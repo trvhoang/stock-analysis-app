@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 import time
 import pytz
 import shutil
+import tempfile
 
 # Load environment variables
 load_dotenv()
@@ -113,90 +114,86 @@ def process_csv_file(file_path, cutoff_date):
 
 # Function to download and process data
 def download_and_process_data(report_date, gaps_of_data):
-    zip_path = "/data/stock_data.zip"
-    extract_path = "/data/extracted"
-    
-    try:
-        st.write("Cleaning up existing data...")
-        with engine.connect() as conn:
-            conn.execute(text("TRUNCATE TABLE trading_data;"))
-            conn.commit()
-
-        last_trading_day = get_last_trading_day(report_date)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        zip_path = os.path.join(temp_dir, "stock_data.zip")
+        extract_path = os.path.join(temp_dir, "extracted")
         
-        ymd_to_date = last_trading_day.strftime("%Y%m%d")
-        dmy_to_date = last_trading_day.strftime("%d%m%Y")
-        url = f"https://cafef1.mediacdn.vn/data/ami_data/{ymd_to_date}/CafeF.SolieuGD.Upto{dmy_to_date}.zip"
-        
-        st.write(f"Downloading data from {url}...")
-        response = requests.get(url)
-        response.raise_for_status()
-        with open(zip_path, "wb") as f:
-            f.write(response.content)
+        try:
+            st.write("Cleaning up existing data...")
+            with engine.connect() as conn:
+                conn.execute(text("TRUNCATE TABLE trading_data;"))
+                conn.commit()
 
-        st.write("Extracting data...")
-        os.makedirs(extract_path, exist_ok=True)
-        with zipfile.ZipFile(zip_path, "r") as zip_ref:
-            zip_ref.extractall(extract_path)
+            last_trading_day = get_last_trading_day(report_date)
+            ymd_to_date = last_trading_day.strftime("%Y%m%d")
+            dmy_to_date = last_trading_day.strftime("%d%m%Y")
+            url = f"https://cafef1.mediacdn.vn/data/ami_data/{ymd_to_date}/CafeF.SolieuGD.Upto{dmy_to_date}.zip"
+            
+            st.write(f"Downloading data from {url}...")
+            response = requests.get(url)
+            response.raise_for_status()
+            with open(zip_path, "wb") as f:
+                f.write(response.content)
 
-        st.write("Processing data...")
-        cutoff_date = last_trading_day - timedelta(days=365 * gaps_of_data)
-        
-        with engine.connect() as conn:
-            conn.execute(text("""
-                CREATE TEMPORARY TABLE temp_trading_data (
-                    ticker TEXT,
-                    date DATE,
-                    open INTEGER,
-                    high INTEGER,
-                    low INTEGER,
-                    close INTEGER,
-                    volume INTEGER
-                );
-            """))
-            conn.commit()
+            st.write("Extracting data...")
+            os.makedirs(extract_path, exist_ok=True)
+            with zipfile.ZipFile(zip_path, "r") as zip_ref:
+                zip_ref.extractall(extract_path)
+
+            st.write("Processing data...")
+            cutoff_date = last_trading_day - timedelta(days=365 * gaps_of_data)
             
-            for csv_file in os.listdir(extract_path):
-                if csv_file.endswith(".csv"):
-                    file_path = os.path.join(extract_path, csv_file)
-                    st.write(f"Processing {csv_file}...")
-                    
-                    df = process_csv_file(file_path, cutoff_date)
-                    
-                    if not df.empty:
-                        df.to_sql("temp_trading_data", conn, if_exists="append", index=False)
-                        conn.commit()
-                        temp_count = conn.execute(text("SELECT COUNT(*) FROM temp_trading_data")).fetchone()[0]
-                        st.write(f"Inserted {len(df)} rows from {csv_file} into temp_trading_data, total now: {temp_count}")
-            
-            temp_count = conn.execute(text("SELECT COUNT(*) FROM temp_trading_data")).fetchone()[0]
-            st.write(f"Total rows in temp_trading_data before transfer: {temp_count}")
-            
-            if temp_count > 0:
+            with engine.connect() as conn:
                 conn.execute(text("""
-                    INSERT INTO trading_data (ticker, date, open, high, low, close, volume)
-                    SELECT DISTINCT ticker, date, open, high, low, close, volume
-                    FROM temp_trading_data;
+                    CREATE TEMPORARY TABLE temp_trading_data (
+                        ticker TEXT,
+                        date DATE,
+                        open INTEGER,
+                        high INTEGER,
+                        low INTEGER,
+                        close INTEGER,
+                        volume INTEGER
+                    );
                 """))
                 conn.commit()
-            
-            conn.execute(text("DROP TABLE temp_trading_data;"))
-            conn.commit()
-            
-            conn.execute(text("DROP INDEX IF EXISTS idx_ticker_date;"))
-            conn.execute(text("""
-                CREATE INDEX idx_ticker_date ON trading_data (ticker, date DESC);
-            """))
-            conn.commit()
-            
-            result = conn.execute(text("SELECT COUNT(*) FROM trading_data")).fetchone()
-            st.write(f"Total rows in trading_data after insert: {result[0]}")
+                
+                for csv_file in os.listdir(extract_path):
+                    if csv_file.endswith(".csv"):
+                        file_path = os.path.join(extract_path, csv_file)
+                        st.write(f"Processing {csv_file}...")
+                        df = process_csv_file(file_path, cutoff_date)
+                        if not df.empty:
+                            df.to_sql("temp_trading_data", conn, if_exists="append", index=False)
+                            conn.commit()
+                            temp_count = conn.execute(text("SELECT COUNT(*) FROM temp_trading_data")).fetchone()[0]
+                            st.write(f"Inserted {len(df)} rows from {csv_file} into temp_trading_data, total now: {temp_count}")
+                
+                temp_count = conn.execute(text("SELECT COUNT(*) FROM temp_trading_data")).fetchone()[0]
+                st.write(f"Total rows in temp_trading_data before transfer: {temp_count}")
+                
+                if temp_count > 0:
+                    conn.execute(text("""
+                        INSERT INTO trading_data (ticker, date, open, high, low, close, volume)
+                        SELECT DISTINCT ticker, date, open, high, low, close, volume
+                        FROM temp_trading_data;
+                    """))
+                    conn.commit()
+                
+                conn.execute(text("DROP TABLE temp_trading_data;"))
+                conn.commit()
+                
+                conn.execute(text("DROP INDEX IF EXISTS idx_ticker_date;"))
+                conn.execute(text("CREATE INDEX idx_ticker_date ON trading_data (ticker, date DESC);"))
+                conn.commit()
+                
+                result = conn.execute(text("SELECT COUNT(*) FROM trading_data")).fetchone()
+                st.write(f"Total rows in trading_data after insert: {result[0]}")
 
-        st.write("Data saved to database.")
-    except Exception as e:
-        st.error(f"Error downloading or processing data: {str(e)}")
-    finally:
-        cleanup_files(zip_path, extract_path)
+            st.write("Data saved to database.")
+        except Exception as e:
+            st.error(f"Error downloading or processing data: {str(e)}")
+        finally:
+            cleanup_files(zip_path, extract_path)
 
 # Function to analyze price movements
 def analyze_price_movement(ticker, validation_days, result_days, delta_target):
