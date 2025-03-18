@@ -302,7 +302,6 @@ def provide_advice(ticker, validation_days, result_days, delta_target, df_stats)
         down_prob = float(down_row["possibility of result"].iloc[0].replace("%", "")) if not down_row.empty else 0
         no_change_prob = float(no_change_row["possibility of result"].iloc[0].replace("%", "")) if not no_change_row.empty else 0
         
-        # Find the highest probability
         probs = {"Up": up_prob, "Down": down_prob, "No Change": no_change_prob}
         max_prob = max(probs.values())
         predictions = [k for k, v in probs.items() if v == max_prob]
@@ -356,8 +355,7 @@ def main():
         """)
         df_value = pd.read_sql(query_value, engine, params={"start_date": start_date, "current_date": current_date})
 
-        # Display side-by-side with adjusted widths
-        col1, col2 = st.columns([1, 2])  # Trading Value gets more width
+        col1, col2 = st.columns([1, 2])
         with col1:
             st.subheader("Top 10 Trading Volume")
             st.dataframe(df_volume)
@@ -386,20 +384,18 @@ def main():
             df_block = analyze_price_movement(ticker, validation_days, result_days, delta_target)
             df_stats = create_analyzed_statistical_report(df_block)
             
-            # Display tables side-by-side with a gap
-            col5, col_gap, col6 = st.columns([2, 1, 2])  # Gap sized like a text box
-            with col5:
-                st.subheader("Block Day and Delta Statistical Report")
-                if not df_block.empty:
-                    st.dataframe(df_block)
-                else:
-                    st.write("No events found matching the criteria.")
-            with col6:
-                st.subheader("Analyzed Statistical Report")
-                if not df_stats.empty:
-                    st.dataframe(df_stats)
-                else:
-                    st.write("No statistical data available.")
+            # Display tables on separate lines with full width
+            st.subheader("Block Day and Delta Statistical Report")
+            if not df_block.empty:
+                st.dataframe(df_block, use_container_width=True)  # Use full container width
+            else:
+                st.write("No events found matching the criteria.")
+            
+            st.subheader("Analyzed Statistical Report")
+            if not df_stats.empty:
+                st.dataframe(df_stats, use_container_width=True)  # Use full container width
+            else:
+                st.write("No statistical data available.")
             
             advice = provide_advice(ticker, validation_days, result_days, delta_target, df_stats)
             st.subheader("Advice")

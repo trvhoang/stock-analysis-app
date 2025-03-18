@@ -7,6 +7,8 @@ from sqlalchemy import create_engine, text
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import time
+import pytz
+import shutil
 
 # Load environment variables
 load_dotenv()
@@ -19,7 +21,7 @@ def get_engine_with_retry(retries=5, delay=5):
     while attempt < retries:
         try:
             engine = create_engine(DATABASE_URL)
-            with engine.connect() as conn:  # Test the connection
+            with engine.connect() as conn:
                 conn.execute(text("SELECT 1"))
             return engine
         except Exception as e:
@@ -57,6 +59,34 @@ def get_last_trading_day(current_date):
         return current_date - timedelta(days=2)
     return current_date
 
+# Function to determine default report date based on GMT+7 time
+def get_default_report_date():
+    tz = pytz.timezone('Asia/Ho_Chi_Minh')  # GMT+7 for Vietnam
+    now = datetime.now(tz)
+    current_time = now.time()
+    eight_pm = datetime.strptime("20:00", "%H:%M").time()
+
+    if current_time >= eight_pm:
+        report_date = now.date()
+    else:
+        report_date = now.date() - timedelta(days=1)
+        if now.weekday() == 0:  # If today is Monday, go back to last Friday
+            report_date -= timedelta(days=2)
+
+    return get_last_trading_day(report_date)
+
+# Function to clean up files
+def cleanup_files(zip_path, extract_path):
+    try:
+        if os.path.exists(zip_path):
+            os.remove(zip_path)
+            st.write(f"Deleted ZIP file: {zip_path}")
+        if os.path.exists(extract_path):
+            shutil.rmtree(extract_path)
+            st.write(f"Deleted extracted folder: {extract_path}")
+    except Exception as e:
+        st.warning(f"Error during cleanup: {str(e)}")
+
 # Function to process CSV file
 def process_csv_file(file_path, cutoff_date):
     df = pd.read_csv(file_path)
@@ -82,15 +112,17 @@ def process_csv_file(file_path, cutoff_date):
     return df
 
 # Function to download and process data
-def download_and_process_data():
+def download_and_process_data(report_date, gaps_of_data):
+    zip_path = "/data/stock_data.zip"
+    extract_path = "/data/extracted"
+    
     try:
         st.write("Cleaning up existing data...")
         with engine.connect() as conn:
             conn.execute(text("TRUNCATE TABLE trading_data;"))
             conn.commit()
 
-        current_date = datetime.today()
-        last_trading_day = get_last_trading_day(current_date).date()
+        last_trading_day = get_last_trading_day(report_date)
         
         ymd_to_date = last_trading_day.strftime("%Y%m%d")
         dmy_to_date = last_trading_day.strftime("%d%m%Y")
@@ -99,18 +131,16 @@ def download_and_process_data():
         st.write(f"Downloading data from {url}...")
         response = requests.get(url)
         response.raise_for_status()
-        zip_path = "/data/stock_data.zip"
         with open(zip_path, "wb") as f:
             f.write(response.content)
 
         st.write("Extracting data...")
-        extract_path = "/data/extracted"
         os.makedirs(extract_path, exist_ok=True)
         with zipfile.ZipFile(zip_path, "r") as zip_ref:
             zip_ref.extractall(extract_path)
 
         st.write("Processing data...")
-        cutoff_date = last_trading_day - timedelta(days=365 * 10)
+        cutoff_date = last_trading_day - timedelta(days=365 * gaps_of_data)
         
         with engine.connect() as conn:
             conn.execute(text("""
@@ -165,33 +195,46 @@ def download_and_process_data():
         st.write("Data saved to database.")
     except Exception as e:
         st.error(f"Error downloading or processing data: {str(e)}")
+    finally:
+        cleanup_files(zip_path, extract_path)
 
 # Function to analyze price movements
 def analyze_price_movement(ticker, validation_days, result_days, delta_target):
     query = text("""
-        WITH ordered_data AS (
+        WITH trading_days AS (
             SELECT date, close,
-                   LAG(close, :validation_days) OVER (ORDER BY date) AS prev_close,
-                   LEAD(close, :result_days) OVER (ORDER BY date) AS next_close
+                   ROW_NUMBER() OVER (PARTITION BY ticker ORDER BY date) AS day_rank
             FROM trading_data
             WHERE ticker = :ticker
-            ORDER BY date
+        ),
+        ordered_data AS (
+            SELECT date, close,
+                   LAG(close, :validation_days) OVER (ORDER BY date) AS prev_close,
+                   LEAD(close, :result_days) OVER (ORDER BY date) AS next_close,
+                   LAG(date, :validation_days) OVER (ORDER BY date) AS start_date,
+                   day_rank,
+                   LAG(day_rank, :validation_days) OVER (ORDER BY date) AS prev_day_rank,
+                   LEAD(day_rank, :result_days) OVER (ORDER BY date) AS next_day_rank
+            FROM trading_days
         ),
         delta_calc AS (
             SELECT date,
                    close,
                    prev_close,
                    next_close,
+                   start_date,
                    CASE 
-                       WHEN prev_close IS NOT NULL 
+                       WHEN prev_close IS NOT NULL AND (day_rank - prev_day_rank) = :validation_days
                        THEN ROUND(((close - prev_close)::FLOAT / prev_close * 100)::NUMERIC, 2)
                        ELSE NULL 
                    END AS exact_delta,
                    CASE 
-                       WHEN next_close IS NOT NULL 
+                       WHEN next_close IS NOT NULL AND (next_day_rank - day_rank) = :result_days
                        THEN ROUND(((next_close - close)::FLOAT / close * 100)::NUMERIC, 2)
                        ELSE NULL 
-                   END AS result_delta
+                   END AS result_delta,
+                   CONCAT(TO_CHAR(start_date, 'DD/MM/YYYY'), ' - ', 
+                          TO_CHAR(date, 'DD/MM/YYYY')) AS signal_date_range
             FROM ordered_data
         )
         SELECT 
@@ -202,17 +245,18 @@ def analyze_price_movement(ticker, validation_days, result_days, delta_target):
                 WHEN result_delta < 0 THEN 'Down'
                 ELSE 'No Change'
             END AS result,
-            result_delta
+            result_delta,
+            signal_date_range
         FROM delta_calc
         WHERE exact_delta IS NOT NULL 
-          AND exact_delta >= :delta_min 
-          AND exact_delta <= :delta_max
+          AND exact_delta BETWEEN :delta_min AND :delta_max
           AND result_delta IS NOT NULL
+          AND start_date IS NOT NULL
         ORDER BY date;
     """)
     
-    delta_min = delta_target - 0.99  # e.g., -3.99 for -3 target
-    delta_max = delta_target        # e.g., -3.00 for -3 target
+    delta_min = delta_target - 1  # e.g., -16% for -15%
+    delta_max = delta_target + 1  # e.g., -14% for -15%
     
     params = {
         "ticker": ticker,
@@ -226,9 +270,9 @@ def analyze_price_movement(ticker, validation_days, result_days, delta_target):
     
     if not df.empty:
         df["no. events"] = range(1, len(df) + 1)
-        df = df[["no. events", "exact_delta", "result", "result_delta"]]
+        df = df[["no. events", "exact_delta", "result", "result_delta", "signal_date_range"]]
     else:
-        df = pd.DataFrame(columns=["no. events", "exact_delta", "result", "result_delta"])
+        df = pd.DataFrame(columns=["no. events", "exact_delta", "result", "result_delta", "signal_date_range"])
     
     return df
 
@@ -287,8 +331,8 @@ def provide_advice(ticker, validation_days, result_days, delta_target, df_stats)
     latest_close = df_latest["close"].iloc[0]
     prev_close = df_latest["prev_close"].iloc[0]
     latest_delta = round(((latest_close - prev_close) / prev_close * 100), 2)
-    delta_min = delta_target - 0.99
-    delta_max = delta_target
+    delta_min = delta_target - 1
+    delta_max = delta_target + 1
     
     if delta_min <= latest_delta <= delta_max:
         if df_stats.empty:
@@ -319,12 +363,15 @@ def provide_advice(ticker, validation_days, result_days, delta_target, df_stats)
 def main():
     init_db()
     st.title("Stock Analysis App")
-    page = st.sidebar.selectbox("Select Page", ["Data", "Result", "Analyze"], index=0)  # Data as default
+    page = st.sidebar.selectbox("Select Page", ["Data", "Result", "Analyze"], index=0)
 
     if page == "Data":
         st.header("Data Page")
+        default_date = get_default_report_date()
+        report_date = st.date_input("Select Report Date", value=default_date)
+        gaps_of_data = st.number_input("Gaps of Data (Years)", min_value=1, value=10, step=1)
         if st.button("Get Data"):
-            download_and_process_data()
+            download_and_process_data(report_date, gaps_of_data)
 
     elif page == "Result":
         st.header("Result Page")
@@ -384,16 +431,15 @@ def main():
             df_block = analyze_price_movement(ticker, validation_days, result_days, delta_target)
             df_stats = create_analyzed_statistical_report(df_block)
             
-            # Display tables on separate lines with full width
             st.subheader("Block Day and Delta Statistical Report")
             if not df_block.empty:
-                st.dataframe(df_block, use_container_width=True)  # Use full container width
+                st.dataframe(df_block, use_container_width=True)
             else:
                 st.write("No events found matching the criteria.")
             
             st.subheader("Analyzed Statistical Report")
             if not df_stats.empty:
-                st.dataframe(df_stats, use_container_width=True)  # Use full container width
+                st.dataframe(df_stats, use_container_width=True)
             else:
                 st.write("No statistical data available.")
             
