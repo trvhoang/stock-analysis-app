@@ -4,12 +4,13 @@ import zipfile
 import os
 import pandas as pd
 from sqlalchemy import create_engine, text
+from sqlalchemy.types import BigInteger
 from datetime import datetime, timedelta
 import pytz
 import shutil
 import tempfile
 
-# Database connection (assumes DATABASE_URL is passed from main)
+# Database connection
 def get_engine_with_retry(database_url, retries=5, delay=5):
     attempt = 0
     while attempt < retries:
@@ -26,21 +27,32 @@ def get_engine_with_retry(database_url, retries=5, delay=5):
                 raise
             time.sleep(delay)
 
-# Create trading_data table if it doesn’t exist
+# Create trading_data table with BIGINT for numerical columns
 def init_db(engine):
     with engine.connect() as conn:
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS trading_data (
                 ticker TEXT,
                 date DATE,
-                open INTEGER,
-                high INTEGER,
-                low INTEGER,
-                close INTEGER,
-                volume INTEGER,
+                open BIGINT,
+                high BIGINT,
+                low BIGINT,
+                close BIGINT,
+                volume BIGINT,
                 PRIMARY KEY (ticker, date)
             );
         """))
+        # Verify schema
+        result = conn.execute(text("""
+            SELECT column_name, data_type 
+            FROM information_schema.columns 
+            WHERE table_name = 'trading_data' 
+            AND column_name IN ('open', 'high', 'low', 'close', 'volume');
+        """)).fetchall()
+        for col, dtype in result:
+            if dtype.lower() != 'bigint':
+                st.error(f"Column {col} is {dtype}, expected BIGINT")
+                raise ValueError(f"Invalid schema for trading_data: {col} is {dtype}")
         conn.commit()
 
 # Function to get the last trading day (Monday to Friday)
@@ -53,7 +65,7 @@ def get_last_trading_day(current_date):
 
 # Function to determine default report date based on GMT+7 time
 def get_default_report_date():
-    tz = pytz.timezone('Asia/Ho_Chi_Minh')  # GMT+7 for Vietnam
+    tz = pytz.timezone('Asia/Ho_Chi_Minh')
     now = datetime.now(tz)
     current_time = now.time()
     eight_pm = datetime.strptime("20:00", "%H:%M").time()
@@ -62,7 +74,7 @@ def get_default_report_date():
         report_date = now.date()
     else:
         report_date = now.date() - timedelta(days=1)
-        if now.weekday() == 0:  # If today is Monday, go back to last Friday
+        if now.weekday() == 0:
             report_date -= timedelta(days=2)
 
     return get_last_trading_day(report_date)
@@ -81,20 +93,21 @@ def cleanup_files(zip_path, extract_path):
 
 # Function to process CSV file with chunking and ticker filtering
 def process_csv_file(file_path, cutoff_date, ticker_filter=None, chunk_size=10000, engine=None):
-    chunks = pd.read_csv(file_path, chunksize=chunk_size)
+    chunks = pd.read_csv(file_path, chunksize=chunk_size, dtype={"Open": "float64", "High": "float64", "Low": "float64", "Close": "float64", "Volume": "float64"})
     total_rows = 0
     filtered_rows = 0
+    last_chunk_dtypes = None
     
     with engine.connect() as conn:
         conn.execute(text("""
             CREATE TEMPORARY TABLE temp_chunk (
                 ticker TEXT,
                 date DATE,
-                open INTEGER,
-                high INTEGER,
-                low INTEGER,
-                close INTEGER,
-                volume INTEGER
+                open BIGINT,
+                high BIGINT,
+                low BIGINT,
+                close BIGINT,
+                volume BIGINT
             );
         """))
         conn.commit()
@@ -107,33 +120,71 @@ def process_csv_file(file_path, cutoff_date, ticker_filter=None, chunk_size=1000
             if ticker_filter is not None:
                 chunk = chunk[chunk["Ticker"] == ticker_filter]
             else:
-                chunk = chunk[chunk["Ticker"].str.len() <= 3]
+                chunk = chunk[chunk["Ticker"].str.len() <= 7]
             filtered_rows += len(chunk)
             
             if not chunk.empty:
-                chunk["Open"] = (chunk["Open"] * 1000).astype(int)
-                chunk["High"] = (chunk["High"] * 1000).astype(int)
-                chunk["Low"] = (chunk["Low"] * 1000).astype(int)
-                chunk["Close"] = (chunk["Close"] * 1000).astype(int)
-                chunk["Volume"] = chunk["Volume"].astype(int)
-                chunk.columns = ["ticker", "date", "open", "high", "low", "close", "volume"]
-                chunk.to_sql("temp_chunk", conn, if_exists="append", index=False)
-                conn.commit()
+                try:
+                    chunk["Open"] = (chunk["Open"] * 1000).round().astype('int64')
+                    chunk["High"] = (chunk["High"] * 1000).round().astype('int64')
+                    chunk["Low"] = (chunk["Low"] * 1000).round().astype('int64')
+                    chunk["Close"] = (chunk["Close"] * 1000).round().astype('int64')
+                    chunk["Volume"] = chunk["Volume"].round().astype('int64')
+                    chunk.columns = ["ticker", "date", "open", "high", "low", "close", "volume"]
+                    # Deduplicate in Pandas
+                    chunk = chunk.drop_duplicates(subset=["ticker", "date"], keep="first")
+                    chunk.to_sql("temp_chunk", conn, if_exists="append", index=False, 
+                                dtype={"open": BigInteger, "high": BigInteger, "low": BigInteger, 
+                                       "close": BigInteger, "volume": BigInteger}, method="multi")
+                    conn.commit()
+                    last_chunk_dtypes = chunk.dtypes
+                except Exception as e:
+                    st.error(f"Error processing chunk in {os.path.basename(file_path)}: {str(e)}")
+                    raise
 
         st.write(f"Raw data rows in {os.path.basename(file_path)}: {total_rows}")
         st.write(f"Rows after filtering: {filtered_rows}")
+        if last_chunk_dtypes is not None:
+            st.write(f"Processed chunk dtypes: {last_chunk_dtypes}")
         
-        conn.execute(text("""
-            INSERT INTO trading_data (ticker, date, open, high, low, close, volume)
-            SELECT DISTINCT ticker, date, open, high, low, close, volume
-            FROM temp_chunk
-            ON CONFLICT (ticker, date) DO NOTHING;
-        """))
+        # Log temp_chunk contents
+        temp_count = conn.execute(text("SELECT COUNT(*) FROM temp_chunk")).fetchone()[0]
+        st.write(f"Rows in temp_chunk before insert: {temp_count}")
+        
+        # Check for duplicates in temp_chunk
+        duplicates = conn.execute(text("""
+            SELECT ticker, date, COUNT(*) 
+            FROM temp_chunk 
+            GROUP BY ticker, date 
+            HAVING COUNT(*) > 1;
+        """)).fetchall()
+        if duplicates:
+            st.warning(f"Duplicates found in temp_chunk: {duplicates}")
+        
+        # Insert into trading_data
+        try:
+            result = conn.execute(text("""
+                INSERT INTO trading_data (ticker, date, open, high, low, close, volume)
+                SELECT ticker, date, open, high, low, close, volume
+                FROM temp_chunk
+                ON CONFLICT (ticker, date) DO NOTHING
+                RETURNING ticker;
+            """))
+            inserted_rows = result.rowcount
+            st.write(f"Inserted {inserted_rows} rows into trading_data from {os.path.basename(file_path)}")
+        except Exception as e:
+            st.error(f"Error inserting into trading_data: {str(e)}")
+            raise
+        
+        # Verify trading_data contents
+        trading_count = conn.execute(text("SELECT COUNT(*) FROM trading_data")).fetchone()[0]
+        st.write(f"Rows in trading_data after insert: {trading_count}")
+        
         conn.commit()
         conn.execute(text("DROP TABLE temp_chunk;"))
         conn.commit()
 
-# Function to download and process data (stock or index)
+# Function to download and process data
 def download_and_process_data(report_date, gaps_of_data, data_type="stock", engine=None):
     with tempfile.TemporaryDirectory() as temp_dir:
         zip_path = os.path.join(temp_dir, "stock_data.zip")
@@ -183,6 +234,7 @@ def download_and_process_data(report_date, gaps_of_data, data_type="stock", engi
             st.write(f"{data_type.capitalize()} data saved to database.")
         except Exception as e:
             st.error(f"Error downloading or processing {data_type} data: {str(e)}")
+            raise
         finally:
             cleanup_files(zip_path, extract_path)
 

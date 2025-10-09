@@ -3,17 +3,32 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy import text
 import concurrent.futures
+from datetime import datetime, timedelta
 
-# Function to get all tickers with average volume filter
+# Function to get all tickers with average volume filter, no zero-volume days, and at least one record in the last year
 def get_all_tickers(engine, min_avg_volume):
+    # Calculate the date 1 year ago from today
+    one_year_ago = datetime.today().date() - timedelta(days=365)
+    
     query = text("""
         SELECT ticker
         FROM trading_data
         WHERE ticker <> 'VNINDEX'
+        AND ticker IN (
+            SELECT ticker 
+            FROM trading_data 
+            WHERE date >= :one_year_ago
+        )
         GROUP BY ticker
         HAVING AVG(volume) >= :min_avg_volume
+        AND ticker NOT IN (
+            SELECT ticker 
+            FROM trading_data 
+            WHERE volume = 0 
+            AND date >= :one_year_ago
+        )
     """)
-    return pd.read_sql(query, engine, params={"min_avg_volume": min_avg_volume})["ticker"].tolist()
+    return pd.read_sql(query, engine, params={"min_avg_volume": min_avg_volume, "one_year_ago": one_year_ago})["ticker"].tolist()
 
 # Function to analyze a single ticker (no changes here)
 def analyze_ticker(ticker, day_range, result_day_range, engine):
@@ -104,7 +119,7 @@ def suggestion_page(engine):
     if st.button("Generate Suggestions"):
         min_avg_volume = volume_threshold * 1000  # Convert thousands to actual volume
         tickers = get_all_tickers(engine, min_avg_volume)
-        st.write(f"Analyzing {len(tickers)} tickers with average volume >= {min_avg_volume}...")
+        st.write(f"Analyzing {len(tickers)} tickers with average volume >= {min_avg_volume} and no zero-volume days in the last year...")
         
         # Parallel processing of tickers
         results = []
