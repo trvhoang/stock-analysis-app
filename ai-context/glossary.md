@@ -35,3 +35,8 @@ This document defines key terms, acronyms, and concepts specific to the Stock An
 *   **Result Page:** A dashboard showing general market statistics (e.g., top volume tickers).
 *   **Analyze Page:** A two-tab page. The "Ticker Analyze" tab provides a deep-dive into a single ticker's historical performance based on its current signal. The "Portfolio Analyze" tab provides a high-level statistical summary for a user-defined list of tickers.
 *   **Suggestion Page:** The interface for scanning the *entire market* to find tickers with the highest probability of success, based on their own unique and current price signal.
+
+## Technical Indicators
+
+- **Golden Cross:** A bullish technical analysis signal that occurs when a short-term moving average (e.g., 20-day) crosses above a long-term moving average (e.g., 50-day).
+- **Death Cross:** A bearish technical analysis signal that occurs when a short-term moving average crosses below a long-term moving average.

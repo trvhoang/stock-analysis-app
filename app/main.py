@@ -5,6 +5,7 @@ from data_preparation import data_page, get_engine_with_retry, init_db
 from result_visualization import result_page
 from analyze_visualization import analyze_page
 from suggestion_visualization import suggestion_page
+from technical_visualization import technical_analysis_page
 
 # Load environment variables
 load_dotenv()
@@ -38,7 +39,7 @@ def main():
 
     # App title and page selection
     st.title("Stock Analysis App")
-    page = st.sidebar.selectbox("Select Page", ["Data", "Result", "Analyze", "Suggestion"], index=0)
+    page = st.sidebar.selectbox("Select Page", ["Data", "Result", "Analyze", "Suggestion", "Technical Analyze"], index=0)
 
     # Route to appropriate page
     if page == "Data":
@@ -49,6 +50,8 @@ def main():
         analyze_page(engine)
     elif page == "Suggestion":
         suggestion_page(engine)
+    elif page == "Technical Analyze":
+        technical_analysis_page(engine)
 
 if __name__ == "__main__":
     main()

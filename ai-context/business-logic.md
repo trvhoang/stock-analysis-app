@@ -77,3 +77,17 @@ Outcomes (`result_delta`) are classified into three categories to generate proba
 2.  **Timezone:** All "current date" logic for reports defaults to `Asia/Ho_Chi_Minh` (GMT+7).
 3.  **Data Cutoff:** Daily reports are generated based on the assumption that data for the current day is available after 8:00 PM GMT+7.
 4.  **Rounding:** All percentage deltas are rounded to 2 decimal places.
+
+## 6. Technical Indicator Logic
+
+### Timeframe Resampling (Weekly/Monthly)
+*   **What:** To generate 'Week' or 'Month' data, the application fetches a larger-than-required set of daily data. It then uses pandas `resample()` to aggregate this daily data into the target timeframe.
+*   **Logic:**
+    *   **Aggregation:** `{'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last', 'volume': 'sum'}`.
+    *   **Data Integrity:** Any resampled period with no trading data (e.g., a week full of holidays) is dropped using `dropna()` to ensure data continuity.
+
+### Moving Average Cross (MA Cross)
+*   **What:** The system identifies Golden Cross and Death Cross signals based on two Simple Moving Averages (SMAs).
+*   **Logic:**
+    *   **Golden Cross:** A bullish signal where the short-term SMA crosses *above* the long-term SMA. (`short_ma > long_ma` now, and `short_ma <= long_ma` in the previous period).
+    *   **Death Cross:** A bearish signal where the short-term SMA crosses *below* the long-term SMA. (`short_ma < long_ma` now, and `short_ma >= long_ma` in the previous period).

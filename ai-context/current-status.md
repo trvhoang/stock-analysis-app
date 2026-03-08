@@ -1,9 +1,19 @@
-﻿# Current Project Status
+﻿﻿# Current Project Status
 
 This document provides a snapshot of the project's current state, including finished tasks, ongoing work, known issues, and next steps.
 
 ## 1. Recently Completed Tasks
-
+- **Finalize MA and MA Cross Indicator:**
+  - Implemented UI controls for MA/MA Cross on the "Technical Analyze" page.
+  - Added timeframe-aware MA pair selection (Day, Week, Month).
+  - Visualized SMA lines and Golden/Death cross signals on the main price chart.
+  - Collapsed the raw data table by default to improve layout.
+- **Technical Analyzed Page Implementation:**
+  - Created a new page named "Technical Analyzed Page" using `pandas-ta` and `plotly`.
+  - Implemented UI with Ticker, Timeframe, and Lookback controls.
+  - Implemented interactive Price (Candlestick) and Volume (Bar) charts.
+  - Created placeholder structure for technical indicators.
+  - **Fix:** Resolved `AttributeError` in `fetch_data` by using `engine.raw_connection()` to bypass pandas/SQLAlchemy compatibility issues.
 - **Refactor Number Formatting in Analyze Page:**
   - Refactored all numbers in analyze page (Ticker and Portfolio tabs) to have 2 decimal numbers after floating point.
 - **Refactoring Core SQL Logic:**
@@ -31,10 +41,11 @@ This document provides a snapshot of the project's current state, including fini
   - This eliminated redundant helper functions and resolved the long-standing "Fragile String Parsing" known issue.
 
 ## 2. Work In Progress (WIP)
-- **Technical Analyzed Page Implementation:**
-  - Create a new page named "Technical Analyzed Page" using `pandas-ta`.
-  - Create a new file to control technical indicators.
-  - Implement empty placeholder functions for: Stochastic (10,3,3), RSI, MA, MA Cross, Ichimoku Cloud, Bollinger Band.
+- **Implement Technical Indicators & Charts:**
+  - Implement RSI (14) logic and visualization.
+  - Implement Stochastic (10, 3, 3) logic and visualization.
+  - Implement Bollinger Bands logic and visualization.
+  - Implement Ichimoku Cloud (9, 26, 52, 26, 26) logic and visualization.
 
 ## 3. Known Issues & Technical Debt
 
@@ -45,4 +56,4 @@ This document provides a snapshot of the project's current state, including fini
 2.  Identify next high-value feature or refactoring target.
 
 ---
-*Last Updated: 2024-05-22 (Number Formatting Refactor)*
+*Last Updated: 2024-05-23 (MA/MA Cross Refinement Complete)*

@@ -3,12 +3,16 @@ import requests
 import zipfile
 import os
 import pandas as pd
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, event
 from sqlalchemy.types import BigInteger
 from datetime import datetime, timedelta
 import pytz
 import shutil
 import tempfile
+import time
+
+# Import the high-performance `execute_values` helper from psycopg2
+from psycopg2.extras import execute_values
 
 # Database connection
 def get_engine_with_retry(database_url, retries=5, delay=5):
@@ -98,7 +102,7 @@ def process_csv_file(file_path, cutoff_date, ticker_filter=None, chunk_size=1000
     filtered_rows = 0
     last_chunk_dtypes = None
     
-    with engine.connect() as conn:
+    with engine.begin() as conn:
         conn.execute(text("""
             CREATE TEMPORARY TABLE temp_chunk (
                 ticker TEXT,
@@ -110,7 +114,6 @@ def process_csv_file(file_path, cutoff_date, ticker_filter=None, chunk_size=1000
                 volume BIGINT
             );
         """))
-        conn.commit()
 
         for chunk in chunks:
             total_rows += len(chunk)
@@ -133,10 +136,15 @@ def process_csv_file(file_path, cutoff_date, ticker_filter=None, chunk_size=1000
                     chunk.columns = ["ticker", "date", "open", "high", "low", "close", "volume"]
                     # Deduplicate in Pandas
                     chunk = chunk.drop_duplicates(subset=["ticker", "date"], keep="first")
-                    chunk.to_sql("temp_chunk", conn, if_exists="append", index=False, 
-                                dtype={"open": BigInteger, "high": BigInteger, "low": BigInteger, 
-                                       "close": BigInteger, "volume": BigInteger}, method="multi")
-                    conn.commit()
+                    # The `dtype` argument is removed as it causes a ValueError in this pandas/SQLAlchemy version.
+                    # The temp_chunk table already has the correct BIGINT types, and the DataFrame dtypes are int64,
+                    # so the database driver can handle the mapping correctly.
+                    # DIRECT INSERTION USING PSYCOPG2
+                    # Bypass pandas.to_sql entirely to avoid SQLAlchemy/Pandas version conflicts
+                    with conn.connection.cursor() as cursor:
+                        execute_values(cursor, 
+                            "INSERT INTO temp_chunk (ticker, date, open, high, low, close, volume) VALUES %s", 
+                            chunk.values.tolist())
                     last_chunk_dtypes = chunk.dtypes
                 except Exception as e:
                     st.error(f"Error processing chunk in {os.path.basename(file_path)}: {str(e)}")
@@ -180,9 +188,7 @@ def process_csv_file(file_path, cutoff_date, ticker_filter=None, chunk_size=1000
         trading_count = conn.execute(text("SELECT COUNT(*) FROM trading_data")).fetchone()[0]
         st.write(f"Rows in trading_data after insert: {trading_count}")
         
-        conn.commit()
         conn.execute(text("DROP TABLE temp_chunk;"))
-        conn.commit()
 
 # Function to download and process data
 def download_and_process_data(report_date, gaps_of_data, data_type="stock", engine=None):

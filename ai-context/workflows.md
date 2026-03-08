@@ -24,7 +24,7 @@ The entire application is containerized with Docker to ensure a consistent and r
 1.  **Open a terminal** in the project root directory.
 2.  **Build and start the services** using Docker Compose. The `-f` flag is necessary if `docker-compose.yml` is not in the root.
     ```bash
-    docker-compose up --build
+    docker-compose -f docker/docker-compose.yml up --build
     ```
     *   `--build`: This flag forces a rebuild of the application's Docker image, which is necessary to include any changes made to the Python code or `requirements.txt`.
 3.  **Access the app:** Open a web browser and navigate to `http://localhost:8501`.

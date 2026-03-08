@@ -5,7 +5,8 @@
 ## 1. Technology Stack
 
 - **Backend/UI:** Python, Streamlit
-- **Data Processing:** Pandas
+- **Data Processing:** Pandas, pandas-ta
+- **Visualization:** Plotly
 - **Database:** PostgreSQL
 - **Database ORM/Driver:** SQLAlchemy, Psycopg2
 - **Containerization:** Docker, Docker Compose
@@ -20,9 +21,10 @@ A high-level overview of the project's directory structure.
 ├── .env                  # Environment variables (DB credentials)
 ├── docker-compose.yml    # Defines and orchestrates Docker services (app, db)
 ├── Dockerfile            # Instructions to build the Python application container
-├── requirements.txt      # Python dependencies
+├── requirements.txt      # Python dependencies for product deployment
 │
 ├── app/                  # Main application source code
+│   ├── requirements.txt    # Python dependencies for local build
 │   ├── main.py           # Application entry point, UI routing
 │   ├── data_preparation.py # Data ingestion and database setup
 │   ├── common_queries.py # Centralized SQL query components
@@ -74,6 +76,12 @@ Details on the role of each Python module within the `app/` directory.
 
 - **`result_visualization.py`**:
     - **"Result" Page Logic:** Contains functions to display general market statistics, such as top tickers by volume or trading value.
+
+- **`technical_analysis.py`**:
+    - **Technical Logic:** Controller for technical analysis. Fetches data for specific timeframes and calculates indicators (Stochastic, RSI, MA, etc.) using `pandas-ta`.
+
+- **`technical_visualization.py`**:
+    - **"Technical Analyze" Page Logic:** Handles the UI for the technical analysis page, including inputs (Ticker, Timeframe) and Plotly chart rendering (Price & Volume).
 
 ## 4. Data Flow
 
