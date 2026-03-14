@@ -42,7 +42,10 @@ def main():
     page = st.sidebar.selectbox("Select Page", ["Data", "Result", "Analyze", "Suggestion", "Technical Analyze"], index=0)
 
     # Route to appropriate page
-    if page == "Data":
+    if page != "Technical Analyze":
+         # Clear sidebar if not Technical Analyze page
+        st.session_state.clear()  # Clear all session state
+    if page == "Data":       
         data_page(engine)
     elif page == "Result":
         result_page(engine)

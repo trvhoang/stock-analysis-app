@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-from sqlalchemy import text
 from datetime import datetime, timedelta
 
 # Result page logic
@@ -10,28 +9,38 @@ def result_page(engine):
     current_date = datetime.today().date()
     start_date = current_date - timedelta(days=months * 30)
     
-    query_volume = text("""
+    # Use raw DBAPI syntax (%(name)s) for raw_connection
+    query_volume = """
         SELECT ticker, SUM(volume) as total_volume
         FROM trading_data
-        WHERE date >= :start_date AND date <= :current_date AND ticker <> 'VNINDEX'
+        WHERE date >= %(start_date)s AND date <= %(current_date)s AND ticker <> 'VNINDEX'
         GROUP BY ticker
         ORDER BY total_volume DESC
         LIMIT 10
-    """)
-    df_volume = pd.read_sql(query_volume, engine, params={"start_date": start_date, "current_date": current_date})
+    """
 
-    query_value = text("""
+    # Use raw DBAPI syntax (%(name)s) for raw_connection
+    query_value = """
         SELECT ticker, 
                SUM(CAST(close AS BIGINT) * CAST(volume AS BIGINT)) as total_value,
                SUM(volume) as total_volume,
                ROUND((SUM(CAST(close AS BIGINT) * CAST(volume AS BIGINT))::FLOAT / SUM(volume))::NUMERIC, 2) as avg_price
         FROM trading_data
-        WHERE date >= :start_date AND date <= :current_date AND ticker <> 'VNINDEX'
+        WHERE date >= %(start_date)s AND date <= %(current_date)s AND ticker <> 'VNINDEX'
         GROUP BY ticker
         ORDER BY total_value DESC
         LIMIT 10
-    """)
-    df_value = pd.read_sql(query_value, engine, params={"start_date": start_date, "current_date": current_date})
+    """
+
+    params = {"start_date": start_date, "current_date": current_date}
+    
+    # Use a raw connection to bypass pandas/SQLAlchemy compatibility issues
+    conn = engine.raw_connection()
+    try:
+        df_volume = pd.read_sql(query_volume, conn, params=params)
+        df_value = pd.read_sql(query_value, conn, params=params)
+    finally:
+        conn.close()
 
     col1, col2 = st.columns([1, 2])
     with col1:

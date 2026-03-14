@@ -67,7 +67,8 @@ Details on the role of each Python module within the `app/` directory.
     - **`analyze_price_movement`:** Queries the database for a detailed list of every historical instance of a specific signal for one ticker.
     - **`create_analyzed_statistical_report`:** Calculates the probability statistics (Up, Down, No Change) from the results.
     - **`provide_advice`:** Provides a prediction based on the historical statistics.
-    - **Portfolio Logic:** Handles batch analysis for multiple tickers using `ThreadPoolExecutor` and the shared `analyze_ticker` function.
+    - **Portfolio Logic:** Handles batch analysis for multiple tickers using `ThreadPoolExecutor` and the local `analyze_portfolio_ticker` wrapper to combine statistical and technical analysis.
+    - **Linear Flow:** The `analyze_page` function orchestrates a strict 1-5 display order (Signal -> Stats -> Tech -> Final -> Explanation) to ensure logical information flow.
 
 - **`suggestion_visualization.py`**:
     - **"Suggestion" Page Logic:** Contains all functions for the market-wide suggestion page.
@@ -78,10 +79,10 @@ Details on the role of each Python module within the `app/` directory.
     - **"Result" Page Logic:** Contains functions to display general market statistics, such as top tickers by volume or trading value.
 
 - **`technical_analysis.py`**:
-    - **Technical Logic:** Controller for technical analysis. Fetches data for specific timeframes and calculates indicators (Stochastic, RSI, MA, etc.) using `pandas-ta`.
+    - **Technical Logic:** Controller for technical analysis. Fetches data, calculates indicators (e.g., `calculate_ma_cross`, `calculate_rsi`), and determines trend classifications (e.g., `calculate_ma_trend`, `calculate_rsi_trend`, `calculate_ma_cross_trend`) based on defined business rules.
 
 - **`technical_visualization.py`**:
-    - **"Technical Analyze" Page Logic:** Handles the UI for the technical analysis page, including inputs (Ticker, Timeframe) and Plotly chart rendering (Price & Volume).
+    - **"Technical Analyze" Page Logic:** Handles the UI for the technical analysis page. **It uses `st.session_state` to cache calculation results, preventing redundant computations when UI elements are toggled.** It renders Plotly charts (Price, Volume, and indicators like RSI).
 
 ## 4. Data Flow
 

@@ -251,10 +251,15 @@ def data_page(engine):
     report_date = st.date_input("Select Report Date", value=default_date)
     gaps_of_data = st.number_input("Gaps of Data (Years)", min_value=1, value=10, step=1)
     if st.button("Get Data"):
-        st.write("Starting data retrieval...")
-        with engine.connect() as conn:
-            conn.execute(text("TRUNCATE TABLE trading_data;"))
-            conn.commit()
-        download_and_process_data(report_date, gaps_of_data, "stock", engine=engine)
-        download_and_process_data(report_date, gaps_of_data, "index", engine=engine)
-        st.write("Data retrieval complete.")
+        with st.spinner("Downloading and processing data..."):
+            st.write("Starting data retrieval...")
+            with engine.connect() as conn:
+                conn.execute(text("TRUNCATE TABLE trading_data;"))
+                conn.commit()
+            download_and_process_data(report_date, gaps_of_data, "stock", engine=engine)
+            if False:
+                st.error("Data processing failed", icon="‼️")
+            download_and_process_data(report_date, gaps_of_data, "index", engine=engine)
+            if True:
+                st.success("Data retrieval complete.", icon="✅")
+            

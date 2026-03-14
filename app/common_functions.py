@@ -1,5 +1,6 @@
 import pandas as pd
 from sqlalchemy import text
+import traceback
 from common_queries import BASE_DELTA_CALC_CTE, COMMON_DELTA_FILTER_WHERE_CLAUSE, DELTA_UP_THRESHOLD, DELTA_DOWN_THRESHOLD
 
 # Function to analyze a single ticker
@@ -13,18 +14,25 @@ def analyze_ticker(ticker, day_range, result_day_range, engine):
         # 1. Get latest data to calculate current_delta
         # We need the close of the most recent date, and the close 'lag_days' trading days before that.
         # We fetch day_range (which is lag_days + 1) records to get the start and end points of the window.
-        query_latest = text("""
+        # Use raw DBAPI syntax (%(name)s) for raw_connection
+        query_latest = """
             SELECT date, close 
             FROM trading_data 
-            WHERE ticker = :ticker 
+            WHERE ticker = %(ticker)s 
             ORDER BY date DESC 
-            LIMIT :limit
-        """)
+            LIMIT %(limit)s
+        """
         
-        df_latest = pd.read_sql(query_latest, engine, params={"ticker": ticker, "limit": day_range})
+        # Use a raw connection to bypass pandas/SQLAlchemy compatibility issues
+        conn = engine.raw_connection()
+        try:
+            df_latest = pd.read_sql(query_latest, conn, params={"ticker": ticker, "limit": day_range})
+        finally:
+            conn.close()
         
         # Ensure we have enough data points to calculate the delta
         if len(df_latest) < day_range:
+            print(f"Insufficient data for {ticker}: Found {len(df_latest)} rows, needed {day_range}.")
             return None
             
         current_close = df_latest.iloc[0]["close"]
@@ -33,10 +41,12 @@ def analyze_ticker(ticker, day_range, result_day_range, engine):
         start_date = df_latest.iloc[-1]["date"]
         
         if prev_close == 0:
+            print(f"Zero previous close price detected for {ticker}.")
             return None
             
         # Calculate the current delta for this specific ticker
-        current_delta = round(((current_close - prev_close) / prev_close * 100), 2)
+        # Convert to native Python float to avoid Psycopg2 adapter issues with numpy types
+        current_delta = float(round(((current_close - prev_close) / prev_close * 100), 2))
         
         # 2. Set target range based on current delta
         delta_min = current_delta - 1
@@ -59,8 +69,15 @@ def analyze_ticker(ticker, day_range, result_day_range, engine):
             FROM delta_calc
         """ + COMMON_DELTA_FILTER_WHERE_CLAUSE
 
-        query = text(query_str)
-        
+        # Convert SQLAlchemy :param syntax to Psycopg2 %(param)s syntax for raw connection
+        query_str = query_str.replace(":ticker", "%(ticker)s")
+        query_str = query_str.replace(":validation_days", "%(validation_days)s")
+        query_str = query_str.replace(":result_days", "%(result_days)s")
+        query_str = query_str.replace(":delta_min", "%(delta_min)s")
+        query_str = query_str.replace(":delta_max", "%(delta_max)s")
+        query_str = query_str.replace(":up_threshold", "%(up_threshold)s")
+        query_str = query_str.replace(":down_threshold", "%(down_threshold)s")
+
         params = {
             "ticker": ticker,
             "validation_days": lag_days,
@@ -70,7 +87,12 @@ def analyze_ticker(ticker, day_range, result_day_range, engine):
             "up_threshold": DELTA_UP_THRESHOLD,
             "down_threshold": DELTA_DOWN_THRESHOLD
         }
-        result = pd.read_sql(query, engine, params=params).iloc[0]
+        
+        conn = engine.raw_connection()
+        try:
+            result = pd.read_sql(query_str, conn, params=params).iloc[0]
+        finally:
+            conn.close()
         
         if result["total_signals"] > 0:
             possibility_up = round((result["up_count"] / result["total_signals"]) * 100, 2)
@@ -94,6 +116,8 @@ def analyze_ticker(ticker, day_range, result_day_range, engine):
             "median_down_delta": result["median_down_delta"],
             "max_down_delta": result["max_down_delta"]
         }
-    except Exception:
+    except Exception as e:
+        print(f"Error analyzing ticker {ticker}: {e}")
+        traceback.print_exc()
         # Return None to indicate failure for this specific ticker, allowing the batch to continue
         return None
