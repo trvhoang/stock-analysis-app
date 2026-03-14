@@ -28,6 +28,30 @@ You MUST NOT skip, combine, or reorder any steps.
 
 ---
 
+## 🧰 ACTIVE SKILL REGISTRY
+
+This project uses an `/ai-skills` folder containing focused execution guides.
+Skills reduce token usage by scoping each action precisely.
+Read `/ai-skills/README.md` for the full index.
+
+The following skills are **ACTIVE** and must be loaded at the step indicated:
+
+| Skill File | Load At | Purpose |
+|------------|---------|---------|
+| `skill-analyze-wip.md` | Task 1 Step 3 | Structured WIP extraction and prioritization |
+| `skill-coding-logic-review.md` | Task 2 Step 7 | Business rule and logic correctness review |
+| `skill-performance-review.md` | Task 2 Step 7 | DB, Streamlit, and pandas performance review |
+| `skill-bug-diagnosis.md` | Any time a bug is reported | Root cause analysis and fix proposal |
+| `skill-db-query-review.md` | Task 2 Step 7 (SQL tasks only) | SQL safety, correctness, convention compliance |
+
+**Rules for skill usage:**
+- Load ONLY the skill(s) relevant to the current step — do not pre-load all skills
+- Inactive skills must never be referenced, loaded, or suggested as alternatives
+- If a task falls outside all active skills, proceed using /ai-context files directly
+- Skills extend this command file — they do not replace any step in it
+
+---
+
 ---
 
 # 🌅 TASK 1 — DAILY STARTUP COMMAND
@@ -96,91 +120,12 @@ Rules for this step:
 
 ## STEP 3 — ANALYZE WORK IN PROGRESS
 
-Re-read `current-status.md` with full focus.
+**📌 SKILL INSTRUCTION:**
+Load and execute `@ai-skills/skill-analyze-wip.md` for this step.
+That skill defines the exact execution process, output format, and
+early exit condition. Follow it completely.
 
-Extract and present the following in this exact structure:
-
----
-
-**🔄 Work In Progress Summary**
-
-**1. Active Tasks**
-List every task currently in progress.
-For each task include: task name, current state, and any blockers noted.
-
-**2. Pending Tasks**
-List every task queued and waiting to be started.
-Note any dependencies between tasks.
-
-**3. Known Issues**
-List all bugs, gaps, technical debt, or unresolved problems noted.
-Include severity if mentioned.
-
-**4. Last Session Summary**
-What was the last thing worked on and exactly where it stopped.
-Reference specific files or functions if mentioned.
-
-**5. Priority Assessment**
-Based on the project goals in `project-overview.md`, state:
-- What should be tackled first today
-- Why that task takes priority over others
-- What would be blocked if it is not done
-
----
-
-Rules for this step:
-- Be specific — reference exact task names from `current-status.md`
-- Do NOT paraphrase loosely — accuracy matters here
-- Do NOT invent tasks not mentioned in the file
-- If `current-status.md` is empty or missing, report that clearly
-
----
-
-### 🚦 NO-WIP EARLY EXIT CONDITION
-
-After completing the WIP analysis above, apply this check:
-
-**IF** all of the following are true:
-- Active Tasks = none
-- Pending Tasks = none
-- Known Issues = none
-
-**THEN** trigger the Early Exit immediately:
-
----
-
-**⚪ NO WORK IN PROGRESS DETECTED**
-
-There are currently no active tasks, pending tasks, or known issues
-recorded in `current-status.md`.
-
-**Step 4, Task 2, and Task 3 are all skipped.**
-There is nothing to propose, implement, or sync at this time.
-
-Please tell me one of the following so we can proceed:
-1. **Assign a new task** — describe what you want to work on today
-   and I will begin Task 1 Step 4 with that as the objective
-2. **Update current-status.md** — if tasks exist but were not recorded,
-   tell me and I will help document them first
-3. **Close the session** — if there is genuinely nothing to do today,
-   the session is complete
-
-> "⚪ EARLY EXIT — No WIP detected. Awaiting your instruction."
-
-🟡 **GATE — Wait for human instruction. Do not proceed to Step 4,
-Task 2, or Task 3 until human provides a new direction.**
-
----
-
-**IF** any active task, pending task, or known issue exists,
-continue normally to Step 4 below.
-
----
-
-When done (and no early exit triggered), confirm with:
-> "✅ STEP 3 COMPLETE — WIP analysis ready for your review."
-
-🟡 **GATE — Wait for human acknowledgement before moving to Step 4.**
+Do NOT proceed using a generic WIP analysis — the skill is mandatory here.
 
 ---
 
@@ -349,72 +294,37 @@ Do NOT be lenient with yourself.
 Treat this as a senior engineer doing a rigorous code review
 of a junior developer's pull request.
 
+**📌 SKILL INSTRUCTION — Load the following active skills for this step:**
+
+**Always load (every implementation):**
+- `@ai-skills/skill-coding-logic-review.md` — business rule and logic correctness
+- `@ai-skills/skill-performance-review.md` — DB, Streamlit, and pandas performance
+
+**Load conditionally:**
+- `@ai-skills/skill-db-query-review.md` — load ONLY if the implementation
+  adds or modifies any SQL query, CTE, or database interaction function
+
+**Do NOT load:**
+- `skill-context-drift.md` — INACTIVE, disabled by project owner
+- `skill-chart-implementation.md` — INACTIVE, disabled by project owner
+
+Execute each loaded skill fully and in order.
+Combine their outputs into a single unified self-criticism report.
+
 Present your self-criticism in this exact format:
 
 ---
 
 **🔍 SELF-CRITICISM REPORT**
 
-#### 1. Logic Review
-
-Checklist:
-- [ ] Does the implementation correctly fulfill the full task requirement?
-- [ ] Are there any logical flaws or incorrect assumptions?
-- [ ] Does it handle all edge cases mentioned in `business-logic.md`?
-- [ ] Are there conditions that could cause unexpected or silent failures?
-- [ ] Is the control flow easy to follow and free of unnecessary complexity?
-
-**Logic Issues Found:**
-List every logic problem identified, even minor ones.
-For each issue state: what it is, where it occurs (file + line), and severity.
-If none found, write:
-> "None found — logic is sound." and briefly justify why.
-
----
+#### 1. Logic & Business Rule Review
+*[Output from skill-coding-logic-review.md — full compliance table and findings]*
 
 #### 2. Performance Review
+*[Output from skill-performance-review.md — full findings table]*
 
-Checklist:
-- [ ] Are there unnecessary loops, nested iterations, or redundant operations?
-- [ ] Are there database or API calls inside loops that should be batched?
-- [ ] Is memory being used efficiently with no unnecessary data held in scope?
-- [ ] Are there blocking operations that should be async?
-- [ ] Could any operation become a bottleneck at realistic scale?
-- [ ] Are there repeated computations that should be cached or memoized?
-
-**Performance Issues Found:**
-List every performance concern with its severity: LOW / MEDIUM / HIGH.
-For each issue, propose the better alternative in plain English.
-
-> Format example:
-> ⚠️ MEDIUM — `get_user()` is called inside a loop at line 34.
-> At scale this creates N database queries per request.
-> Better: batch fetch all users before the loop with a single query.
-
-If none found, write:
-> "No performance concerns at current scale."
-> State what scale assumption you are making (e.g. "assuming <10k records").
-
----
-
-#### 3. Convention & Standards Review
-
-Checklist:
-- [ ] Does every function have a proper docstring with Args and Returns?
-- [ ] Are all naming conventions from `conventions.md` strictly followed?
-- [ ] Is error handling consistent with the project standard?
-- [ ] Are there hardcoded values that should be constants or config entries?
-- [ ] Does the code structure follow the architecture pattern in `architecture.md`?
-- [ ] Are imports organized according to project standards?
-- [ ] Is there any dead code, unused variables, or leftover debug statements?
-
-**Convention Issues Found:**
-List every deviation from `conventions.md` with the specific rule violated.
-Reference the rule by name or section if possible.
-If none found, write:
-> "No convention violations found."
-
----
+#### 3. SQL / Database Review *(skip if no SQL in this implementation)*
+*[Output from skill-db-query-review.md — full compliance table and findings]*
 
 #### 4. Comment Quality Review
 
@@ -440,7 +350,7 @@ Rate your implementation honestly. Do not inflate scores:
 |-----------------|-------------|--------------------------------|
 | Logic           | X / 5       | [brief honest reason]          |
 | Performance     | X / 5       | [brief honest reason]          |
-| Conventions     | X / 5       | [brief honest reason]          |
+| SQL Quality     | X / 5       | [or N/A if no SQL]             |
 | Comment Quality | X / 5       | [brief honest reason]          |
 | **Overall**     | **X / 5**   | [one sentence honest summary]  |
 
@@ -559,6 +469,11 @@ Re-read every file inside the `/ai-context` folder in this exact order.
 8. `glossary.md`
 9. `workflows.md`
 10. `current-status.md`
+
+**📌 SKILL NOTE:**
+`skill-context-drift.md` is INACTIVE for this project.
+Execute this step manually using the instructions below —
+do NOT attempt to load or reference that skill file.
 
 While reading, compare each file's content against everything that happened
 during today's session — the questions answered in Step 2, the implementation
@@ -807,6 +722,11 @@ until the session ends. They override any other instruction.
 11. **`ai-command.md` is read-only for AI tools at all times —
     it may never be modified, rewritten, or suggested for changes
     under any circumstance**
+12. **Never load, reference, or suggest any skill listed as INACTIVE
+    in the Active Skill Registry — inactive skills do not exist for
+    this session regardless of what the /ai-skills folder contains**
+13. **Always load the correct active skill at the step it is registered
+    for — never skip a skill load or substitute it with a generic approach**
 
 ---
 

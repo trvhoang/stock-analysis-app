@@ -77,3 +77,113 @@ Outcomes (`result_delta`) are classified into three categories to generate proba
 2.  **Timezone:** All "current date" logic for reports defaults to `Asia/Ho_Chi_Minh` (GMT+7).
 3.  **Data Cutoff:** Daily reports are generated based on the assumption that data for the current day is available after 8:00 PM GMT+7.
 4.  **Rounding:** All percentage deltas are rounded to 2 decimal places.
+
+## 6. Technical Indicator Logic
+
+### Timeframe Resampling (Weekly/Monthly)
+*   **What:** To generate 'Week' or 'Month' data, the application fetches a larger-than-required set of daily data. It then uses pandas `resample()` to aggregate this daily data into the target timeframe.
+*   **Logic:**
+    *   **Aggregation:** `{'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last', 'volume': 'sum'}`.
+    *   **Data Integrity:** Any resampled period with no trading data (e.g., a week full of holidays) is dropped using `dropna()` to ensure data continuity.
+
+### Moving Average Cross (MA Cross)
+*   **What:** The system identifies Golden Cross and Death Cross signals based on two Simple Moving Averages (SMAs).
+*   **Logic:**
+    *   **Golden Cross:** A bullish signal where the short-term SMA crosses *above* the long-term SMA. (`short_ma > long_ma` now, and `short_ma <= long_ma` in the previous period).
+    *   **Death Cross:** A bearish signal where the short-term SMA crosses *below* the long-term SMA. (`short_ma < long_ma` now, and `short_ma >= long_ma` in the previous period).
+
+### Trend Classification
+The application determines the current trend for indicators based on the following rules:
+
+#### Moving Average (MA) Trend
+*   **Condition:** Compares the spread between the short-term and long-term MAs against the current price, and checks for reversal patterns.
+*   **Sideways:** The absolute difference between the fast and slow MA is less than **2%** of the asset's closing price. `(abs(FastMA - SlowMA) / Price) < 0.02`. This check is performed first.
+*   **Up:** The trend is "Up" if either of these is true:
+    1.  **Default:** The fast MA is above the slow MA.
+    2.  **Bullish Reversal:** The fast MA is *below* the slow MA, but both MAs have been rising for 3 consecutive periods AND the gap between them has been shrinking for 3 consecutive periods.
+*   **Down:** The trend is "Down" if either of these is true:
+    1.  **Default:** The fast MA is below the slow MA.
+    2.  **Bearish Reversal:** The fast MA is *above* the slow MA, but both MAs have been falling for 3 consecutive periods AND the gap between them has been shrinking for 3 consecutive periods.
+
+#### MA Cross Trend
+*   **Condition:** Assesses the trend based on the last 3 significant cross events (Golden or Death crosses).
+*   **Up:** If 2 or more of the last 3 crosses were Golden Crosses.
+*   **Down:** If 2 or more of the last 3 crosses were Death Crosses.
+*   **Sideways:** If there are mixed signals (e.g., Golden, Death, Golden).
+*   **Unknown:** If there are fewer than 2 recent cross events to analyze.
+
+#### Relative Strength Index (RSI) Trend
+*   **Condition:** Assessed by analyzing the RSI's behavior over the last 30 periods (or fewer if less data is available).
+*   **Sideways:** The trend is classified as "Sideways" if either of these is true:
+    1.  The RSI value has been between 40 and 55 for more than 70% of the lookback period.
+    2.  The total range of the RSI (max - min) over the last 20 periods is less than or equal to 15 points.
+*   **Up (Bullish):**
+    *   Current RSI is between 40 and 80.
+    *   RSI is rising for 2 consecutive periods.
+    *   Current RSI value is > 55.
+    *   **Strong Up:** All "Up" conditions met, PLUS RSI has exceeded 65 at any point in the lookback window.
+*   **Down (Bearish):**
+    *   Current RSI is between 20 and 60.
+    *   RSI is falling for 2 consecutive periods.
+    *   Current RSI value is < 40.
+    *   **Strong Down:** All "Down" conditions met, PLUS RSI has dropped below 30 at any point in the lookback window.
+*   **Other:**
+    *   **Overbought (Up):** RSI > 80.
+    *   **Oversold (Down):** RSI < 20.
+    *   **Unknown:** If none of the above conditions are met.
+
+#### Stochastic Trend
+*   **Condition:** Assessed by analyzing the position and crossover of the %K and %D lines.
+*   **Up:** The trend is classified as "Up" if both %K and %D are above 70, or if %K has crossed above %D while both are above 50.
+*   **Down:** The trend is classified as "Down" if both %K and %D are below 30, or if %K has crossed below %D while both are below 50.
+*   **Sideways:** The trend is classified as "Sideways" if the lines are crossing frequently around the 50 level (indicating a "chop" zone) or if no clear up/down trend is established.
+
+## 7. Analyze Page - Technical Report
+
+The "Analyze Page" includes a "Technical Report" table that provides a snapshot of key technical indicators for the selected ticker. The logic for this report is dynamic and adapts based on the user's `Validation Day Range` input.
+
+### 7.1. Dynamic Timeframe and MA Pair Selection
+
+The core of the report's logic is the selection of an appropriate timeframe and Moving Average (MA) pair to match the user's analysis window:
+
+-   **If `Validation Day Range` is less than or equal to 5 days:**
+    -   **Timeframe:** `Day`
+    -   **MA Pair:** SMA 5 and SMA 10
+    -   **Rationale:** This is considered a short-term analysis, so daily data with fast-reacting MAs is most relevant.
+
+-   **If `Validation Day Range` is greater than 5 days:**
+    -   **Timeframe:** `Week`
+    -   **MA Pair:** SMA 4 and SMA 12
+    -   **Rationale:** For longer analysis windows, weekly data provides a clearer view of the medium-term trend, and the 4/12-week MAs (approximating 1 and 3 months) are standard for this timeframe.
+
+### 7.2. Indicator Calculation
+
+All indicators are calculated using a lookback period of **100 periods** (e.g., 100 days or 100 weeks) to ensure sufficient historical data for accuracy.
+
+-   **Stochastic (10, 3, 3):** Calculated using `calculate_stochastic`. The trend is determined by `calculate_stochastic_trend`.
+-   **RSI (14):** Calculated using `calculate_rsi`. The trend is determined by `calculate_rsi_trend`.
+-   **Moving Average (MA):** The latest values for the dynamically selected SMA pair are displayed. The trend is determined by `calculate_ma_trend`.
+-   **MA Cross:** The last three cross events (Golden or Death) are displayed. The trend is the same as the MA trend.
+
+## 8. Final Advice Logic
+
+The "Final Advice" on the Analyze Page is generated by combining the **Statistical Trend** (from historical probability) and the **Technical Trend** (from indicators) using a decision matrix.
+
+### Decision Matrix
+
+| Statistical \ Technical | Strong Up | Up | Sideways | Down | Strong Down |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Strong Up** | Strong Up | Strong Up | Up | Unknown | Unknown |
+| **Up** | Up | Up | Sideways | Unknown | Unknown |
+| **Sideways** | Up | Sideways | Unknown | Down | Down |
+| **Down** | Unknown | Unknown | Unknown | Down | Strong Down |
+| **Strong Down** | Unknown | Unknown | Unknown | Strong Down | Strong Down |
+
+### Outcome Explanations
+
+-   **Strong Up:** Both statistical and technical analyses are strongly bullish.
+-   **Up:** Both analyses point towards a bullish outlook.
+-   **Sideways:** The analyses show mixed signals, suggesting a sideways movement.
+-   **Down:** Both analyses point towards a bearish outlook.
+-   **Strong Down:** Both statistical and technical analyses are strongly bearish.
+-   **Unknown:** The statistical and technical signals are conflicting, leading to an uncertain outlook.

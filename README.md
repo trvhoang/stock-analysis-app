@@ -20,6 +20,9 @@ A Python-based web application built with Streamlit to download and analyze stoc
    Build and run the app: 
    docker-compose -f docker/docker-compose.yml up --build
 
+   BUild and run the app with no-cache: 
+   docker-compose -f docker/docker-compose.yml up --build --no-cache
+
    Stop running app (if error duplicated data or any loading data issue)
    docker-compose -f docker/docker-compose.yml down
 

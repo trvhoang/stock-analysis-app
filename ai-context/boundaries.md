@@ -4,7 +4,7 @@ This document defines areas of the codebase that are either off-limits for modif
 
 ## 1. Critical Boundaries (DO NOT MODIFY)
 
-These areas are fundamental to the application's architecture and business logic. Unauthorized changes will break the system.
+These areas are fundamental to the application's architecture and business logic. Unauthorized changes will break the system. (Date: 2024-05-25 - Date updated)
 
 ### Core Delta Calculation Logic
 *   **File(s):** `app/common_queries.py`

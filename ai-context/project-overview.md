@@ -38,5 +38,6 @@ The application's workflow is divided into distinct pages, each serving a specif
 *   **Result Page:** Displays basic market statistics, such as the top 10 stocks by trading volume and value over a recent period.
 *   **Analyze Page:** This page has two tabs:
     1.  **Ticker Analyze:** For a single ticker, it automatically calculates the *current* price delta (the signal) and finds all historical instances of similar events. It outputs a detailed event list, a statistical summary, and predictive advice.
-    2.  **Portfolio Analyze:** Allows a user to input a list of tickers and view a summary table of their current signals and historical probabilities (Up/Down).
+    2.  **Portfolio Analyze:** Allows a user to input a list of tickers and view a summary table of their current signals, historical probabilities, technical trends, and final advice.
 *   **Suggestion Page:** Scans the *entire market*, automatically calculating the current price delta for each liquid stock. It then outputs ranked lists of tickers that show the highest historical probability of going up or down following their current, specific signal.
+*   **Technical Analyze Page:** Visualize common technical indicators like Moving Averages (MA) and identify key signals such as Golden/Death crosses on interactive charts.
