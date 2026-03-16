@@ -11,25 +11,36 @@ def get_all_tickers(engine, min_avg_volume):
     # Calculate the date 1 year ago from today
     one_year_ago = datetime.today().date() - timedelta(days=365)
     
-    query = text("""
+    # Use raw string with %(param)s placeholders for raw_connection compatibility
+    query = """
         SELECT ticker
         FROM trading_data
         WHERE ticker <> 'VNINDEX'
         AND ticker IN (
             SELECT ticker 
             FROM trading_data 
-            WHERE date >= :one_year_ago
+            WHERE date >= %(one_year_ago)s
         )
         GROUP BY ticker
-        HAVING AVG(volume) >= :min_avg_volume
+        HAVING AVG(volume) >= %(min_avg_volume)s
         AND ticker NOT IN (
             SELECT ticker 
             FROM trading_data 
             WHERE volume = 0 
-            AND date >= :one_year_ago
+            AND date >= %(one_year_ago)s
         )
-    """)
-    return pd.read_sql(query, engine, params={"min_avg_volume": min_avg_volume, "one_year_ago": one_year_ago})["ticker"].tolist()
+    """
+    
+    params = {"min_avg_volume": min_avg_volume, "one_year_ago": one_year_ago}
+    
+    # Use raw connection to bypass pandas/SQLAlchemy compatibility issues
+    conn = engine.raw_connection()
+    try:
+        df = pd.read_sql(query, conn, params=params)
+    finally:
+        conn.close()
+        
+    return df["ticker"].tolist()
 
 # Main page function with volume filter
 def suggestion_page(engine):
