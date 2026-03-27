@@ -39,10 +39,8 @@ The following skills are **ACTIVE** and must be loaded at the step indicated:
 | Skill File | Load At | Purpose |
 |------------|---------|---------|
 | `skill-analyze-wip.md` | Task 1 Step 3 | Structured WIP extraction and prioritization |
-| `skill-coding-logic-review.md` | Task 2 Step 7 | Business rule and logic correctness review |
-| `skill-performance-review.md` | Task 2 Step 7 | DB, Streamlit, and pandas performance review |
+| `skill-implementation-review.md` | Task 2 Step 7 | Comprehensive Logic, Perf, and SQL review |
 | `skill-bug-diagnosis.md` | Any time a bug is reported | Root cause analysis and fix proposal |
-| `skill-db-query-review.md` | Task 2 Step 7 (SQL tasks only) | SQL safety, correctness, convention compliance |
 
 **Rules for skill usage:**
 - Load ONLY the skill(s) relevant to the current step — do not pre-load all skills
@@ -65,21 +63,9 @@ The following skills are **ACTIVE** and must be loaded at the step indicated:
 Read every file inside the `/ai-context` folder in this exact order:
 
 1. `README.md`
-2. `project-overview.md`
-3. `architecture.md`
-4. `business-logic.md`
-5. `conventions.md`
-6. `decisions.md`
-7. `boundaries.md`
-8. `glossary.md`
-9. `workflows.md`
-10. `current-status.md`
+2. `project-overview.md` ... [through] ... 10. `current-status.md`
 
-While reading, do the following silently (do not output yet):
-- Build a mental model of the project purpose, structure, and rules
-- Note every term, pattern, and constraint you encounter
-- Flag anything that is ambiguous, contradictory, or incomplete
-- Do NOT make assumptions — mark all uncertainties for the next step
+**Action:** Sequential reading required. Note patterns and constraints. Flag ambiguities.
 
 When done, confirm with exactly this message:
 > "✅ STEP 1 COMPLETE — I have read all /ai-context files."
@@ -297,12 +283,7 @@ of a junior developer's pull request.
 **📌 SKILL INSTRUCTION — Load the following active skills for this step:**
 
 **Always load (every implementation):**
-- `@ai-skills/skill-coding-logic-review.md` — business rule and logic correctness
-- `@ai-skills/skill-performance-review.md` — DB, Streamlit, and pandas performance
-
-**Load conditionally:**
-- `@ai-skills/skill-db-query-review.md` — load ONLY if the implementation
-  adds or modifies any SQL query, CTE, or database interaction function
+- `@ai-skills/skill-implementation-review.md` — Unified Logic, Performance, and SQL review.
 
 **Do NOT load:**
 - `skill-context-drift.md` — INACTIVE, disabled by project owner

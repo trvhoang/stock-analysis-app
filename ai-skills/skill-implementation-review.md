@@ -32,6 +32,58 @@
 ## Integration with ai-command.md
 
 Skills plug into the task workflow at specific steps:
+# skill-implementation-review.md
+# SKILL: Comprehensive Implementation Review (Logic, Performance, SQL)
+#
+# PURPOSE: Unified review of newly written code for business logic correctness,
+#          performance bottlenecks, and SQL convention compliance.
+# TRIGGER: Task 2 Step 7 — after implementation draft is written.
+
+---
+
+## 1. LOGIC & BUSINESS RULES
+
+- [ ] **BIGINT handling:** Raw DB values (*1000) are divided by 1000 before display/UI.
+- [ ] **Delta Formula:** `(current - prev) / prev * 100`. 
+- [ ] **Lag Logic:** N-day window uses `LAG(offset=N-1)`.
+- [ ] **Timezone:** Uses `pytz.timezone('Asia/Ho_Chi_Minh')`. Naive `now()` forbidden.
+- [ ] **Statistical Thresholds:** Up > 0.1, Down < -0.1, No Change [-0.1, 0.1].
+
+## 2. SQL & DATABASE SAFETY
+
+- [ ] **Bindings:** Uses `:param` (standard) or `%(param)s` (raw_connection) - NO f-strings or concatenation.
+- [ ] **Wrappers:** Every query wrapped in `sqlalchemy.text()`.
+- [ ] **Connections:** Uses `get_engine_with_retry()`. For `pd.read_sql`, uses `engine.raw_connection()`.
+- [ ] **CTE Reuse:** `BASE_DELTA_CALC_CTE` is imported/concatenated, not rewritten.
+- [ ] **Market Scans:** Filters out 'VNINDEX', enforces min volume, and filters inactive tickers (>365 days).
+
+## 3. PERFORMANCE & STREAMLIT
+
+- [ ] **N+1 Queries:** DB queries are NEVER inside loops. Use batching/SQL aggregates.
+- [ ] **Caching:** Expensive results (indicators/large fetches) stored in `st.session_state` with specific keys.
+- [ ] **vectorization:** Uses pandas vectorized operations. `iterrows()` is avoided.
+- [ ] **Fetch Scope:** Queries bounded by date/ticker; no full table scans unless required.
+- [ ] **Concurrency:** `ThreadPoolExecutor` workers create their own DB connections.
+
+---
+
+## OUTPUT FORMAT
+
+### 🔍 IMPLEMENTATION REVIEW REPORT
+
+| Category | Findings | Severity |
+|----------|----------|----------|
+| Logic    | [Pass/Fail + Note] | [High/Med/Low] |
+| SQL      | [Pass/Fail + Note] | [High/Med/Low] |
+| Perf     | [Pass/Fail + Note] | [High/Med/Low] |
+
+**Critical Findings (Severity HIGH):**
+[List exact code fragment + fix for any High severity issue]
+
+**Verdict:** [✅ PASS | ⚠️ PASS WITH WARNINGS | ❌ FAIL]
+---
+**Note on SQL Standard:** This project prefers the `engine.raw_connection()` + `%(param)s` pattern for pandas reads to ensure compatibility.
+```
 
 ```
 TASK 1 — Daily Startup

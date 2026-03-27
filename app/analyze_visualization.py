@@ -204,7 +204,6 @@ def generate_final_advice(ticker, statistical_trend, technical_trend):
     else: # Unknown
         text = "The statistical and technical signals are conflicting, leading to an uncertain outlook."
 
-    return f"**{ticker}'s trend: {final_advice_with_emoji}**. {text}"    
     return f"**{ticker}'s trend: {final_advice_with_emoji}**. {text}"
 
 # Wrapper function for Portfolio Analysis (Runs both Stats and Tech)
