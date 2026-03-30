@@ -4,7 +4,11 @@ from sqlalchemy import text
 import concurrent.futures
 from common_queries import BASE_DELTA_CALC_CTE, COMMON_DELTA_FILTER_WHERE_CLAUSE, DELTA_UP_THRESHOLD, DELTA_DOWN_THRESHOLD
 from common_functions import analyze_ticker
-from technical_analysis import fetch_data, calculate_stochastic, calculate_rsi, calculate_ma_cross, calculate_ma_trend, calculate_ma_cross_trend
+from technical_analysis import (
+    fetch_data, calculate_stochastic, calculate_rsi, calculate_ma_cross, 
+    calculate_ma_trend, calculate_ma_cross_trend, 
+    calculate_stochastic_trend, calculate_rsi_trend
+)
 
 # Centralized Emoji Map for consistency across advice functions
 TREND_EMOJIS = {
@@ -14,8 +18,8 @@ TREND_EMOJIS = {
     "Down": "📉",
     "Strong Down": "📉",
     "Unknown": "❓",
-    "Overbought (Up)": "📈", # Mapped to Strong Bullish behavior
-    "Oversold (Down)": "📉"  # Mapped to Strong Bearish behavior
+    "Overbought (Up)": "🐮",
+    "Oversold (Down)": "🐻"
 }
 
 # Function to analyze price movements
@@ -74,9 +78,11 @@ def analyze_price_movement(ticker, validation_days, result_days, delta_target, e
         # Round numerical columns to 2 decimal places for cleaner display
         df["exact_delta"] = df["exact_delta"].round(2)
         df["result_delta"] = df["result_delta"].round(2)
-        df = df[["no. events", "exact_delta", "result", "result_delta", "signal_date_range"]]
+        # Include event_date internally to allow joining with historical technical indicator data
+        df = df[["no. events", "event_date", "exact_delta", "result", "result_delta", "signal_date_range"]]
     else:        
-        df = pd.DataFrame(columns=["no. events", "exact_delta", "result", "result_delta", "signal_date_range"])
+        # Ensure consistent column structure even on empty results
+        df = pd.DataFrame(columns=["no. events", "event_date", "exact_delta", "result", "result_delta", "signal_date_range"])
     
     return df
 
@@ -94,11 +100,11 @@ def provide_advice(validation_days, result_days, analysis_results):
     # Determine the trend key first, then map to emoji
     if up_prob > 70:
         trend = "Strong Up"
-    elif 52 < up_prob <= 70:
+    elif 53 <= up_prob <= 70:
         trend = "Up"
-    elif 48 < up_prob <= 52:
+    elif 48 <= up_prob < 53:
         trend = "Sideways"
-    elif 30 < up_prob <= 48:
+    elif 30 <= up_prob < 48:
         trend = "Down"
     else: # up_prob <= 30
         trend = "Strong Down"
@@ -219,9 +225,9 @@ def analyze_portfolio_ticker(ticker, validation_days, result_days, engine):
     
     # Logic for Final Advice key (matching provide_advice thresholds)
     if up_prob > 70: stat_key = "Strong Up"
-    elif 52 < up_prob <= 70: stat_key = "Up"
-    elif 48 < up_prob <= 52: stat_key = "Sideways"
-    elif 30 < up_prob <= 48: stat_key = "Down"
+    elif 53 <= up_prob <= 70: stat_key = "Up"
+    elif 48 <= up_prob < 53: stat_key = "Sideways"
+    elif 30 <= up_prob < 48: stat_key = "Down"
     else: stat_key = "Strong Down"
 
     if up_prob >= down_prob:
@@ -384,11 +390,91 @@ def analyze_page(engine):
             st.subheader("Statistical Advice")
             st.write(statistical_advice_display)
 
+            # --- NEW: Historical Technical Context Analysis ---
+            # We calculate the technical score for EVERY historical point to provide deeper context
+            if not df_block.empty:
+                # Re-use the timeframe logic from the technical report (Day if < 15, Week otherwise)
+                if validation_days < 15:
+                    tech_timeframe, s_ma, l_ma = 'Day', 5, 10
+                else:
+                    tech_timeframe, s_ma, l_ma = 'Week', 4, 12
+                
+                # Fetch full data for technical context in one go for efficiency
+                with st.spinner("Calculating historical technical scores..."):
+                    query_all = "SELECT date, open, high, low, close, volume FROM trading_data WHERE ticker = %(ticker)s ORDER BY date ASC"
+                    conn = engine.raw_connection()
+                    try:
+                        df_full = pd.read_sql(query_all, conn, params={"ticker": ticker.upper()})
+                    finally:
+                        conn.close()
+                    
+                    if not df_full.empty:
+                        df_full['date'] = pd.to_datetime(df_full['date'])
+                        # Resample full history to match selected timeframe
+                        if tech_timeframe == 'Week':
+                            df_full = df_full.set_index('date').resample('W').agg({'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last', 'volume': 'sum'}).dropna().reset_index()
+                        
+                        # Pre-calculate indicators for the entire historical dataframe
+                        df_full, _ = calculate_stochastic(df_full)
+                        df_full, _ = calculate_rsi(df_full, length=14)
+                        df_full = calculate_ma_cross(df_full, [(s_ma, l_ma)])
+                        
+                        # Create a date-to-index lookup to make row-by-row scoring O(1) per point
+                        date_to_idx = {d: i for i, d in enumerate(df_full['date'])}
+                        
+                        def score_point(target_date):
+                            target_dt = pd.to_datetime(target_date)
+                            idx = date_to_idx.get(target_dt)
+                            # Ensure we have enough lookback (min 30 bars for RSI trend rules)
+                            if idx is None or idx < 30: return None
+                            
+                            # Analyze trend at that point in history using indicator-specific logic
+                            sub_df = df_full.iloc[:idx+1]
+                            trends = [calculate_stochastic_trend(sub_df), calculate_rsi_trend(sub_df), 
+                                     calculate_ma_trend(sub_df, f'SMA_{s_ma}', f'SMA_{l_ma}'), 
+                                     calculate_ma_cross_trend(sub_df, f'cross_{s_ma}_{l_ma}')]
+                            
+                            # Map trends to score: 4=Strong/Up, 2=Neutral, 0=Weak/Down
+                            t_map = {"Strong Up": 4, "Overbought (Up)": 4, "Up": 3, "Sideways": 2, "Unknown": 2, "None": 2, "Down": 1, "Strong Down": 0, "Oversold (Down)": 0}
+                            total_pts = sum(t_map.get(t, 2) for t in trends)
+                            return round((total_pts / 16) * 100, 2) # Percent score across 4 indicators (max 16 pts)
+
+                        # Generate summary for the dominant statistical result group
+                        stat_res_map = {"Strong Up": "Up", "Up": "Up", "Sideways": "No Change", "Down": "Down", "Strong Down": "Down"}
+                        target_res = stat_res_map.get(statistical_trend, "Up")
+
+                        # Apply calculation ONLY to rows matching the predicted result to save processing time.
+                        # Other rows in the detailed report will show 'None' or 'NaN'.
+                        df_block['Technical score'] = None
+                        mask = df_block['result'] == target_res
+                        if mask.any():
+                            df_block.loc[mask, 'Technical score'] = df_block.loc[mask, 'event_date'].apply(score_point)
+                        
+                        matches = df_block[mask]
+                        
+                        if not matches.empty:
+                            # Categorize matching scores based on technical trend logic:
+                            # Up (>= 53), Sideway (48-52), Down (< 48)
+                            up_m = matches[matches['Technical score'] >= 53]
+                            sw_m = matches[(matches['Technical score'] >= 48) & (matches['Technical score'] < 53)]
+                            dw_m = matches[matches['Technical score'] < 48]
+                            
+                            # Lookup emoji for predicted result category (target_res is Up, No Change, or Down)
+                            res_emoji = TREND_EMOJIS.get(target_res, TREND_EMOJIS.get("Sideways" if target_res == "No Change" else "Unknown", "❓"))
+                            
+                            summary_txt = (f"technical trend summary of {len(matches)} times {target_res} {res_emoji}: "
+                                          f"{len(up_m)} times Up 📈 (Avg. score: {up_m['Technical score'].mean() if not up_m.empty else 0:.1f}%), "
+                                          f"{len(sw_m)} times Sideway/Unknowns ♻️ (Avg. score: {sw_m['Technical score'].mean() if not sw_m.empty else 0:.1f}%), "
+                                          f"{len(dw_m)} times Down 📉 (Avg. score: {dw_m['Technical score'].mean() if not dw_m.empty else 0:.1f}%)")
+                            st.markdown(f"*{summary_txt}*")
+
             # --- 2.3 Block Day and Delta Statistical Report ---
             # Collapsed by default to declutter UI
             with st.expander("Block Day and Delta Statistical Report", expanded=False):
                 if not df_block.empty:
-                    st.dataframe(df_block, use_container_width=True)
+                    # Show Technical score and reorder columns for clarity
+                    display_cols = ["no. events", "exact_delta", "Technical score", "result", "result_delta", "signal_date_range"]
+                    st.dataframe(df_block[display_cols], use_container_width=True, hide_index=True)
                 else:
                     st.write("No events found matching the criteria.")
             
