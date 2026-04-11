@@ -10,9 +10,36 @@ import pytz
 import shutil
 import tempfile
 import time
+import threading
 
 # Import the high-performance `execute_values` helper from psycopg2
 from psycopg2.extras import execute_values
+
+# Global lock to prevent multiple data preparation tasks from running concurrently
+# Shared by both the Streamlit UI and the FastAPI background thread
+data_prep_lock = threading.Lock()
+
+# --- Headless Support Helpers ---
+def log_progress(msg, level="info"):
+    """Logs messages to Streamlit UI if available, otherwise to console."""
+    # Check for script context to determine if we are in a Streamlit thread
+    # We use a defensive check to avoid "missing ScriptRunContext" warnings in background threads
+    ctx = None
+    try:
+        from streamlit.runtime.scriptrunner import get_script_run_ctx
+        ctx = get_script_run_ctx()
+    except (ImportError, RuntimeError):
+        pass
+
+    if ctx is not None:
+        if level == "error": st.error(msg)
+        elif level == "warning": st.warning(msg)
+        elif level == "success": st.success(msg)
+        else: st.write(msg)
+        return
+
+    # Fallback to standard console output for API or background tasks
+    print(f"[DATA PREP] {level.upper()}: {msg}")
 
 # Database connection
 def get_engine_with_retry(database_url, retries=5, delay=5):
@@ -25,9 +52,9 @@ def get_engine_with_retry(database_url, retries=5, delay=5):
             return engine
         except Exception as e:
             attempt += 1
-            st.warning(f"Failed to connect to database (attempt {attempt}/{retries}): {str(e)}")
+            log_progress(f"Failed to connect to database (attempt {attempt}/{retries}): {str(e)}", "warning")
             if attempt == retries:
-                st.error("Could not connect to database after multiple attempts.")
+                log_progress("Could not connect to database after multiple attempts.", "error")
                 raise
             time.sleep(delay)
 
@@ -55,7 +82,7 @@ def init_db(engine):
         """)).fetchall()
         for col, dtype in result:
             if dtype.lower() != 'bigint':
-                st.error(f"Column {col} is {dtype}, expected BIGINT")
+                log_progress(f"Column {col} is {dtype}, expected BIGINT", "error")
                 raise ValueError(f"Invalid schema for trading_data: {col} is {dtype}")
         conn.commit()
 
@@ -88,12 +115,12 @@ def cleanup_files(zip_path, extract_path):
     try:
         if os.path.exists(zip_path):
             os.remove(zip_path)
-            st.write(f"Deleted ZIP file: {zip_path}")
+            log_progress(f"Deleted ZIP file: {zip_path}")
         if os.path.exists(extract_path):
             shutil.rmtree(extract_path)
-            st.write(f"Deleted extracted folder: {extract_path}")
+            log_progress(f"Deleted extracted folder: {extract_path}")
     except Exception as e:
-        st.warning(f"Error during cleanup: {str(e)}")
+        log_progress(f"Error during cleanup: {str(e)}", "warning")
 
 # Function to process CSV file with chunking and ticker filtering
 def process_csv_file(file_path, cutoff_date, ticker_filter=None, chunk_size=10000, engine=None):
@@ -147,17 +174,17 @@ def process_csv_file(file_path, cutoff_date, ticker_filter=None, chunk_size=1000
                             chunk.values.tolist())
                     last_chunk_dtypes = chunk.dtypes
                 except Exception as e:
-                    st.error(f"Error processing chunk in {os.path.basename(file_path)}: {str(e)}")
+                    log_progress(f"Error processing chunk in {os.path.basename(file_path)}: {str(e)}", "error")
                     raise
 
-        st.write(f"Raw data rows in {os.path.basename(file_path)}: {total_rows}")
-        st.write(f"Rows after filtering: {filtered_rows}")
+        log_progress(f"Raw data rows in {os.path.basename(file_path)}: {total_rows}")
+        log_progress(f"Rows after filtering: {filtered_rows}")
         if last_chunk_dtypes is not None:
-            st.write(f"Processed chunk dtypes: {last_chunk_dtypes}")
+            log_progress(f"Processed chunk dtypes: {last_chunk_dtypes}")
         
         # Log temp_chunk contents
         temp_count = conn.execute(text("SELECT COUNT(*) FROM temp_chunk")).fetchone()[0]
-        st.write(f"Rows in temp_chunk before insert: {temp_count}")
+        log_progress(f"Rows in temp_chunk before insert: {temp_count}")
         
         # Check for duplicates in temp_chunk
         duplicates = conn.execute(text("""
@@ -167,7 +194,7 @@ def process_csv_file(file_path, cutoff_date, ticker_filter=None, chunk_size=1000
             HAVING COUNT(*) > 1;
         """)).fetchall()
         if duplicates:
-            st.warning(f"Duplicates found in temp_chunk: {duplicates}")
+            log_progress(f"Duplicates found in temp_chunk: {duplicates}", "warning")
         
         # Insert into trading_data
         try:
@@ -179,14 +206,14 @@ def process_csv_file(file_path, cutoff_date, ticker_filter=None, chunk_size=1000
                 RETURNING ticker;
             """))
             inserted_rows = result.rowcount
-            st.write(f"Inserted {inserted_rows} rows into trading_data from {os.path.basename(file_path)}")
+            log_progress(f"Inserted {inserted_rows} rows into trading_data from {os.path.basename(file_path)}")
         except Exception as e:
-            st.error(f"Error inserting into trading_data: {str(e)}")
+            log_progress(f"Error inserting into trading_data: {str(e)}", "error")
             raise
         
         # Verify trading_data contents
         trading_count = conn.execute(text("SELECT COUNT(*) FROM trading_data")).fetchone()[0]
-        st.write(f"Rows in trading_data after insert: {trading_count}")
+        log_progress(f"Rows in trading_data after insert: {trading_count}")
         
         conn.execute(text("DROP TABLE temp_chunk;"))
 
@@ -209,25 +236,25 @@ def download_and_process_data(report_date, gaps_of_data, data_type="stock", engi
             else:
                 raise ValueError(f"Unknown data_type: {data_type}")
             
-            st.write(f"Downloading {data_type} data from {url}...")
+            log_progress(f"Downloading {data_type} data from {url}...")
             response = requests.get(url, stream=True)
             response.raise_for_status()
             with open(zip_path, "wb") as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
 
-            st.write(f"Extracting {data_type} data...")
+            log_progress(f"Extracting {data_type} data...")
             os.makedirs(extract_path, exist_ok=True)
             with zipfile.ZipFile(zip_path, "r") as zip_ref:
                 zip_ref.extractall(extract_path)
 
-            st.write(f"Processing {data_type} data...")
+            log_progress(f"Processing {data_type} data...")
             cutoff_date = last_trading_day - timedelta(days=365 * gaps_of_data)
             
             for csv_file in os.listdir(extract_path):
                 if csv_file.endswith(".csv"):
                     file_path = os.path.join(extract_path, csv_file)
-                    st.write(f"Processing {csv_file}...")
+                    log_progress(f"Processing {csv_file}...")
                     process_csv_file(file_path, cutoff_date, ticker_filter, engine=engine)
 
             with engine.connect() as conn:
@@ -235,14 +262,41 @@ def download_and_process_data(report_date, gaps_of_data, data_type="stock", engi
                 conn.execute(text("CREATE INDEX idx_ticker_date ON trading_data (ticker, date DESC);"))
                 conn.commit()
                 result = conn.execute(text("SELECT COUNT(*) FROM trading_data")).fetchone()
-                st.write(f"Total rows in trading_data after {data_type} insert: {result[0]}")
+                log_progress(f"Total rows in trading_data after {data_type} insert: {result[0]}")
 
-            st.write(f"{data_type.capitalize()} data saved to database.")
+            log_progress(f"{data_type.capitalize()} data saved to database.")
         except Exception as e:
-            st.error(f"Error downloading or processing {data_type} data: {str(e)}")
             raise
         finally:
             cleanup_files(zip_path, extract_path)
+
+# --- Centralized Ingestion Logic ---
+def run_full_ingestion(report_date, gaps_of_data, engine):
+    """
+    Headless function to run the full data ingestion process (Stocks + Indices).
+    Uses the module-level lock to ensure thread safety.
+    """
+    if not data_prep_lock.acquire(blocking=False):
+        log_progress("Data preparation is already in progress.", level="warning")
+        return False
+        
+    try:
+        log_progress(f"Starting full data ingestion for report date: {report_date}")
+        with engine.connect() as conn:
+            log_progress("Truncating trading_data table...")
+            conn.execute(text("TRUNCATE TABLE trading_data;"))
+            conn.commit()
+            
+        download_and_process_data(report_date, gaps_of_data, "stock", engine=engine)
+        download_and_process_data(report_date, gaps_of_data, "index", engine=engine)
+        
+        log_progress("Full data ingestion complete.", level="success")
+        return True
+    except Exception as e:
+        log_progress(f"Data ingestion failed: {str(e)}", level="error")
+        return False
+    finally:
+        data_prep_lock.release()
 
 # Data page logic
 def data_page(engine):
@@ -251,15 +305,10 @@ def data_page(engine):
     report_date = st.date_input("Select Report Date", value=default_date)
     gaps_of_data = st.number_input("Gaps of Data (Years)", min_value=1, value=10, step=1)
     if st.button("Get Data"):
-        with st.spinner("Downloading and processing data..."):
-            st.write("Starting data retrieval...")
-            with engine.connect() as conn:
-                conn.execute(text("TRUNCATE TABLE trading_data;"))
-                conn.commit()
-            download_and_process_data(report_date, gaps_of_data, "stock", engine=engine)
-            if False:
-                st.error("Data processing failed", icon="‼️")
-            download_and_process_data(report_date, gaps_of_data, "index", engine=engine)
-            if True:
-                st.success("Data retrieval complete.", icon="✅")
+        if data_prep_lock.locked():
+            st.warning("Data preparation is already in progress (triggered via API or UI).")
+        else:
+            with st.spinner("Downloading and processing data..."):
+                run_full_ingestion(report_date, gaps_of_data, engine)
+
             

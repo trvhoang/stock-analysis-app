@@ -19,19 +19,26 @@ A high-level overview of the project's directory structure.
 ```
 /
 ├── .env                  # Environment variables (DB credentials)
-├── docker-compose.yml    # Defines and orchestrates Docker services (app, db)
-├── Dockerfile            # Instructions to build the Python application container
+├── docker/
+│   ├── docker-compose.yml # Defines and orchestrates Docker services (app, db)
+│   └── Dockerfile         # Instructions to build the Python application container
 ├── requirements.txt      # Python dependencies for product deployment
 │
 ├── app/                  # Main application source code
-│   ├── requirements.txt    # Python dependencies for local build
-│   ├── main.py           # Application entry point, UI routing
-│   ├── data_preparation.py # Data ingestion and database setup
-│   ├── common_queries.py # Centralized SQL query components
-│   ├── common_functions.py # Centralized Python analysis functions
-│   ├── analyze_visualization.py # Logic for the "Analyze" page
-│   ├── suggestion_visualization.py # Logic for the "Suggestion" page
-│   └── result_visualization.py # Logic for the "Result" page
+│   ├── main.py           # Single entry point (Streamlit UI & FastAPI server)
+│   ├── apis/             # REST API logic (FastAPI)
+│   │   ├── routes.py     # API endpoint definitions
+│   │   └── schemas.py    # Pydantic models for API responses
+│   ├── commons/          # Shared logic and SQL queries
+│   │   ├── common_functions.py # Business logic shared by UI and API
+│   │   └── common_queries.py
+│   └── pages/            # Streamlit visualization and data pages
+│       ├── data_preparation.py
+│       ├── analyze_visualization.py
+│       ├── suggestion_visualization.py
+│       ├── result_visualization.py
+│       ├── technical_analysis.py
+│       └── technical_visualization.py
 │
 └── ai-context/           # Documentation for AI assistants
     └── ...
@@ -44,6 +51,7 @@ Details on the role of each Python module within the `app/` directory.
 - **`main.py`**:
     - **Entry Point:** The script that is executed to run the application.
     - **Environment Loading:** Loads database credentials from the `.env` file.
+    - **Service Orchestration:** Manages the lifecycle of both the Streamlit UI and the FastAPI background thread.
     - **Database Initialization:** Establishes a connection to PostgreSQL using `get_engine_with_retry` and initializes the schema with `init_db`.
     - **UI Routing:** Creates the main Streamlit interface, including the sidebar for page navigation. It directs the user to the appropriate page module (`data_page`, `result_page`, etc.) based on their selection.
 
@@ -59,7 +67,8 @@ Details on the role of each Python module within the `app/` directory.
     - **`COMMON_DELTA_FILTER_WHERE_CLAUSE`:** The standard `WHERE` clause for filtering results based on the user's `delta_target`.
 
 - **`common_functions.py`**:
-    - **`analyze_ticker`:** A core, reusable function that takes a ticker and parameters, calculates its current delta, and queries the database for historical statistics (possibility of up/down, delta ranges, etc.). This is used by both the Suggestion and Portfolio Analyze pages.
+    - **Shared Analysis:** Contains `analyze_ticker` and indicator calculation logic.
+    - **Advice Synthesis:** Contains logic to generate Statistical, Technical, and Final advice strings used by both the UI and the API.
 
 - **`analyze_visualization.py`**:
     - **"Analyze" Page Logic:** Contains all functions for the "Ticker Analyze" and "Portfolio Analyze" tabs.
@@ -70,19 +79,23 @@ Details on the role of each Python module within the `app/` directory.
     - **Portfolio Logic:** Handles batch analysis for multiple tickers using `ThreadPoolExecutor` and the local `analyze_portfolio_ticker` wrapper to combine statistical and technical analysis.
     - **Linear Flow:** The `analyze_page` function orchestrates a strict 1-5 display order (Signal -> Stats -> Tech -> Final -> Explanation) to ensure logical information flow.
 
-- **`suggestion_visualization.py`**:
+- **`pages/suggestion_visualization.py`**:
     - **"Suggestion" Page Logic:** Contains all functions for the market-wide suggestion page.
     - **`get_all_tickers`:** Queries the database for all tickers that meet the liquidity and activity criteria.
     - **Concurrency:** Uses `ThreadPoolExecutor` to run the shared `analyze_ticker` function from `common_functions.py` for all tickers in parallel.
 
-- **`result_visualization.py`**:
+- **`pages/result_visualization.py`**:
     - **"Result" Page Logic:** Contains functions to display general market statistics, such as top tickers by volume or trading value.
 
-- **`technical_analysis.py`**:
-    - **Technical Logic:** Controller for technical analysis. Fetches data, calculates indicators (e.g., `calculate_ma_cross`, `calculate_rsi`), and determines trend classifications (e.g., `calculate_ma_trend`, `calculate_rsi_trend`, `calculate_ma_cross_trend`) based on defined business rules.
+- **`pages/technical_analysis.py`**:
+    - **Technical UI Logic:** Handles calculations and trend classification requests specifically for the UI, consuming shared functions from `commons/common_functions.py`.
 
-- **`technical_visualization.py`**:
+- **`pages/technical_visualization.py`**:
     - **"Technical Analyze" Page Logic:** Handles the UI for the technical analysis page. **It uses `st.session_state` to cache calculation results, preventing redundant computations when UI elements are toggled.** It renders Plotly charts (Price, Volume, and indicators like RSI).
+
+    - **`apis/`**:
+    - **`routes.py`**: Defines RESTful endpoints for ticker analysis and programmatic data updates.
+    - **`schemas.py`**: Defines Pydantic models for request validation and structured JSON responses.
 
 ## 4. Data Flow
 

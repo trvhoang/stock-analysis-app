@@ -1,8 +1,24 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿# Current Project Status
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿# Current Project Status
 
 This document provides a snapshot of the project's current state, including finished tasks, ongoing work, known issues, and next steps.
 
 ## 1. Recently Completed Tasks
+- **FastAPI Integration:**
+  - Implemented REST API endpoint `GET /api/analyze/{ticker}` to trigger full statistical and technical analysis.
+  - Developed Pydantic schemas for structured JSON responses (`TickerAnalysisResponse`).
+  - Integrated the API server as a background thread within the Streamlit application for unified service management.
+  - **Fix:** Resolved a bug in `synthesize_all_advice` where `result_days` was hardcoded to 10; it now respects API query parameters.
+- **API Data Management:**
+  - Implemented `POST /api/prepare-data` endpoint to trigger historical data ingestion.
+  - Integrated `BackgroundTasks` to handle long-running downloads without HTTP timeouts.
+  - Added a global `threading.Lock` to ensure thread-safety between UI and API-triggered ingestion.
+- **Environment & Performance Fixes:**
+  - Resolved Numba `RuntimeError` in Docker by configuring `NUMBA_CACHE_DIR` and optimizing `load_dotenv()` placement.
+  - Fixed `StreamlitAPIException` by ensuring `st.set_page_config` is the absolute first command in `main.py`.
+- **Project Restructuring:**
+  - Modularized the application into `apis/` (REST), `commons/` (Shared logic), and `pages/` (Streamlit UI).
+  - Updated all internal absolute imports to support the new package structure.
+  - Centralized business logic in `app/commons/common_functions.py` to ensure consistency between the UI and API.
 - **Refactor Ticker Analyze Tab (Historical Technical Context):**
   - Added 'Technical score' column to 'Block Day and Delta Statistical Report' to calculate technical strength at historical signal points.
   - Implemented a technical trend summary below 'Statistical Advice' using specific thresholds (Up $\ge 53\%$, Down $< 48\%$).
@@ -101,6 +117,10 @@ This document provides a snapshot of the project's current state, including fini
 - **Implement Remaining Technical Indicators:**
   - Implement Bollinger Bands logic and visualization.
   - Implement Ichimoku Cloud (9, 26, 52, 26, 26) logic and visualization.
+- **Implement API support functions:**
+  - Implement API endpoint to support trigger Data preparation: default values: 
+    . Select Report Date: latest trading date
+    . Gaps of data (years): 1 (year)
 ## 3. Known Issues & Technical Debt
 *No known issues at this time.*
 
@@ -110,4 +130,4 @@ This document provides a snapshot of the project's current state, including fini
 3.  **Define explanation of Final advice:** (Lowest Priority) Define the logic to generate a detailed explanation for the Final Advice (currently a placeholder).
 
 ---
-*Last Updated: 2024-05-24 (Completed Ticker Analyze Refactor with Historical Technical Context)*
+*Last Updated: 2026-04-11 (Implemented Ticker Analyze API and fixed environment startup bugs)*

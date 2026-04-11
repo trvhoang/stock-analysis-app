@@ -4,17 +4,16 @@
 #          Reference with @FOCUS.md in every Gemini prompt.
 #          Updated at session start and whenever task changes. 
 # MAINTAINED BY: AI tool — updated per systemInstruction.md Section 5 rules
-# Last Updated: 2026-03-11
+# Last Updated: 2026-04-11
 
 ---
 
 ## Current Task
-Refactor: Analyze Page > Final Advice message
+Implement: Bollinger Bands logic and visualization
 
 ## Task Type
-[ ] New feature
+[X] New feature
 [] Bug fix
-[X] Refactor
 [ ] New requirement
 [ ] Review code logic
 
@@ -23,11 +22,11 @@ Refactor: Analyze Page > Final Advice message
 [ ] New requirement from human this session
 [ ] Bug reported this session
 [ ] Business logic in business-logic.md and implementation logic in code
-[X] Refactor requirement from human this session
+[X] WIP item from current-status.md
 ---
 
 ## Target Files
-i:\VscProjects\stock-analysis-app\app\analyze_visualization.py
+i:\VscProjects\stock-analysis-app\app\apis\routes.py
 
 ## Out of Scope — Do Not Touch
 app/common_queries.py
@@ -43,8 +42,8 @@ app/data_preparation.py
 ---
 
 ## Technical Notes
-- provide_advice currently returns a string, but caller expects tuple (display, trend)
-- generate_technical_advice already returns tuple
+- API should allow triggering the ZIP download and DB ingestion process.
+- Need to ensure thread-safety or prevent multiple simultaneous data prep tasks.
 
 ---
 
@@ -64,3 +63,6 @@ app/data_preparation.py
 ---
 
 ## Session Progress
+- Implemented `POST /api/prepare-data` endpoint with `BackgroundTasks` support.
+- Refactored `data_preparation.py` to support headless ingestion via a shared `threading.Lock`.
+- Fixed Streamlit threading warnings by making `log_progress` context-aware.
