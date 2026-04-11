@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from technical_analysis import fetch_data, calculate_ma_cross, calculate_rsi, calculate_stochastic, calculate_ma_trend, calculate_ma_cross_trend
+from commons.technical_analysis import fetch_data, calculate_ma_cross, calculate_rsi, calculate_stochastic, calculate_ma_trend, calculate_ma_cross_trend
 
 def technical_analysis_page(engine):
     st.header("Technical Analysis")

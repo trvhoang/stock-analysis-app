@@ -4,7 +4,8 @@ import pandas as pd
 from sqlalchemy import text
 import concurrent.futures
 from datetime import datetime, timedelta
-from common_functions import analyze_ticker
+# Updated import to use the commons package prefix
+from commons.common_functions import analyze_ticker
 
 # Function to get all tickers with average volume filter, no zero-volume days, and at least one record in the last year
 def get_all_tickers(engine, min_avg_volume):

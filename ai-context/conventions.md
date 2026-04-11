@@ -52,7 +52,7 @@
     *   **Example:**
         ```python
         # Correct
-        from common_queries import BASE_DELTA_CALC_CTE
+        from commons.common_queries import BASE_DELTA_CALC_CTE
         query_str = BASE_DELTA_CALC_CTE + "SELECT ..."
         # Incorrect
         query_str = "WITH trading_days AS (SELECT ... ) ..." # Re-writing the CTE manually
@@ -64,7 +64,7 @@
 *   **Pattern:** Construct complex queries by concatenating modular CTE strings from `common_queries.py`.
 *   **Example:**
     ```python
-    from common_queries import BASE_DELTA_CALC_CTE, COMMON_DELTA_FILTER_WHERE_CLAUSE
+    from commons.common_queries import BASE_DELTA_CALC_CTE, COMMON_DELTA_FILTER_WHERE_CLAUSE
     
     query_str = BASE_DELTA_CALC_CTE + """
         SELECT date, result_delta FROM delta_calc

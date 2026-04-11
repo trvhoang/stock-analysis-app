@@ -2,25 +2,17 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy import text
 import concurrent.futures
-from common_queries import BASE_DELTA_CALC_CTE, COMMON_DELTA_FILTER_WHERE_CLAUSE, DELTA_UP_THRESHOLD, DELTA_DOWN_THRESHOLD
-from common_functions import analyze_ticker
-from technical_analysis import (
+from commons.common_queries import BASE_DELTA_CALC_CTE, COMMON_DELTA_FILTER_WHERE_CLAUSE, DELTA_UP_THRESHOLD, DELTA_DOWN_THRESHOLD
+from commons.common_functions import (
+    analyze_ticker, provide_advice, generate_technical_advice, 
+    generate_final_advice, TREND_EMOJIS
+)
+# Import neighbor module using the pages package prefix
+from commons.technical_analysis import (
     fetch_data, calculate_stochastic, calculate_rsi, calculate_ma_cross, 
     calculate_ma_trend, calculate_ma_cross_trend, 
     calculate_stochastic_trend, calculate_rsi_trend
 )
-
-# Centralized Emoji Map for consistency across advice functions
-TREND_EMOJIS = {
-    "Strong Up": "📈",
-    "Up": "📈",
-    "Sideways": "♻️",
-    "Down": "📉",
-    "Strong Down": "📉",
-    "Unknown": "❓",
-    "Overbought (Up)": "🐮",
-    "Oversold (Down)": "🐻"
-}
 
 # Function to analyze price movements
 def analyze_price_movement(ticker, validation_days, result_days, delta_target, engine):
