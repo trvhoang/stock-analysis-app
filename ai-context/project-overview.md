@@ -46,4 +46,4 @@ The application's workflow is divided into distinct pages, each serving a specif
 
 The application includes a REST API (FastAPI) that allows external systems to consume the analysis logic.
 *   **Ticker Analysis:** Provides JSON-formatted statistical and technical advice for any ticker.
-*   **Programmatic Control:** (WIP) Endpoints to trigger data updates and maintenance tasks.
+*   **Programmatic Control:** Endpoints to trigger data updates and maintenance tasks.
