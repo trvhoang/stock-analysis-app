@@ -34,8 +34,8 @@ services:
       db:
         condition: service_healthy  # ✅ Wait for DB to be ready
     ports:
-      - "${APP_PORT:-8501}:8501"
-      - "${API_PORT:-8000}:8000"  # ✅ FastAPI port (if you're using it)
+      - "${APP_PORT:-3501}:3501"
+      - "${API_PORT:-3500}:3500"  # ✅ FastAPI port (if you're using it)
     volumes:
       # ⚠️ Development mode: live code reload
       - ../app:/app:ro  # :ro = read-only for security
@@ -53,7 +53,7 @@ services:
     networks:
       - stock-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3501/_stcore/health"]
       interval: 30s
       timeout: 10s
       retries: 3

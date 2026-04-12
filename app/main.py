@@ -41,7 +41,7 @@ def initialize_global_services():
 
     # Start FastAPI in a background thread
     thread = threading.Thread(
-        target=lambda: uvicorn.run(api_app, host="0.0.0.0", port=8000, log_level="info"), 
+        target=lambda: uvicorn.run(api_app, host="0.0.0.0", port=3500, log_level="info"), 
         daemon=True
     )
     thread.start()

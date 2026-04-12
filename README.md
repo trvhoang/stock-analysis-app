@@ -12,7 +12,7 @@ A Python-based web application built with Streamlit to download and analyze stoc
    git clone <repository-url>
    cd stock-analysis-app
 
-   Access the app at http://localhost:8501
+   Access the app at http://localhost:3501
 
    HOW TO RUN
    Install and start Docker app (Installation https://docs.docker.com/desktop/setup/install/windows-install/)
