@@ -169,7 +169,7 @@ All indicators are calculated using a lookback period of **100 periods** (e.g., 
 To provide context for statistical predictions, the app analyzes the technical state of the ticker at every historical "signal date" that resulted in the predicted outcome.
 
 - **Scoring:** Uses the same 0-100% point system based on 4 indicators (Stochastic, RSI, MA Spread, MA Cross).
-- **Selective Calculation:** For performance optimization, technical scores are only calculated for historical events where the outcome (`result`) matches the predicted statistical trend.
+- **Selective Calculation:** For performance optimization, technical scores are only calculated for historical events where the outcome (`result`) matches the result category with the highest statistical frequency.
 - **Summary Grouping:**
     - **Up:** Score $\ge 53\%$.
     - **Sideway/Unknown:** $48\% \le \text{Score} < 53\%$.
