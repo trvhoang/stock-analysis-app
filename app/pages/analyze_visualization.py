@@ -411,14 +411,14 @@ def analyze_page(engine):
                         df_full, _ = calculate_rsi(df_full, length=14)
                         df_full = calculate_ma_cross(df_full, [(s_ma, l_ma)])
                         
-                        # Create a date-to-index lookup to make row-by-row scoring O(1) per point
-                        date_to_idx = {d: i for i, d in enumerate(df_full['date'])}
-                        
                         def score_point(target_date):
                             target_dt = pd.to_datetime(target_date)
-                            idx = date_to_idx.get(target_dt)
-                            # Ensure we have enough lookback (min 30 bars for RSI trend rules)
-                            if idx is None or idx < 30: return None
+                            # Use binary search to find the index of the latest technical data point 
+                            # on or before the signal date. This is critical for Weekly/Monthly timeframes.
+                            idx = df_full['date'].searchsorted(target_dt, side='right') - 1
+                            
+                            # Lower threshold from 30 to 10 to provide scores for earlier historical points.
+                            if idx < 10: return None
                             
                             # Analyze trend at that point in history using indicator-specific logic
                             sub_df = df_full.iloc[:idx+1]
@@ -431,9 +431,12 @@ def analyze_page(engine):
                             total_pts = sum(t_map.get(t, 2) for t in trends)
                             return round((total_pts / 16) * 100, 2) # Percent score across 4 indicators (max 16 pts)
 
-                        # Generate summary for the dominant statistical result group
-                        stat_res_map = {"Strong Up": "Up", "Up": "Up", "Sideways": "No Change", "Down": "Down", "Strong Down": "Down"}
-                        target_res = stat_res_map.get(statistical_trend, "Up")
+                        # Identify the result category with the highest frequency (Up, Down, or No Change)
+                        # to focus the historical technical context analysis on the most likely outcome,
+                        # as per the requirement to analyze the technical trend of the 'higher result'.
+                        # Count of Up include Up/Strong Up, Down include Down/Strong Down, No Change include No Change/Sideways.
+                        probs = {"Up": up_prob, "Down": down_prob, "No Change": no_change_prob}
+                        target_res = max(probs, key=probs.get)
 
                         # Apply calculation ONLY to rows matching the predicted result to save processing time.
                         # Other rows in the detailed report will show 'None' or 'NaN'.

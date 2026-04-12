@@ -80,10 +80,10 @@ USER appuser
 # Health check for container orchestration
 # Switched to curl to avoid the overhead of starting a Python interpreter for health checks.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8501/_stcore/health || exit 1
+    CMD curl -f http://localhost:3501/_stcore/health || exit 1
 
 # Expose Streamlit default port
-EXPOSE 8501
+EXPOSE 3501
 
 # Run Streamlit app
-CMD ["streamlit", "run", "main.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "main.py", "--server.port=3501", "--server.address=0.0.0.0"]

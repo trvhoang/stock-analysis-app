@@ -12,7 +12,7 @@ A Python-based web application built with Streamlit to download and analyze stoc
    git clone <repository-url>
    cd stock-analysis-app
 
-   Access the app at http://localhost:8501
+   Access the app at http://localhost:3501
 
    HOW TO RUN
    Install and start Docker app (Installation https://docs.docker.com/desktop/setup/install/windows-install/)
@@ -45,3 +45,11 @@ A Python-based web application built with Streamlit to download and analyze stoc
          For example: code = FPT, validation day range = 3, detal range = -10, result day range = 7
             Find all time in history when FPT has 3 cumulative day with -10% price (close price of day T+3 compare to close price of day T)
                and capture the price change of the next 7 cumulative day after the signal happen
+
+2. Docker Image
+   Build:
+   - docker build -f docker/Dockerfile -t stockanalysisapp:v{version} .  
+   Tag:
+   - docker tag stockanalysisapp:v{local-version} trvhoang/stock-analysis-app:v{remote-version}
+   Push:
+   - docker push trvhoang/stock-analysis-app:v{remote-version}

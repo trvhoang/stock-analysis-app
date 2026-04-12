@@ -27,7 +27,7 @@ The entire application is containerized with Docker to ensure a consistent and r
     docker-compose -f docker/docker-compose.yml up --build
     ```
     *   `--build`: This flag forces a rebuild of the application's Docker image, which is necessary to include any changes made to the Python code or `requirements.txt`.
-3.  **Access the app:** Open a web browser and navigate to `http://localhost:8501`.
+3.  **Access the app:** Open a web browser and navigate to `http://localhost:3501`.
 
 ## 2. Typical Feature Development Cycle
 
