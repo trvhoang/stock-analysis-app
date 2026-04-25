@@ -64,6 +64,7 @@ def init_db(engine):
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS trading_data (
                 ticker TEXT,
+                exchange TEXT,
                 date DATE,
                 open BIGINT,
                 high BIGINT,
@@ -74,15 +75,30 @@ def init_db(engine):
             );
         """))
         # Verify schema
+        
+        # Ensure the exchange column exists (handles updates to existing tables)
+        # Postgres 9.6+ supports ADD COLUMN IF NOT EXISTS
+        conn.execute(text("""
+            ALTER TABLE trading_data ADD COLUMN IF NOT EXISTS exchange TEXT;
+        """))
+
+        # Strict Schema Verification
         result = conn.execute(text("""
             SELECT column_name, data_type 
             FROM information_schema.columns 
             WHERE table_name = 'trading_data' 
-            AND column_name IN ('open', 'high', 'low', 'close', 'volume');
+            AND column_name IN ('exchange', 'open', 'high', 'low', 'close', 'volume');
         """)).fetchall()
+        
+        if len(result) < 6:
+            missing = 6 - len(result)
+            log_progress(f"Schema verification failed: {missing} columns missing from trading_data", "error")
+            raise ValueError("Incomplete database schema. Missing required columns.")
+
         for col, dtype in result:
-            if dtype.lower() != 'bigint':
-                log_progress(f"Column {col} is {dtype}, expected BIGINT", "error")
+            expected = 'text' if col == 'exchange' else 'bigint'
+            if dtype.lower() != expected:
+                log_progress(f"Column {col} is {dtype}, expected {expected.upper()}", "error")
                 raise ValueError(f"Invalid schema for trading_data: {col} is {dtype}")
         conn.commit()
 
@@ -123,7 +139,7 @@ def cleanup_files(zip_path, extract_path):
         log_progress(f"Error during cleanup: {str(e)}", "warning")
 
 # Function to process CSV file with chunking and ticker filtering
-def process_csv_file(file_path, cutoff_date, ticker_filter=None, chunk_size=10000, engine=None):
+def process_csv_file(file_path, cutoff_date, ticker_filter=None, chunk_size=10000, engine=None, exchange="Unknown"):
     chunks = pd.read_csv(file_path, chunksize=chunk_size, dtype={"Open": "float64", "High": "float64", "Low": "float64", "Close": "float64", "Volume": "float64"})
     total_rows = 0
     filtered_rows = 0
@@ -133,6 +149,7 @@ def process_csv_file(file_path, cutoff_date, ticker_filter=None, chunk_size=1000
         conn.execute(text("""
             CREATE TEMPORARY TABLE temp_chunk (
                 ticker TEXT,
+                exchange TEXT,
                 date DATE,
                 open BIGINT,
                 high BIGINT,
@@ -160,18 +177,24 @@ def process_csv_file(file_path, cutoff_date, ticker_filter=None, chunk_size=1000
                     chunk["Low"] = (chunk["Low"] * 1000).round().astype('int64')
                     chunk["Close"] = (chunk["Close"] * 1000).round().astype('int64')
                     chunk["Volume"] = chunk["Volume"].round().astype('int64')
-                    chunk.columns = ["ticker", "date", "open", "high", "low", "close", "volume"]
+                    
+                    # Assign the exchange captured from the filename
+                    # Assign the exchange and standardize column names
+                    chunk["exchange"] = exchange
+                    chunk.columns = ["ticker", "date", "open", "high", "low", "close", "volume", "exchange"]
+                    chunk = chunk.rename(columns={"Ticker": "ticker", "DTYYYYMMDD": "date", "Open": "open", "High": "high", "Low": "low", "Close": "close", "Volume": "volume"})
+
                     # Deduplicate in Pandas
                     chunk = chunk.drop_duplicates(subset=["ticker", "date"], keep="first")
-                    # The `dtype` argument is removed as it causes a ValueError in this pandas/SQLAlchemy version.
-                    # The temp_chunk table already has the correct BIGINT types, and the DataFrame dtypes are int64,
-                    # so the database driver can handle the mapping correctly.
+
+                    # Ensure columns match the SQL statement order: ticker, exchange, date, ...
+                    cols = ["ticker", "exchange", "date", "open", "high", "low", "close", "volume"]
                     # DIRECT INSERTION USING PSYCOPG2
                     # Bypass pandas.to_sql entirely to avoid SQLAlchemy/Pandas version conflicts
                     with conn.connection.cursor() as cursor:
                         execute_values(cursor, 
-                            "INSERT INTO temp_chunk (ticker, date, open, high, low, close, volume) VALUES %s", 
-                            chunk.values.tolist())
+                            "INSERT INTO temp_chunk (ticker, exchange, date, open, high, low, close, volume) VALUES %s", 
+                            chunk[cols].values.tolist())
                     last_chunk_dtypes = chunk.dtypes
                 except Exception as e:
                     log_progress(f"Error processing chunk in {os.path.basename(file_path)}: {str(e)}", "error")
@@ -199,8 +222,8 @@ def process_csv_file(file_path, cutoff_date, ticker_filter=None, chunk_size=1000
         # Insert into trading_data
         try:
             result = conn.execute(text("""
-                INSERT INTO trading_data (ticker, date, open, high, low, close, volume)
-                SELECT ticker, date, open, high, low, close, volume
+                INSERT INTO trading_data (ticker, exchange, date, open, high, low, close, volume)
+                SELECT ticker, exchange, date, open, high, low, close, volume
                 FROM temp_chunk
                 ON CONFLICT (ticker, date) DO NOTHING
                 RETURNING ticker;
@@ -253,9 +276,20 @@ def download_and_process_data(report_date, gaps_of_data, data_type="stock", engi
             
             for csv_file in os.listdir(extract_path):
                 if csv_file.endswith(".csv"):
+                    # Detect exchange from filename (e.g., CafeF.HSX.Upto10052024.csv)
+                    file_upper = csv_file.upper()
+                    if "HSX" in file_upper:
+                        detected_exchange = "HSX"
+                    elif "HNX" in file_upper:
+                        detected_exchange = "HNX"
+                    elif "UPCOM" in file_upper:
+                        detected_exchange = "UPCOM"
+                    else:
+                        detected_exchange = "Unknown"
+                        
                     file_path = os.path.join(extract_path, csv_file)
-                    log_progress(f"Processing {csv_file}...")
-                    process_csv_file(file_path, cutoff_date, ticker_filter, engine=engine)
+                    log_progress(f"Processing {csv_file} as {detected_exchange}...")
+                    process_csv_file(file_path, cutoff_date, ticker_filter, engine=engine, exchange=detected_exchange)
 
             with engine.connect() as conn:
                 conn.execute(text("DROP INDEX IF EXISTS idx_ticker_date;"))
@@ -283,9 +317,11 @@ def run_full_ingestion(report_date, gaps_of_data, engine):
     try:
         log_progress(f"Starting full data ingestion for report date: {report_date}")
         with engine.connect() as conn:
-            log_progress("Truncating trading_data table...")
-            conn.execute(text("TRUNCATE TABLE trading_data;"))
+            log_progress("Resetting trading_data table for schema synchronization...")
+            conn.execute(text("DROP TABLE IF EXISTS trading_data;"))
             conn.commit()
+        
+        init_db(engine)
             
         download_and_process_data(report_date, gaps_of_data, "stock", engine=engine)
         download_and_process_data(report_date, gaps_of_data, "index", engine=engine)
