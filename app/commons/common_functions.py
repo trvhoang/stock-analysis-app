@@ -1,6 +1,7 @@
 import pandas as pd
 from sqlalchemy import text
 import traceback
+from datetime import datetime, timedelta
 # Use the directory prefix for modules within the same package to ensure correct resolution in Docker
 from commons.common_queries import BASE_DELTA_CALC_CTE, COMMON_DELTA_FILTER_WHERE_CLAUSE, DELTA_UP_THRESHOLD, DELTA_DOWN_THRESHOLD
 from commons.technical_analysis import (
@@ -20,6 +21,47 @@ TREND_EMOJIS = {
     "Oversold (Down)": "🐻"
 }
 
+# Function to get all tickers with average volume filter, no zero-volume days, and activity check
+# Migrated from suggestion_visualization.py to allow sharing with REST API
+def get_all_tickers(engine, min_avg_volume, year_gap):
+    # Calculate the lookback date based on the user-defined year gap
+    year_ago = datetime.today().date() - timedelta(days=365*year_gap)
+    
+    # Query filters for:
+    # 1. Non-index tickers
+    # 2. Activity within the lookback period
+    # 3. Liquidity (Average volume >= threshold)
+    # 4. Continuity (No zero-volume days within the lookback period)
+    query = """
+        SELECT ticker
+        FROM trading_data
+        WHERE ticker <> 'VNINDEX'
+        AND ticker IN (
+            SELECT ticker 
+            FROM trading_data 
+            WHERE date >= %(year_ago)s
+        )
+        GROUP BY ticker
+        HAVING AVG(volume) >= %(min_avg_volume)s
+        AND ticker NOT IN (
+            SELECT ticker 
+            FROM trading_data 
+            WHERE volume = 0 
+            AND date >= %(year_ago)s
+        )
+    """
+    
+    params = {"min_avg_volume": min_avg_volume, "year_ago": year_ago}
+    
+    # Use raw connection for performance and to avoid SQLAlchemy overhead in market-wide scans
+    conn = engine.raw_connection()
+    try:
+        df = pd.read_sql(query, conn, params=params)
+    finally:
+        conn.close()
+        
+    return df["ticker"].tolist()
+
 # Function to analyze a single ticker
 # Moved from suggestion_visualization.py to allow reuse in analyze_visualization.py
 def analyze_ticker(ticker, day_range, result_day_range, engine):
@@ -29,24 +71,22 @@ def analyze_ticker(ticker, day_range, result_day_range, engine):
         lag_days = day_range - 1
 
         # 1. Get latest data to calculate current_delta
-        # We need the close of the most recent date, and the close 'lag_days' trading days before that.
-        # We fetch day_range (which is lag_days + 1) records to get the start and end points of the window.
-        # Use raw DBAPI syntax (%(name)s) for raw_connection
         query_latest = """
-            SELECT date, close 
+            SELECT date, close, exchange 
             FROM trading_data 
             WHERE ticker = %(ticker)s 
             ORDER BY date DESC 
             LIMIT %(limit)s
         """
         
-        # Use a raw connection to bypass pandas/SQLAlchemy compatibility issues
         conn = engine.raw_connection()
         try:
             df_latest = pd.read_sql(query_latest, conn, params={"ticker": ticker, "limit": day_range})
         finally:
             conn.close()
-        
+
+        exchange = df_latest.iloc[0]["exchange"] if not df_latest.empty and "exchange" in df_latest.columns else "Unknown"
+
         # Ensure we have enough data points to calculate the delta
         if len(df_latest) < day_range:
             print(f"Insufficient data for {ticker}: Found {len(df_latest)} rows, needed {day_range}.")
@@ -118,8 +158,44 @@ def analyze_ticker(ticker, day_range, result_day_range, engine):
             possibility_up = 0
             possibility_down = 0
         
+        # 4. Determine Statistical Trend
+        if possibility_up > 70: stat_trend = "Strong Up"
+        elif 53 <= possibility_up <= 70: stat_trend = "Up"
+        elif 48 <= possibility_up < 53: stat_trend = "Sideways"
+        elif 30 <= possibility_up < 48: stat_trend = "Down"
+        else: stat_trend = "Strong Down"
+
+        # 5. Perform Technical Analysis for Trend Alignment
+        # Use current logic: Day timeframe for short ranges, Week for long
+        tech_timeframe = 'Day' if day_range < 15 else 'Week'
+        s_ma, l_ma = (5, 10) if tech_timeframe == 'Day' else (4, 12)
+        
+        df_tech = fetch_data(ticker, tech_timeframe, 100, engine)
+        tech_trend = "Unknown"
+        tech_score = 0
+        
+        if not df_tech.empty:
+            tech_data_list = []
+            # Run basic indicators
+            df_tech, stoch_trend = calculate_stochastic(df_tech)
+            tech_data_list.append([0, "Stoch", "", stoch_trend])
+            
+            df_tech, rsi_trend = calculate_rsi(df_tech, length=14)
+            tech_data_list.append([1, "RSI", "", rsi_trend])
+            
+            df_tech = calculate_ma_cross(df_tech, [(s_ma, l_ma)])
+            short_col, long_col, sig_col = f'SMA_{s_ma}', f'SMA_{l_ma}', f'cross_{s_ma}_{l_ma}'
+            
+            if short_col in df_tech.columns and long_col in df_tech.columns:
+                tech_data_list.append([2, "MA", "", calculate_ma_trend(df_tech, short_col, long_col)])
+            if sig_col in df_tech.columns:
+                tech_data_list.append([3, "Cross", "", calculate_ma_cross_trend(df_tech, sig_col)])
+            
+            _, tech_trend, tech_score = generate_technical_advice(tech_data_list)
+
         return {
             "ticker": ticker,
+            "exchange": exchange,
             "current_delta": current_delta,
             "start_date": start_date,
             "end_date": end_date,
@@ -131,11 +207,15 @@ def analyze_ticker(ticker, day_range, result_day_range, engine):
             "max_up_delta": result["max_up_delta"],
             "min_down_delta": result["min_down_delta"],
             "median_down_delta": result["median_down_delta"],
-            "max_down_delta": result["max_down_delta"]
+            "max_down_delta": result["max_down_delta"],
+            "stat_trend": stat_trend,
+            "tech_trend": tech_trend,
+            "tech_score": tech_score
         }
     except Exception as e:
-        print(f"Error analyzing ticker {ticker}: {e}")
-        traceback.print_exc()
+        # Avoid flooding logs with tracebacks for expected missing data/columns
+        if "exchange" not in str(e).lower():
+            print(f"Error analyzing ticker {ticker}: {e}")
         # Return None to indicate failure for this specific ticker, allowing the batch to continue
         return None
 

@@ -1,0 +1,44 @@
+{
+  "Codex Onboard": {
+    "prefix": "cxonboard",
+    "body": [
+      "Read AGENTS.md completely.",
+      "Then read FOCUS.md.",
+      "Then read ai-context/README.md, current-status.md,",
+      "conventions.md, boundaries.md in that order.",
+      "Confirm: task · top 3 rules · files not to touch.",
+      "Load the relevant skill from ai-skills/.",
+      "Do not start any work until you confirm all points."
+    ]
+  },
+  "Codex Kickoff": {
+    "prefix": "cxkick",
+    "body": [
+      "Read: AGENTS.md · FOCUS.md · ai-context/current-status.md",
+      "Confirm: current task · blockers · most relevant rule today.",
+      "Load ai-skills/skill-analyze-wip.md and execute it.",
+      "Wait for GO."
+    ]
+  },
+  "Codex Recovery": {
+    "prefix": "cxreset",
+    "body": [
+      "CONTEXT RESET.",
+      "Re-read: FOCUS.md · ai-context/conventions.md · ai-context/boundaries.md",
+      "Answer: 1) active task 2) SQL rule 3) file never to touch 4) last action",
+      "Resume after answering all four."
+    ]
+  },
+  "Codex Task": {
+    "prefix": "cxtask",
+    "body": [
+      "CONTEXT: AGENTS.md + FOCUS.md already read.",
+      "TASK: $1",
+      "INPUT: $2",
+      "MUST: $3",
+      "MUST NOT: modify common_queries.py · new dependencies · code before approval",
+      "OUTPUT: approach first → APPROVED → code block → self-criticism",
+      "GATE: list plan. Wait for APPROVED."
+    ]
+  }
+}

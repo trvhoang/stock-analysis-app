@@ -2,7 +2,7 @@
 
 This document outlines the core business rules, formulas, and domain-specific logic that drive the Stock Analysis App.
 
-## 1. Stock Data Handling
+## 1. Stock Data Handling & Filtering
 
 ### Price Storage (BIGINT)
 *   **What:** All price data (Open, High, Low, Close) is stored in the database as `BIGINT`, calculated as `ROUND(Price * 1000)`.

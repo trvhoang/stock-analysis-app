@@ -118,7 +118,11 @@ This document provides a snapshot of the project's current state, including fini
   - **Fix Bug: Inconsistent Technical Advice between Analyze Tabs:**
     - **Root Cause:** The `calculate_ma_cross` function incorrectly coupled the trend logic for MA spread and MA cross events, leading to inconsistent trend assignments.
     - **Fix:** Refactored the logic into two separate functions: `calculate_ma_trend` (for spread/reversal) and `calculate_ma_cross_trend` (for events). Both "Ticker Analyze" and "Portfolio Analyze" were updated to call these distinct functions, ensuring consistent and correct trend calculation for each indicator.
+- **Enhance logic of Suggestion Page**: Implemented the filtering and multi-tier sorting logic for the Suggestion Page, combining statistical probabilities with technical scores and exchange-based priorities (HSX > HNX > UPCOM).
 ## 2. Work In Progress (WIP)
+- **Implement Suggestion API:** Create a new API endpoint to provide market-wide ticker suggestions.
+  - Default parameters: `day_range=5`, `result_day_range=5`, `min_avg_volume=1000000`, `year_gap=1`.
+  - Response requirements: Top 5 Tickers by Possibility of Up (ticker, possibility_up, total_signals) and Top 5 Tickers by Delta of Up (ticker, max_up_delta, total_signals).
 - **Implement Remaining Technical Indicators:**
   - Implement Bollinger Bands logic and visualization.
   - Implement Ichimoku Cloud (9, 26, 52, 26, 26) logic and visualization.
@@ -126,9 +130,10 @@ This document provides a snapshot of the project's current state, including fini
 *No known issues at this time.*
 
 ## 4. Next Steps & Priorities
-1.  **Implement Bollinger Bands:** Add calculation logic and visualization for Bollinger Bands (20, 2) to the Technical Analyze and Analyze pages.
-2.  **Implement Ichimoku Cloud:** Add calculation logic and visualization for Ichimoku Cloud (9, 26, 52, 26, 26).
-3.  **Define explanation of Final advice:** (Lowest Priority) Define the logic to generate a detailed explanation for the Final Advice (currently a placeholder).
+1.  **Implement Suggestion API:** Create a new FastAPI endpoint for market-wide high-probability ticker suggestions.
+2.  **Implement Bollinger Bands:** Add calculation logic and visualization for Bollinger Bands (20, 2) to the Technical Analyze and Analyze pages.
+3.  **Implement Ichimoku Cloud:** Add calculation logic and visualization for Ichimoku Cloud (9, 26, 52, 26, 26).
+4.  **Define explanation of Final advice:** (Lowest Priority) Define the logic to generate a detailed explanation for the Final Advice (currently a placeholder).
 
 ---
-*Last Updated: 2026-04-11 (Implemented Ticker Analyze API and fixed environment startup bugs)*
+*Last Updated: 2024-05-28 (Enhanced Suggestion Page logic)*
