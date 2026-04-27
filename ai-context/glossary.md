@@ -11,8 +11,7 @@ This document defines key terms, acronyms, and concepts specific to the Stock An
 *   **Delta:** The percentage change in price between two points in time.
     *   **Exact Delta:** The actual percentage change that occurred during the `Validation Days`.
     *   **Result Delta:** The percentage change that occurred during the `Result Days`.
-*   **Delta Target:** The user's desired percentage change for the signal (e.g., -3.0%). The app searches for events within a range of `[Target - 1, Target + 1]`.
-*   **Delta Target:** A user-defined percentage change for a signal. **Note:** This is now only used in the underlying logic for the "Ticker Analyze" tab; the Suggestion and Portfolio pages calculate this dynamically based on the stock's current delta.
+*   **Delta Target:** A percentage change used to find similar historical events. On the "Ticker Analyze" tab, this is derived from the stock's current price movement. Matches are sought within a `+/- 1%` tolerance window.
 
 ## Data & Technical Terms
 
@@ -28,6 +27,7 @@ This document defines key terms, acronyms, and concepts specific to the Stock An
 *   **Down:** An outcome where the `Result Delta` is strictly less than -0.1%.
 *   **No Change:** An outcome where the `Result Delta` is between -0.1% and 0.1% (inclusive).
 *   **Possibility (of Result):** The historical probability of a specific outcome (Up/Down/No Change) occurring after a signal, expressed as a percentage.
+*   **Technical Score:** A weighted score (0-100%) aggregating signals from MA, RSI, and Stochastic indicators to determine technical strength.
 
 ## Application Pages
 

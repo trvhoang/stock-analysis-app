@@ -1,6 +1,7 @@
 import pandas as pd
 from sqlalchemy import text
 import traceback
+from datetime import datetime, timedelta
 # Use the directory prefix for modules within the same package to ensure correct resolution in Docker
 from commons.common_queries import BASE_DELTA_CALC_CTE, COMMON_DELTA_FILTER_WHERE_CLAUSE, DELTA_UP_THRESHOLD, DELTA_DOWN_THRESHOLD
 from commons.technical_analysis import (
@@ -19,6 +20,47 @@ TREND_EMOJIS = {
     "Overbought (Up)": "🐮",
     "Oversold (Down)": "🐻"
 }
+
+# Function to get all tickers with average volume filter, no zero-volume days, and activity check
+# Migrated from suggestion_visualization.py to allow sharing with REST API
+def get_all_tickers(engine, min_avg_volume, year_gap):
+    # Calculate the lookback date based on the user-defined year gap
+    year_ago = datetime.today().date() - timedelta(days=365*year_gap)
+    
+    # Query filters for:
+    # 1. Non-index tickers
+    # 2. Activity within the lookback period
+    # 3. Liquidity (Average volume >= threshold)
+    # 4. Continuity (No zero-volume days within the lookback period)
+    query = """
+        SELECT ticker
+        FROM trading_data
+        WHERE ticker <> 'VNINDEX'
+        AND ticker IN (
+            SELECT ticker 
+            FROM trading_data 
+            WHERE date >= %(year_ago)s
+        )
+        GROUP BY ticker
+        HAVING AVG(volume) >= %(min_avg_volume)s
+        AND ticker NOT IN (
+            SELECT ticker 
+            FROM trading_data 
+            WHERE volume = 0 
+            AND date >= %(year_ago)s
+        )
+    """
+    
+    params = {"min_avg_volume": min_avg_volume, "year_ago": year_ago}
+    
+    # Use raw connection for performance and to avoid SQLAlchemy overhead in market-wide scans
+    conn = engine.raw_connection()
+    try:
+        df = pd.read_sql(query, conn, params=params)
+    finally:
+        conn.close()
+        
+    return df["ticker"].tolist()
 
 # Function to analyze a single ticker
 # Moved from suggestion_visualization.py to allow reuse in analyze_visualization.py

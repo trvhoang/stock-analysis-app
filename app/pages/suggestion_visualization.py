@@ -5,44 +5,7 @@ from sqlalchemy import text
 import concurrent.futures
 from datetime import datetime, timedelta
 # Updated import to use the commons package prefix
-from commons.common_functions import analyze_ticker
-
-# Function to get all tickers with average volume filter, no zero-volume days, and at least one record in the last year
-def get_all_tickers(engine, min_avg_volume, year_gap):
-    # Calculate the date 1 year ago from today
-    # one_year_ago = datetime.today().date() - timedelta(days=365)
-    year_ago = datetime.today().date() - timedelta(days=365*year_gap)
-    
-    # Use raw string with %(param)s placeholders for raw_connection compatibility
-    query = """
-        SELECT ticker
-        FROM trading_data
-        WHERE ticker <> 'VNINDEX'
-        AND ticker IN (
-            SELECT ticker 
-            FROM trading_data 
-            WHERE date >= %(year_ago)s
-        )
-        GROUP BY ticker
-        HAVING AVG(volume) >= %(min_avg_volume)s
-        AND ticker NOT IN (
-            SELECT ticker 
-            FROM trading_data 
-            WHERE volume = 0 
-            AND date >= %(year_ago)s
-        )
-    """
-    
-    params = {"min_avg_volume": min_avg_volume, "year_ago": year_ago}
-    
-    # Use raw connection to bypass pandas/SQLAlchemy compatibility issues
-    conn = engine.raw_connection()
-    try:
-        df = pd.read_sql(query, conn, params=params)
-    finally:
-        conn.close()
-        
-    return df["ticker"].tolist()
+from commons.common_functions import analyze_ticker, get_all_tickers
 
 # Main page function with volume filter
 def suggestion_page(engine):
