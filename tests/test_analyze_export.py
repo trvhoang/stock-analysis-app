@@ -59,6 +59,10 @@ class TestAnalyzeExport(unittest.TestCase):
         self.assertIn("%(ticker)s", query)
         self.assertIn("%(range_value)s", query)
         self.assertIn("%(range_unit)s", query)
+        self.assertIn("td.open", query)
+        self.assertIn("td.high", query)
+        self.assertIn("td.low", query)
+        self.assertIn("td.volume", query)
         self.assertEqual(params, {"ticker": "FPT", "range_value": 3, "range_unit": "years"})
         self.assertIs(connection, engine.raw_connection.return_value)
         engine.raw_connection.return_value.close.assert_called_once_with()
@@ -106,6 +110,43 @@ class TestAnalyzeExport(unittest.TestCase):
         result = format_export_dataframe(source, include_percentage_change=False)
 
         self.assertEqual(list(result.columns), ["ticker", "trading_date", "close_price"])
+
+    def test_format_export_dataframe_keeps_original_ohlc_and_volume_when_selected(self):
+        source = pd.DataFrame(
+            {
+                "ticker": ["FPT"],
+                "trading_date": [date(2026, 7, 31)],
+                "open": [99000],
+                "high": [111000],
+                "low": [98000],
+                "close": [110000],
+                "volume": [2500000],
+            }
+        )
+
+        result = format_export_dataframe(
+            source,
+            include_percentage_change=False,
+            include_ohlc_volume=True,
+        )
+
+        self.assertEqual(
+            list(result.columns),
+            [
+                "ticker",
+                "trading_date",
+                "open_price",
+                "high_price",
+                "low_price",
+                "close_price",
+                "trading_volume",
+            ],
+        )
+        self.assertEqual(
+            result.loc[0, ["open_price", "high_price", "low_price", "close_price"]].tolist(),
+            [99000, 111000, 98000, 110000],
+        )
+        self.assertEqual(result.loc[0, "trading_volume"], 2500000)
 
     def test_format_export_dataframe_keeps_required_columns_for_empty_history(self):
         source = pd.DataFrame(columns=["ticker", "trading_date", "close"])

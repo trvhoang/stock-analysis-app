@@ -122,6 +122,7 @@ This document provides a snapshot of the project's current state, including fini
 - **Implement Suggestion API:** Created a new FastAPI endpoint (`GET /api/suggestions`) to provide market-wide ticker suggestions. Supported top 5 categories by probability and delta with default parameter handling and structured JSON output.
 - **Implement Analyze Page Export Function:** Added hidden-by-default export form, validated ticker/range inputs, bounded parameterized history query, BIGINT price scaling, optional percentage change, safe feedback, deterministic CSV filename, and focused unit tests. Verified with 18 passing tests; live PostgreSQL verification remains pending because Docker daemon is unavailable.
 - **Enhance Analyze Page Export Form:** Added native Streamlit collapse/expand control around the export form without changing export behavior. Focused and full unittest suites pass (10 and 19 tests).
+- **Enhance Analyze Page Export Data:** Added optional full OHLC prices and trading-volume columns while preserving required ticker/range/unit fields and optional percentage change. Optional OHLC values remain original BIGINT storage values; default close-price export remains display-scaled. Full unittest suite passes (20 tests).
 ## 2. Work In Progress (WIP)
 - **Implement Comprehensive Unit Testing (Priority 2):**
   - Use `unittest` to implement unit tests for all functions inside the project.
@@ -140,4 +141,4 @@ This document provides a snapshot of the project's current state, including fini
 4.  **Define explanation of Final advice:** (Lowest Priority).
 
 ---
-*Last Updated: 2026-08-01 (Export and collapse/expand enhancement complete)*
+*Last Updated: 2026-08-01 (OHLC/volume export enhancement complete)*

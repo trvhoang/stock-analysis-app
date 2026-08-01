@@ -61,7 +61,14 @@ def fetch_export_history(ticker, range_value, range_unit, engine):
             FROM trading_data
             WHERE ticker = %(ticker)s
         )
-        SELECT td.ticker, td.date AS trading_date, td.close
+        SELECT
+            td.ticker,
+            td.date AS trading_date,
+            td.open,
+            td.high,
+            td.low,
+            td.close,
+            td.volume
         FROM trading_data AS td
         CROSS JOIN latest_record
         WHERE td.ticker = %(ticker)s
@@ -88,9 +95,31 @@ def fetch_export_history(ticker, range_value, range_unit, engine):
         conn.close()
 
 
-def format_export_dataframe(df, include_percentage_change):
+def format_export_dataframe(df, include_percentage_change, include_ohlc_volume=False):
     """Build stable export columns and convert stored prices to display scale."""
-    columns = ["ticker", "trading_date", "close_price"]
+    source_columns = ["ticker", "trading_date", "close"]
+    columns = ["ticker", "trading_date"]
+    if include_ohlc_volume:
+        source_columns = [
+            "ticker",
+            "trading_date",
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume",
+        ]
+        columns.extend(
+            [
+                "open_price",
+                "high_price",
+                "low_price",
+                "close_price",
+                "trading_volume",
+            ]
+        )
+    else:
+        columns.append("close_price")
     if include_percentage_change:
         columns.append("percentage_change")
 
@@ -98,12 +127,20 @@ def format_export_dataframe(df, include_percentage_change):
         return pd.DataFrame(columns=columns)
 
     export_df = (
-        df[["ticker", "trading_date", "close"]]
+        df[source_columns]
         .copy()
         .sort_values("trading_date")
         .reset_index(drop=True)
     )
-    export_df["close_price"] = pd.to_numeric(export_df.pop("close")) / 1000
+
+    for price_column in ("open", "high", "low", "close"):
+        if price_column in export_df:
+            price_values = export_df.pop(price_column)
+            if not include_ohlc_volume:
+                price_values = pd.to_numeric(price_values) / 1000
+            export_df[f"{price_column}_price"] = price_values
+    if "volume" in export_df:
+        export_df["trading_volume"] = export_df.pop("volume")
 
     if include_percentage_change:
         # Chronological order makes first row intentionally have no prior value.
@@ -437,6 +474,9 @@ def analyze_page(engine):
                     )
                     export_unit = st.selectbox("Export Time Unit", EXPORT_RANGE_UNITS)
                     include_percentage_change = st.checkbox("Include Percentage Change")
+                    include_ohlc_volume = st.checkbox(
+                        "Include OHLC Prices and Trading Volume"
+                    )
                     export_submitted = st.form_submit_button("Prepare CSV")
 
             if export_submitted:
@@ -456,7 +496,9 @@ def analyze_page(engine):
                             engine,
                         )
                         export_df = format_export_dataframe(
-                            history_df, include_percentage_change
+                            history_df,
+                            include_percentage_change,
+                            include_ohlc_volume,
                         )
                         if export_df.empty:
                             st.warning("No trading history found for the requested range.")
