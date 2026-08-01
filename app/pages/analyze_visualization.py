@@ -14,6 +14,151 @@ from commons.technical_analysis import (
     calculate_stochastic_trend, calculate_rsi_trend
 )
 
+EXPORT_RANGE_UNITS = ("days", "months", "years")
+EXPORT_VISIBLE_KEY = "analyze_export_visible"
+EXPORT_CSV_KEY = "analyze_export_csv"
+EXPORT_FILENAME_KEY = "analyze_export_filename"
+EXPORT_FORM_LABEL = "Export form"
+
+
+def validate_export_inputs(ticker, range_value, range_unit):
+    """Return normalized export inputs or a user-safe validation message."""
+    normalized_ticker = str(ticker or "").strip().upper()
+    if not normalized_ticker:
+        return None, "Ticker code is required."
+    if not normalized_ticker.isalnum():
+        return None, "Ticker code must contain only letters and numbers."
+
+    try:
+        numeric_range = float(range_value)
+    except (TypeError, ValueError):
+        return None, "Time range must be a positive whole number."
+    if not numeric_range.is_integer() or numeric_range <= 0:
+        return None, "Time range must be a positive whole number."
+
+    normalized_unit = str(range_unit or "").strip().lower()
+    if normalized_unit not in EXPORT_RANGE_UNITS:
+        return None, "Time unit must be days, months, or years."
+
+    return {
+        "ticker": normalized_ticker,
+        "range_value": int(numeric_range),
+        "range_unit": normalized_unit,
+    }, None
+
+
+def fetch_export_history(ticker, range_value, range_unit, engine):
+    """Fetch only the requested calendar-bounded trading rows for export."""
+    values, error = validate_export_inputs(ticker, range_value, range_unit)
+    if error:
+        raise ValueError(error)
+
+    # The latest-date CTE keeps the range anchored to available data while the
+    # ticker/date predicates allow PostgreSQL to use the time-series index.
+    query = text("""
+        WITH latest_record AS (
+            SELECT MAX(date) AS latest_date
+            FROM trading_data
+            WHERE ticker = %(ticker)s
+        )
+        SELECT
+            td.ticker,
+            td.date AS trading_date,
+            td.open,
+            td.high,
+            td.low,
+            td.close,
+            td.volume
+        FROM trading_data AS td
+        CROSS JOIN latest_record
+        WHERE td.ticker = %(ticker)s
+          AND td.date BETWEEN latest_record.latest_date - (
+              CASE %(range_unit)s
+                  WHEN 'days' THEN %(range_value)s * INTERVAL '1 day'
+                  WHEN 'months' THEN %(range_value)s * INTERVAL '1 month'
+                  WHEN 'years' THEN %(range_value)s * INTERVAL '1 year'
+              END
+          ) AND latest_record.latest_date
+        ORDER BY td.date ASC
+    """)
+    params = {
+        "ticker": values["ticker"],
+        "range_value": values["range_value"],
+        "range_unit": values["range_unit"],
+    }
+
+    conn = engine.raw_connection()
+    try:
+        # Raw connections require the SQL text string for pandas compatibility.
+        return pd.read_sql(query.text, conn, params=params)
+    finally:
+        conn.close()
+
+
+def format_export_dataframe(df, include_percentage_change, include_ohlc_volume=False):
+    """Build stable export columns and convert stored prices to display scale."""
+    source_columns = ["ticker", "trading_date", "close"]
+    columns = ["ticker", "trading_date"]
+    if include_ohlc_volume:
+        source_columns = [
+            "ticker",
+            "trading_date",
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume",
+        ]
+        columns.extend(
+            [
+                "open_price",
+                "high_price",
+                "low_price",
+                "close_price",
+                "trading_volume",
+            ]
+        )
+    else:
+        columns.append("close_price")
+    if include_percentage_change:
+        columns.append("percentage_change")
+
+    if df.empty:
+        return pd.DataFrame(columns=columns)
+
+    export_df = (
+        df[source_columns]
+        .copy()
+        .sort_values("trading_date")
+        .reset_index(drop=True)
+    )
+
+    for price_column in ("open", "high", "low", "close"):
+        if price_column in export_df:
+            price_values = export_df.pop(price_column)
+            if not include_ohlc_volume:
+                price_values = pd.to_numeric(price_values) / 1000
+            export_df[f"{price_column}_price"] = price_values
+    if "volume" in export_df:
+        export_df["trading_volume"] = export_df.pop("volume")
+
+    if include_percentage_change:
+        # Chronological order makes first row intentionally have no prior value.
+        export_df["percentage_change"] = export_df["close_price"].pct_change().mul(100).round(2)
+
+    return export_df[columns]
+
+
+def build_export_filename(ticker, range_value, range_unit):
+    """Return deterministic CSV name for one export request."""
+    return f"{ticker}_{range_value}_{range_unit}_price_history.csv"
+
+
+def get_export_form_container():
+    """Use Streamlit's native expander for accessible form collapse/expand."""
+    return st.expander(EXPORT_FORM_LABEL, expanded=True)
+
+
 # Function to analyze price movements
 def analyze_price_movement(ticker, validation_days, result_days, delta_target, engine):
     if validation_days < 2:
@@ -310,6 +455,75 @@ def analyze_page(engine):
             validation_days = st.number_input("Validation Day Range", min_value=2, value=5, step=1)
         with col3:
             result_days = st.number_input("Result Day Range", min_value=1, value=10, step=1)
+
+        st.session_state.setdefault(EXPORT_VISIBLE_KEY, False)
+        st.session_state.setdefault(EXPORT_CSV_KEY, None)
+        st.session_state.setdefault(EXPORT_FILENAME_KEY, None)
+
+        if st.button("Export", key="analyze_export_button"):
+            st.session_state[EXPORT_VISIBLE_KEY] = True
+            st.session_state[EXPORT_CSV_KEY] = None
+            st.session_state[EXPORT_FILENAME_KEY] = None
+
+        if st.session_state[EXPORT_VISIBLE_KEY]:
+            with get_export_form_container():
+                with st.form("analyze_export_form"):
+                    export_ticker = st.text_input("Export Ticker Code", value=ticker)
+                    export_range = st.number_input(
+                        "Export Time Range", min_value=1, value=30, step=1
+                    )
+                    export_unit = st.selectbox("Export Time Unit", EXPORT_RANGE_UNITS)
+                    include_percentage_change = st.checkbox("Include Percentage Change")
+                    include_ohlc_volume = st.checkbox(
+                        "Include OHLC Prices and Trading Volume"
+                    )
+                    export_submitted = st.form_submit_button("Prepare CSV")
+
+            if export_submitted:
+                st.session_state[EXPORT_CSV_KEY] = None
+                st.session_state[EXPORT_FILENAME_KEY] = None
+                try:
+                    export_values, export_error = validate_export_inputs(
+                        export_ticker, export_range, export_unit
+                    )
+                    if export_error:
+                        st.error(export_error)
+                    else:
+                        history_df = fetch_export_history(
+                            export_values["ticker"],
+                            export_values["range_value"],
+                            export_values["range_unit"],
+                            engine,
+                        )
+                        export_df = format_export_dataframe(
+                            history_df,
+                            include_percentage_change,
+                            include_ohlc_volume,
+                        )
+                        if export_df.empty:
+                            st.warning("No trading history found for the requested range.")
+                        else:
+                            st.session_state[EXPORT_CSV_KEY] = export_df.to_csv(
+                                index=False
+                            ).encode("utf-8")
+                            st.session_state[EXPORT_FILENAME_KEY] = build_export_filename(
+                                export_values["ticker"],
+                                export_values["range_value"],
+                                export_values["range_unit"],
+                            )
+                except ValueError as exc:
+                    st.error(str(exc))
+                except Exception:
+                    st.error("Unable to export price history. Please try again later.")
+
+            if st.session_state[EXPORT_CSV_KEY]:
+                st.download_button(
+                    "Download CSV",
+                    data=st.session_state[EXPORT_CSV_KEY],
+                    file_name=st.session_state[EXPORT_FILENAME_KEY],
+                    mime="text/csv",
+                    key="analyze_export_download",
+                )
         
         if st.button("Analyze"):
             ticker = ticker.upper()

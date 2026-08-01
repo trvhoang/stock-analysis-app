@@ -38,7 +38,8 @@ services:
       - "${API_PORT:-3500}:3500"  # ✅ FastAPI port (if you're using it)
     volumes:
       # ⚠️ Development mode: live code reload
-      - ../app:/app:ro  # :ro = read-only for security
+      - ../app:/app
+      - ../tests:/app/tests
       - ../data:/data
       # ✅ Cache directories for better performance
       - app-cache:/home/appuser/.cache

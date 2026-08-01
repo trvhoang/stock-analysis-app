@@ -1,35 +1,47 @@
 ----
 ----
 # FOCUS.md
-# Updated: 2024-05-24
+# Updated: 2026-08-01
 
 ## Task
-[feature] — Enhance Suggestion Page logic with technical scores and multi-criteria sorting.
+[enhancement] - Add optional OHLC and trading-volume export fields.
 Source: WIP from current-status.md
 
 ## Target Files
-app/pages/suggestion_visualization.py  ← (Completed) Update filtering logic and implement 3-tier sorting.
-app/commons/common_functions.py  ← (Completed) Verify technical trend/score consistency for batch processing.
+app/pages/analyze_visualization.py - Export form checkbox and export-column handling.
+tests/ - Tests for optional OHLC/volume columns and preserved export options.
 
 ## Out of Scope
-app/common_queries.py  ← Boundaried file; do not modify.
+app/common_queries.py - Boundaried file; do not modify.
+Price storage and ingestion scaling - Preserve BIGINT values stored as price x 1000.
+Export form required state - Keep ticker, export time range, and export time unit required.
+Percentage change - Keep optional and unchanged.
+Portfolio, Suggestion, Technical Analyze, and API export flows - Not requested.
 
 ## Task-Specific Rules
-- Dual Filter: Statistical Trend must align with Technical Trend (e.g., both must be 'Up' for "Top 5 Up" categories).
-- Sort Priority (Descending): 1. Primary Metric (Possibility or Delta), 2. Total Signals count, 3. Exchange Priority (HSX > HNX > UPCOM).
-- BIGINT prices: Must be handled via the standard scale (Value / 1000) for display.
+- Add one optional checkbox for full OHLC prices and trading volume.
+- Keep required fields: ticker, export time range, and export time unit.
+- Keep percentage change optional.
+- Include OHLC and volume only when checkbox selected; preserve current default columns otherwise.
+- Keep optional OHLC values in original BIGINT storage units; do not divide them by 1000.
+- Preserve existing default close-price export scaling by dividing close by 1000.
+- Preserve export form collapse/expand behavior, validation, query range, filename, and download flow.
+- Use existing dependencies and patterns; add no new dependency.
 
 ## Acceptance Criteria
-- [x] "Top 5" categories only include tickers where statistical and technical trends match.
-- [x] Sorting logic correctly implements the descending hierarchy (Metric -> Signals -> Exchange).
-- [x] Technical scores and trends are accurately accounted for in the suggestion generation.
+- [x] Optional checkbox appears in the export form.
+- [x] Default export columns remain ticker, trading date, close price, and optional percentage change.
+- [x] Checkbox adds open, high, low, close, and trading volume columns.
+- [x] Optional OHLC values remain raw/original BIGINT storage values.
+- [x] Required fields remain required; percentage change remains optional.
+- [x] Existing collapse/expand, validation, query, filename, and download behavior remains unchanged.
+- [x] Tests cover both checkbox states and output scaling/columns.
 
 ## Skill to Load
-@ai-skills/skill-analyze-wip.md → Session start — WIP analysis
+`ai-skills/skill-implementation-review.md` after implementation.
 
 ## Stopping Point
-Last completed: Implemented Dual Filter (Stat + Tech trend alignment) and 3-tier descending sort for the Suggestion Page.
-Next action: Monitor performance and user feedback on suggestion quality.
-Blocker: None
+Last completed: Added optional full OHLC and trading-volume export fields; 20 tests pass.
+Next action: Await next prioritized task.
 ----
 ----

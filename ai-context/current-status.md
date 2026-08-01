@@ -119,10 +119,15 @@ This document provides a snapshot of the project's current state, including fini
     - **Root Cause:** The `calculate_ma_cross` function incorrectly coupled the trend logic for MA spread and MA cross events, leading to inconsistent trend assignments.
     - **Fix:** Refactored the logic into two separate functions: `calculate_ma_trend` (for spread/reversal) and `calculate_ma_cross_trend` (for events). Both "Ticker Analyze" and "Portfolio Analyze" were updated to call these distinct functions, ensuring consistent and correct trend calculation for each indicator.
 - **Enhance logic of Suggestion Page**: Implemented the filtering and multi-tier sorting logic for the Suggestion Page, combining statistical probabilities with technical scores and exchange-based priorities (HSX > HNX > UPCOM).
+- **Implement Suggestion API:** Created a new FastAPI endpoint (`GET /api/suggestions`) to provide market-wide ticker suggestions. Supported top 5 categories by probability and delta with default parameter handling and structured JSON output.
+- **Implement Analyze Page Export Function:** Added hidden-by-default export form, validated ticker/range inputs, bounded parameterized history query, BIGINT price scaling, optional percentage change, safe feedback, deterministic CSV filename, and focused unit tests. Verified with 18 passing tests; live PostgreSQL verification remains pending because Docker daemon is unavailable.
+- **Enhance Analyze Page Export Form:** Added native Streamlit collapse/expand control around the export form without changing export behavior. Focused and full unittest suites pass (10 and 19 tests).
+- **Enhance Analyze Page Export Data:** Added optional full OHLC prices and trading-volume columns while preserving required ticker/range/unit fields and optional percentage change. Optional OHLC values remain original BIGINT storage values; default close-price export remains display-scaled. Full unittest suite passes (20 tests).
 ## 2. Work In Progress (WIP)
-- **Implement Suggestion API:** Create a new API endpoint to provide market-wide ticker suggestions.
-  - Default parameters: `day_range=5`, `result_day_range=5`, `min_avg_volume=1000000`, `year_gap=1`.
-  - Response requirements: Top 5 Tickers by Possibility of Up (ticker, possibility_up, total_signals) and Top 5 Tickers by Delta of Up (ticker, max_up_delta, total_signals).
+- **Implement Comprehensive Unit Testing (Priority 2):**
+  - Use `unittest` to implement unit tests for all functions inside the project.
+  - List out all functions (Completed).
+  - Start implementing tests 1-by-1.
 - **Implement Remaining Technical Indicators:**
   - Implement Bollinger Bands logic and visualization.
   - Implement Ichimoku Cloud (9, 26, 52, 26, 26) logic and visualization.
@@ -130,10 +135,10 @@ This document provides a snapshot of the project's current state, including fini
 *No known issues at this time.*
 
 ## 4. Next Steps & Priorities
-1.  **Implement Suggestion API:** Create a new FastAPI endpoint for market-wide high-probability ticker suggestions.
-2.  **Implement Bollinger Bands:** Add calculation logic and visualization for Bollinger Bands (20, 2) to the Technical Analyze and Analyze pages.
+1.  **Comprehensive Unit Testing:** Implement `unittest` suites for all modules, starting with `commons/`; include export tests when the feature is added.
+2.  **Implement Bollinger Bands:** Add calculation logic and visualization for Bollinger Bands (20, 2).
 3.  **Implement Ichimoku Cloud:** Add calculation logic and visualization for Ichimoku Cloud (9, 26, 52, 26, 26).
-4.  **Define explanation of Final advice:** (Lowest Priority) Define the logic to generate a detailed explanation for the Final Advice (currently a placeholder).
+4.  **Define explanation of Final advice:** (Lowest Priority).
 
 ---
-*Last Updated: 2024-05-28 (Enhanced Suggestion Page logic)*
+*Last Updated: 2026-08-01 (OHLC/volume export enhancement complete)*

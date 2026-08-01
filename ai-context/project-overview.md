@@ -44,6 +44,7 @@ The application's workflow is divided into distinct pages, each serving a specif
 
 ### External API
 
-The application includes a REST API (FastAPI) that allows external systems to consume the analysis logic.
-*   **Ticker Analysis:** Provides JSON-formatted statistical and technical advice for any ticker.
+The application includes a REST API (FastAPI) for programmatic access to analysis and data management.
+*   **Ticker Analysis:** Provides detailed statistical and technical advice for specific symbols.
+*   **Market Suggestions:** Returns ranked lists of high-probability tickers based on current market signals.
 *   **Programmatic Control:** Endpoints to trigger data updates and maintenance tasks.
