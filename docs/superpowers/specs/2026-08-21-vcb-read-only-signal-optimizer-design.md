@@ -84,7 +84,10 @@ fully eligible candidate, report no winner and the rejection funnel.
 
 ## Report Contract
 
-Write one Markdown file under `docs/superpowers/reports/`. It contains:
+Emit one Markdown document to standard output. The documented host PowerShell
+command redirects it to `docs/superpowers/reports/`; the container cannot write
+that directory because Docker mounts only `app/`, `tests/`, and `data/`.
+The document contains:
 
 - run scope, in-sample warning, source bounds, raw row counts, and VCB audit;
 - fixed execution and statistical settings;
@@ -104,8 +107,9 @@ or add mutable paths to `RulebookSpec`, `BacktestConfig`, current pipeline,
 or persistence.
 
 The execution entry point is an explicit manual research command, not a
-Streamlit action or background job. It performs DB reads and writes only its
-named Markdown report.
+Streamlit action or background job. It performs DB reads and emits Markdown to
+standard output; host-side redirection writes the named report. No Docker or
+application filesystem mount changes are required.
 
 ## Test Contract
 
@@ -116,5 +120,6 @@ named Markdown report.
 - DSR family includes every same-horizon `n >= 5` candidate before statistical
   filtering and never mixes horizons;
 - exact unrounded ties are retained and multi-metric winners consolidate;
-- report records eligible and rejected candidates plus in-sample warning; and
+- report output records eligible and rejected candidates plus in-sample warning;
+- optimizer code performs no filesystem write; and
 - canonical V3 configs, artifacts, jobs, and DB writers are not called.
