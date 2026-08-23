@@ -1,0 +1,59 @@
+{
+  "audit_eligibility": {
+    "eligible": true,
+    "reasons": [],
+    "status": "clean"
+  },
+  "certified_at": "2026-08-14T22:29:58.056513+07:00",
+  "empty": false,
+  "schema_version": 2,
+  "signal_sets": [
+    {
+      "combo": {
+        "adx_gate_mode": "hard",
+        "direction": "long",
+        "horizon": "swing",
+        "indicators": {
+          "momentum": [
+            "RSI"
+          ],
+          "trend_direction": [
+            "MA cross"
+          ],
+          "volume": [
+            "OBV"
+          ]
+        },
+        "strategy_id": "ma_cross_rsi_obv",
+        "theme_mode": "AND",
+        "theme_variant": "background-theme",
+        "threshold_score_buy": 60
+      },
+      "date_range": [
+        "2011-08-15",
+        "2026-08-14"
+      ],
+      "deflated_sharpe": 0.987944,
+      "direction": "long",
+      "horizon": "swing",
+      "metrics": [
+        "win_rate",
+        "profit",
+        "sharpe"
+      ],
+      "n": 135,
+      "p_value": 0.002997,
+      "profit": 136.6478,
+      "sharpe": 0.230716,
+      "theme_mode": "AND",
+      "theme_variant": "background-theme",
+      "vnindex_condition": {
+        "mode": "AND",
+        "rule": "VN-Index close > SMA(50) (daily)"
+      },
+      "win_rate": 51.851852
+    }
+  ],
+  "theme_variant": "background-theme",
+  "ticker": "VCB"
+}

@@ -1,0 +1,25 @@
+{
+  "history": [
+    {
+      "actual_buy_price": 45000,
+      "actual_sell_price": null,
+      "buy_date": "2026-08-16",
+      "certified_signal": null,
+      "closed_at": null,
+      "entry_context": null,
+      "id": "931ae3ca9ff943b9b68c3ae3226a1d6f",
+      "opened_at": "2026-08-16T13:23:28.092964+07:00",
+      "origin": "current_positions",
+      "quantity": 2000,
+      "risk_snapshot": null,
+      "risk_suggestion_text": "Swing: 50.0% - medium\nMid-term: 75.0% - high",
+      "sell_date": null,
+      "sell_reason": null,
+      "signal_reference": null,
+      "status": "open",
+      "ticker": "TCB"
+    }
+  ],
+  "schema_version": 1,
+  "ticker": "TCB"
+}

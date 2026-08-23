@@ -1,0 +1,104 @@
+{
+  "audit_eligibility": {
+    "eligible": false,
+    "reasons": [
+      "OHLC ordering mismatch 1.03% exceeds 1.00%"
+    ],
+    "status": "invalid"
+  },
+  "certified_at": "2026-08-14T22:30:50.162166+07:00",
+  "empty": false,
+  "schema_version": 2,
+  "signal_sets": [
+    {
+      "combo": {
+        "adx_gate_mode": "hard",
+        "direction": "long",
+        "horizon": "swing",
+        "indicators": {
+          "momentum": [
+            "RSI"
+          ],
+          "trend_direction": [
+            "MA cross",
+            "Williams Alligator"
+          ],
+          "volume": [
+            "OBV"
+          ]
+        },
+        "strategy_id": "consensus_rsi_obv",
+        "theme_mode": "AND",
+        "theme_variant": "background-theme",
+        "threshold_score_buy": 60
+      },
+      "date_range": [
+        "2011-08-15",
+        "2026-08-14"
+      ],
+      "deflated_sharpe": 0.995481,
+      "direction": "long",
+      "horizon": "swing",
+      "metrics": [
+        "win_rate",
+        "sharpe"
+      ],
+      "n": 112,
+      "p_value": 0.016983,
+      "profit": 162.9641,
+      "sharpe": 0.271481,
+      "theme_mode": "AND",
+      "theme_variant": "background-theme",
+      "vnindex_condition": {
+        "mode": "AND",
+        "rule": "VN-Index close > SMA(50) (daily)"
+      },
+      "win_rate": 51.785714
+    },
+    {
+      "combo": {
+        "adx_gate_mode": "hard",
+        "direction": "long",
+        "horizon": "swing",
+        "indicators": {
+          "momentum": [
+            "RSI"
+          ],
+          "trend_direction": [
+            "Williams Alligator"
+          ],
+          "volume": [
+            "OBV"
+          ]
+        },
+        "strategy_id": "alligator_rsi_obv",
+        "theme_mode": "AND",
+        "theme_variant": "background-theme",
+        "threshold_score_buy": 60
+      },
+      "date_range": [
+        "2011-08-15",
+        "2026-08-14"
+      ],
+      "deflated_sharpe": 0.992695,
+      "direction": "long",
+      "horizon": "swing",
+      "metrics": [
+        "profit"
+      ],
+      "n": 126,
+      "p_value": 0.005994,
+      "profit": 165.2758,
+      "sharpe": 0.240694,
+      "theme_mode": "AND",
+      "theme_variant": "background-theme",
+      "vnindex_condition": {
+        "mode": "AND",
+        "rule": "VN-Index close > SMA(50) (daily)"
+      },
+      "win_rate": 50.793651
+    }
+  ],
+  "theme_variant": "background-theme",
+  "ticker": "STB"
+}

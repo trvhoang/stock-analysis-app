@@ -83,7 +83,7 @@ class TestAnalyzeExport(unittest.TestCase):
 
         engine.raw_connection.return_value.close.assert_called_once_with()
 
-    def test_format_export_dataframe_scales_close_and_calculates_change(self):
+    def test_format_export_dataframe_keeps_raw_close_and_calculates_change(self):
         source = pd.DataFrame(
             {
                 "ticker": ["FPT", "FPT"],
@@ -98,7 +98,7 @@ class TestAnalyzeExport(unittest.TestCase):
             list(result.columns),
             ["ticker", "trading_date", "close_price", "percentage_change"],
         )
-        self.assertEqual(result["close_price"].tolist(), [100.0, 110.0])
+        self.assertEqual(result["close_price"].tolist(), [100000, 110000])
         self.assertTrue(pd.isna(result.loc[0, "percentage_change"]))
         self.assertEqual(result.loc[1, "percentage_change"], 10.0)
 

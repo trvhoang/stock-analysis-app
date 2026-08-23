@@ -11,14 +11,91 @@ from commons.common_functions import (
 from commons.technical_analysis import (
     fetch_data, calculate_stochastic, calculate_rsi, calculate_ma_cross, 
     calculate_ma_trend, calculate_ma_cross_trend, 
-    calculate_stochastic_trend, calculate_rsi_trend
+    calculate_stochastic_trend, calculate_rsi_trend,
+    calculate_dimension_technical_score, calculate_adx, get_latest_adx_value,
 )
+from commons.price_utils import PRICE_OUTPUT_EXPORT, prepare_price_for_output
 
 EXPORT_RANGE_UNITS = ("days", "months", "years")
 EXPORT_VISIBLE_KEY = "analyze_export_visible"
 EXPORT_CSV_KEY = "analyze_export_csv"
 EXPORT_FILENAME_KEY = "analyze_export_filename"
 EXPORT_FORM_LABEL = "Export form"
+
+
+def build_historical_context_query():
+    """Return the full-history query with raw-connection bindings."""
+    query = text("""
+        SELECT date, open, high, low, close, volume
+        FROM trading_data
+        WHERE ticker = :ticker
+        ORDER BY date ASC
+    """)
+    return str(query).replace(":ticker", "%(ticker)s")
+
+
+def build_historical_technical_score_table(df_full, short_ma, long_ma):
+    """Precompute as-of historical scores once for binary-search lookups.
+
+    Indicator values are calculated on the complete chronological frame, then
+    each row's score is derived from only the bounded context required by the
+    existing classifiers. This preserves historical output while avoiding a
+    full ``df_full.iloc[:idx + 1]`` scan for every signal event.
+    """
+    working_df = df_full.copy()
+    score_name = "Technical score"
+    if working_df.empty:
+        return pd.Series(dtype=float, index=working_df.index, name=score_name)
+
+    working_df, _ = calculate_stochastic(working_df)
+    working_df, _ = calculate_rsi(working_df, length=14)
+    working_df = calculate_ma_cross(working_df, [(short_ma, long_ma)])
+    short_col = f"SMA_{short_ma}"
+    long_col = f"SMA_{long_ma}"
+    cross_col = f"cross_{short_ma}_{long_ma}"
+    scores = []
+    recent_crosses = []
+
+    for index in range(len(working_df)):
+        signal = working_df[cross_col].iloc[index]
+        if signal in (1, -1):
+            recent_crosses = (recent_crosses + [int(signal)])[-3:]
+
+        # Keep the existing minimum-history behavior and still collect cross
+        # events above so later rows see the same historical event sequence.
+        if index < 10:
+            scores.append(None)
+            continue
+
+        # RSI reads at most 30 rows; MA reversal reads at most 4 rows. The
+        # Stochastic classifier's non-neutral branches depend only on its
+        # latest values; its aggregate branch also returns Sideways, so one
+        # current row preserves the existing final classification.
+        stoch_context = working_df.iloc[index:index + 1]
+        rsi_context = working_df.iloc[max(0, index - 29):index + 1]
+        ma_context = working_df.iloc[max(0, index - 3):index + 1]
+        cross_context = pd.DataFrame({cross_col: recent_crosses})
+        trends = [
+            calculate_stochastic_trend(stoch_context),
+            calculate_rsi_trend(rsi_context),
+            calculate_ma_trend(ma_context, short_col, long_col),
+            calculate_ma_cross_trend(cross_context, cross_col),
+        ]
+        trend_points = {
+            "Strong Up": 4,
+            "Overbought (Up)": 4,
+            "Up": 3,
+            "Sideways": 2,
+            "Unknown": 2,
+            "None": 2,
+            "Down": 1,
+            "Strong Down": 0,
+            "Oversold (Down)": 0,
+        }
+        total_points = sum(trend_points.get(trend, 2) for trend in trends)
+        scores.append(round((total_points / 16) * 100, 2))
+
+    return pd.Series(scores, index=working_df.index, name=score_name)
 
 
 def validate_export_inputs(ticker, range_value, range_unit):
@@ -96,7 +173,7 @@ def fetch_export_history(ticker, range_value, range_unit, engine):
 
 
 def format_export_dataframe(df, include_percentage_change, include_ohlc_volume=False):
-    """Build stable export columns and convert stored prices to display scale."""
+    """Build stable export columns while preserving stored price values."""
     source_columns = ["ticker", "trading_date", "close"]
     columns = ["ticker", "trading_date"]
     if include_ohlc_volume:
@@ -136,8 +213,9 @@ def format_export_dataframe(df, include_percentage_change, include_ohlc_volume=F
     for price_column in ("open", "high", "low", "close"):
         if price_column in export_df:
             price_values = export_df.pop(price_column)
-            if not include_ohlc_volume:
-                price_values = pd.to_numeric(price_values) / 1000
+            price_values = prepare_price_for_output(
+                price_values, PRICE_OUTPUT_EXPORT
+            )
             export_df[f"{price_column}_price"] = price_values
     if "volume" in export_df:
         export_df["trading_volume"] = export_df.pop("volume")
@@ -223,6 +301,20 @@ def analyze_price_movement(ticker, validation_days, result_days, delta_target, e
     
     return df
 
+def _classify_statistical_trend(possibility_up, possibility_down):
+    """Classify directional evidence without treating no-change as bearish."""
+    if possibility_up > 70:
+        return "Strong Up"
+    if 53 <= possibility_up <= 70:
+        return "Up"
+    if possibility_down > 70:
+        return "Strong Down"
+    if 53 <= possibility_down <= 70:
+        return "Down"
+    # Down uses direct possibility_down evidence, not low possibility_up.
+    return "Sideways"
+
+
 # Function to provide advice with three options
 def provide_advice(validation_days, result_days, analysis_results):
     # analysis_results is the dictionary from analyze_ticker
@@ -232,19 +324,10 @@ def provide_advice(validation_days, result_days, analysis_results):
 
     latest_delta = analysis_results["current_delta"]
     up_prob = analysis_results["possibility_up"]
-    
-    # New logic based on up_prob thresholds
-    # Determine the trend key first, then map to emoji
-    if up_prob > 70:
-        trend = "Strong Up"
-    elif 53 <= up_prob <= 70:
-        trend = "Up"
-    elif 48 <= up_prob < 53:
-        trend = "Sideways"
-    elif 30 <= up_prob < 48:
-        trend = "Down"
-    else: # up_prob <= 30
-        trend = "Strong Down"
+    down_prob = analysis_results["possibility_down"]
+
+    # Determine the trend key first, then map to emoji.
+    trend = _classify_statistical_trend(up_prob, down_prob)
     
     emoji = TREND_EMOJIS.get(trend, "")
     prediction = f"{trend} {emoji}"
@@ -253,40 +336,16 @@ def provide_advice(validation_days, result_days, analysis_results):
     return f"Based on historical data, after a {validation_days}-day delta of {latest_delta:.2f}%, the stock is more likely to go **{prediction}** in the next {result_days} days.", trend
 
 # Helper to generate technical advice based on indicator scores
-def generate_technical_advice(tech_data):
+def generate_technical_advice(tech_data, adx_value=None):
     if not tech_data:
         return "Not enough data to generate technical advice.", "Unknown", 0
 
-    total_score = 0
-    count = 0
-    
-    # Mapping trend strings to points (0-4 scale)
-    # 4: Strong Bullish (Strong Up, Overbought (Up))
-    # 3: Bullish (Up)
-    # 2: Neutral (Sideways, Unknown)
-    # 1: Bearish (Down)
-    # 0: Strong Bearish (Strong Down, Oversold (Down))
-    trend_map = {
-        "Strong Up": 4, "Overbought (Up)": 4,
-        "Up": 3,
-        "Sideways": 2, "Unknown": 2, "None": 2,
-        "Down": 1,
-        "Strong Down": 0, "Oversold (Down)": 0
-    }
-
-    for item in tech_data:
-        # item structure: [index, Name, Value, Trend]
-        trend = item[3]
-        score = trend_map.get(trend, 2) # Default to 2 (Sideways) if unknown
-        total_score += score
-        count += 1
-    
+    percentage, _, count = calculate_dimension_technical_score(
+        tech_data, adx_value=adx_value
+    )
     if count == 0:
         return "No valid indicators found.", "Unknown", 0
 
-    max_points = count * 4
-    percentage = (total_score / max_points) * 100
-    
     # Determine advice based on percentage thresholds
     # Use standard keys to fetch emojis later
     if percentage > 70: trend = "Strong Up"
@@ -385,46 +444,16 @@ def analyze_portfolio_ticker(ticker, validation_days, result_days, engine):
              # For down, show max (least negative) -> median -> min (most negative)
              delta_str = f"{stats_res['max_down_delta']:.2f} {stats_res['median_down_delta']:.2f} {stats_res['min_down_delta']:.2f} (down)"
 
-    # 2. Technical Analysis
-    if validation_days <= 5:
-        tech_timeframe = 'Day'
-        short_ma, long_ma = 5, 10
-    else:
-        tech_timeframe = 'Week'
-        short_ma, long_ma = 4, 12
-        
-    df_tech = fetch_data(ticker, tech_timeframe, 100, engine)
-    tech_data = []
-    
-    if not df_tech.empty:
-        # Stochastic
-        # Use the same robust check as the Ticker Analyze tab
-        df_tech, stoch_trend = calculate_stochastic(df_tech)
-        if '%K' in df_tech.columns and '%D' in df_tech.columns:
-            tech_data.append([0, "Stochastic", "", stoch_trend])
-        
-        # RSI
-        df_tech, rsi_trend = calculate_rsi(df_tech, length=14)
-        if 'RSI_14' in df_tech.columns:
-            tech_data.append([1, "RSI14", "", rsi_trend])
-            
-        # MA & Cross
-        df_tech = calculate_ma_cross(df_tech, [(short_ma, long_ma)])
-        short_col = f'SMA_{short_ma}'
-        long_col = f'SMA_{long_ma}'
-        signal_col = f'cross_{short_ma}_{long_ma}'
-
-        if short_col in df_tech.columns and long_col in df_tech.columns:
-            ma_spread_trend = calculate_ma_trend(df_tech, short_col, long_col)
-            tech_data.append([2, "MA", "", ma_spread_trend])
-
-        # The MA Cross signal is now checked separately for robustness
-        if signal_col in df_tech.columns:
-            ma_cross_event_trend = calculate_ma_cross_trend(df_tech, signal_col)
-            tech_data.append([3, "MA cross", "", ma_cross_event_trend]) 
+    # 2. Reuse the current technical snapshot produced by analyze_ticker.
+    # This keeps portfolio analysis bounded to one technical fetch/calculation
+    # per ticker while preserving the existing output columns and score keys.
+    tech_data = stats_res.get("technical_signals", [])
+    adx_value = stats_res.get("technical_adx_value")
 
     # Generate Score
-    _, tech_trend_key, tech_score = generate_technical_advice(tech_data)
+    _, tech_trend_key, tech_score = generate_technical_advice(
+        tech_data, adx_value=adx_value
+    )
     
     # Map tech trend key to lowercase for display consistency
     tech_trend_display = tech_trend_key.lower() if tech_trend_key != "Unknown" else "unknown"
@@ -607,7 +636,7 @@ def analyze_page(engine):
                 
                 # Fetch full data for technical context in one go for efficiency
                 with st.spinner("Calculating historical technical scores..."):
-                    query_all = "SELECT date, open, high, low, close, volume FROM trading_data WHERE ticker = %(ticker)s ORDER BY date ASC"
+                    query_all = build_historical_context_query()
                     conn = engine.raw_connection()
                     try:
                         df_full = pd.read_sql(query_all, conn, params={"ticker": ticker.upper()})
@@ -620,10 +649,14 @@ def analyze_page(engine):
                         if tech_timeframe == 'Week':
                             df_full = df_full.set_index('date').resample('W').agg({'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last', 'volume': 'sum'}).dropna().reset_index()
                         
-                        # Pre-calculate indicators for the entire historical dataframe
-                        df_full, _ = calculate_stochastic(df_full)
-                        df_full, _ = calculate_rsi(df_full, length=14)
-                        df_full = calculate_ma_cross(df_full, [(s_ma, l_ma)])
+                        # Precompute each as-of score once. Event dates below
+                        # use binary-search lookups instead of rescanning a
+                        # growing historical prefix for every event.
+                        historical_scores = build_historical_technical_score_table(
+                            df_full,
+                            s_ma,
+                            l_ma,
+                        )
                         
                         def score_point(target_date):
                             target_dt = pd.to_datetime(target_date)
@@ -633,17 +666,10 @@ def analyze_page(engine):
                             
                             # Lower threshold from 30 to 10 to provide scores for earlier historical points.
                             if idx < 10: return None
-                            
-                            # Analyze trend at that point in history using indicator-specific logic
-                            sub_df = df_full.iloc[:idx+1]
-                            trends = [calculate_stochastic_trend(sub_df), calculate_rsi_trend(sub_df), 
-                                     calculate_ma_trend(sub_df, f'SMA_{s_ma}', f'SMA_{l_ma}'), 
-                                     calculate_ma_cross_trend(sub_df, f'cross_{s_ma}_{l_ma}')]
-                            
-                            # Map trends to score: 4=Strong/Up, 2=Neutral, 0=Weak/Down
-                            t_map = {"Strong Up": 4, "Overbought (Up)": 4, "Up": 3, "Sideways": 2, "Unknown": 2, "None": 2, "Down": 1, "Strong Down": 0, "Oversold (Down)": 0}
-                            total_pts = sum(t_map.get(t, 2) for t in trends)
-                            return round((total_pts / 16) * 100, 2) # Percent score across 4 indicators (max 16 pts)
+                            if idx >= len(historical_scores):
+                                return None
+                            value = historical_scores.iloc[idx]
+                            return None if pd.isna(value) else value
 
                         # Identify the result category with the highest frequency (Up, Down, or No Change)
                         # to focus the historical technical context analysis on the most likely outcome,
@@ -690,71 +716,43 @@ def analyze_page(engine):
             # --- 3.1 Technical Report ---
             st.subheader("Technical Report")
             
-            # Initialize tech_data list
-            tech_data = []
-            
-            # Logic for Timeframe and MA Pair selection based on validation_days
-            # If looking at short term (<15 days), use Daily data and 5-10 MA
-            # If looking at longer term (>5 days), use Weekly data and 4-12 MA
-            if validation_days < 15:
-                tech_timeframe = 'Day'
-                short_ma, long_ma = 5, 10
-            else:
-                tech_timeframe = 'Week'
-                short_ma, long_ma = 4, 12
-            
-            # Fetch data for technical analysis (default lookback 100 as per requirement)
-            # This ensures we have enough history for accurate indicator calculation
-            df_tech = fetch_data(ticker, tech_timeframe, 100, engine)
-            
-            if not df_tech.empty:
-                # 1. Stochastic Calculation
-                df_tech, stoch_trend = calculate_stochastic(df_tech)
-                if '%K' in df_tech.columns and '%D' in df_tech.columns:
-                    k_val = df_tech['%K'].iloc[-1]
-                    d_val = df_tech['%D'].iloc[-1]
-                    tech_data.append([0, "Stochastic", f"%K: {k_val:.1f} - %D: {d_val:.1f}", stoch_trend])
-                
-                # 2. RSI Calculation
-                df_tech, rsi_trend = calculate_rsi(df_tech, length=14)
-                if 'RSI_14' in df_tech.columns:
-                    rsi_val = df_tech['RSI_14'].iloc[-1]
-                    tech_data.append([1, "RSI14", f"{rsi_val:.1f}", rsi_trend])
-                
-                # 3. MA Calculation
-                df_tech = calculate_ma_cross(df_tech, [(short_ma, long_ma)])
-                short_col = f'SMA_{short_ma}'
-                long_col = f'SMA_{long_ma}'
-                
-                if short_col in df_tech.columns and long_col in df_tech.columns:
-                    s_val = df_tech[short_col].iloc[-1]
-                    l_val = df_tech[long_col].iloc[-1]
-                    # Get trend based on spread/reversal
-                    ma_spread_trend = calculate_ma_trend(df_tech, short_col, long_col)
-                    tech_data.append([2, "MA", f"SMA_{short_ma}: {s_val:.1f} - SMA_{long_ma}: {l_val:.1f}", ma_spread_trend])
-                
-                # 4. MA Cross Calculation
-                # Check for recent cross events (Golden/Death)
-                signal_col = f'cross_{short_ma}_{long_ma}'
-                if signal_col in df_tech.columns:
-                    # Get trend based on cross events
-                    ma_cross_event_trend = calculate_ma_cross_trend(df_tech, signal_col)
+            # analyze_ticker owns the single current snapshot. The report is
+            # display-ready and includes all eight indicators, including ADX
+            # as a gate-only record rather than a score vote.
+            tech_data = analysis_results.get("technical_signals", [])
+            technical_report = analysis_results.get("technical_report", [])
+            adx_value = analysis_results.get("technical_adx_value")
 
-                    # Get last 3 non-zero signals to show history
-                    recent_signals = df_tech[df_tech[signal_col] != 0][signal_col].tail(3).tolist()
-                    # Map 1/-1 to Golden/Death for readability
-                    signal_map = {1: "Golden", -1: "Death"}
-                    signal_str = " - ".join([signal_map.get(s, "") for s in recent_signals]) if recent_signals else "None"
-                    tech_data.append([3, "MA cross", signal_str, ma_cross_event_trend])
-            
-            if tech_data:
-                df_tech_report = pd.DataFrame(tech_data, columns=["#", "Indicator name", "value", "trend"])
-                st.dataframe(df_tech_report, use_container_width=True, hide_index=True)
-            elif not tech_data and df_tech.empty:
-                st.info(f"Not enough data to generate Technical Report for timeframe {tech_timeframe}.")
+            if technical_report:
+                report_rows = [
+                    {
+                        "Indicator": record["indicator"],
+                        "Dimension": record["dimension"],
+                        "Role": record["role"],
+                        "Value": record["value"],
+                        "Trend": record["trend"],
+                    }
+                    for record in technical_report
+                ]
+                st.dataframe(
+                    pd.DataFrame(report_rows),
+                    use_container_width=True,
+                    hide_index=True,
+                )
+
+                if adx_value is None:
+                    st.caption("ADX gate: not applied (ADX unavailable).")
+                elif adx_value < 20:
+                    st.caption("ADX gate: ADX < 20; trend-direction weight is halved.")
+                else:
+                    st.caption("ADX gate: ADX >= 20; trend-direction keeps full weight.")
+            else:
+                st.info("Not enough data to generate the Technical Report.")
             
             # Generate Technical Advice
-            technical_advice_display, technical_trend, _ = generate_technical_advice(tech_data)
+            technical_advice_display, technical_trend, _ = generate_technical_advice(
+                tech_data, adx_value=adx_value
+            )
 
             # --- 3.2 Technical Advice ---
             st.subheader("Technical Advice")

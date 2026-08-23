@@ -1,0 +1,31 @@
+{
+  "error_text": null,
+  "job_id": "b8fdf27cc3bd4f7a9ce18d98b403d965",
+  "output_paths": [
+    "backtest-result/ticker-signals/MWG/MWG_signals_swing.json",
+    "backtest-result/ticker-signals/DMX/DMX_signals_swing.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 4,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/MWG/MWG_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "MWG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DMX/DMX_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DMX"
+    }
+  ]
+}

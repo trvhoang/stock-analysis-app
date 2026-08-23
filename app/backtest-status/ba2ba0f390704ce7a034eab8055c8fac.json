@@ -1,0 +1,97 @@
+{
+  "error_text": null,
+  "job_id": "ba2ba0f390704ce7a034eab8055c8fac",
+  "output_paths": [
+    "backtest-result/ticker-signals/FTS/FTS_signals_midterm.json",
+    "backtest-result/ticker-signals/HCM/HCM_signals_midterm.json",
+    "backtest-result/ticker-signals/MBS/MBS_signals_midterm.json",
+    "backtest-result/ticker-signals/SHS/SHS_signals_midterm.json",
+    "backtest-result/ticker-signals/SSI/SSI_signals_midterm.json",
+    "backtest-result/ticker-signals/TCX/TCX_signals_midterm.json",
+    "backtest-result/ticker-signals/VCI/VCI_signals_midterm.json",
+    "backtest-result/ticker-signals/VND/VND_signals_midterm.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 4,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/FTS/FTS_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "FTS"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/HCM/HCM_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "HCM"
+    },
+    {
+      "attempts": 2,
+      "error_texts": [
+        "ValueError: invalid backtest data: high contains non-positive prices",
+        "ValueError: invalid backtest data: high contains non-positive prices"
+      ],
+      "output_paths": [
+        "backtest-result/ticker-signals/MBS/MBS_signals_midterm.json"
+      ],
+      "state": "failed",
+      "ticker": "MBS"
+    },
+    {
+      "attempts": 2,
+      "error_texts": [
+        "ValueError: invalid backtest data: high contains non-positive prices",
+        "ValueError: invalid backtest data: high contains non-positive prices"
+      ],
+      "output_paths": [
+        "backtest-result/ticker-signals/SHS/SHS_signals_midterm.json"
+      ],
+      "state": "failed",
+      "ticker": "SHS"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/SSI/SSI_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "SSI"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/TCX/TCX_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "TCX"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VCI/VCI_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "VCI"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VND/VND_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "VND"
+    }
+  ]
+}

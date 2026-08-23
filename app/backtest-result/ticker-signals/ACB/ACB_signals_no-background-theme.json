@@ -1,0 +1,13 @@
+{
+  "audit_eligibility": {
+    "eligible": true,
+    "reasons": [],
+    "status": "clean"
+  },
+  "certified_at": "2026-08-14T21:13:08.317938+07:00",
+  "empty": true,
+  "schema_version": 2,
+  "signal_sets": [],
+  "theme_variant": "no-background-theme",
+  "ticker": "ACB"
+}

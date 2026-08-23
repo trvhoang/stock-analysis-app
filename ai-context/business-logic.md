@@ -8,6 +8,11 @@ This document outlines the core business rules, formulas, and domain-specific lo
 *   **What:** All price data (Open, High, Low, Close) is stored in the database as `BIGINT`, calculated as `ROUND(Price * 1000)`.
 *   **Why:** The Vietnamese Dong (VND) has high nominal values and no decimal subdivisions in stock trading. Storing as integers eliminates floating-point precision errors during storage and retrieval, ensuring exact arithmetic.
 
+### Price Output Contexts
+*   **UI and Plotly:** Divide raw prices by `1000` for display and label them `k VND`.
+*   **Export:** Always return raw stored BIGINT prices. Export behavior never depends on UI scaling options or intermediate display data.
+*   **Integrity:** Scaling happens at output boundaries only; SQL queries and database storage remain unchanged.
+
 ### Ticker Filtering (Suggestion Page)
 *   **What:** When scanning the market for suggestions, the app applies strict filters:
     1.  **Exclude 'VNINDEX':** The market index is removed.
@@ -77,6 +82,23 @@ Outcomes (`result_delta`) are classified into three categories to generate proba
 2.  **Timezone:** All "current date" logic for reports defaults to `Asia/Ho_Chi_Minh` (GMT+7).
 3.  **Data Cutoff:** Daily reports are generated based on the assumption that data for the current day is available after 8:00 PM GMT+7.
 4.  **Rounding:** All percentage deltas are rounded to 2 decimal places.
+5.  **Backtest Long-Only Lifecycle:** `VNINDEX` is a non-tradeable confirmation
+    series. A Phase 1 ticker trade is one implicit-unit BUY entry followed by
+    one equal implicit-unit SELL closure; it never opens or closes a short
+    position. Swing uses `MIN_EXIT_OFFSET_SWING_BARS = 3`: SL, TP, and timeout
+    closures require `exit_position - entry_position >= 3` daily bars, and its
+    inclusive custom hold must therefore be at least four bars. Mid-term remains
+    all-weekly: ticker OHLCV, indicators, ATR, signals, and exits use weekly
+    bars only; exits first become eligible on weekly bar 2. Its inclusive
+    `MAX_HOLD_MIDTERM_BARS = 16` window counts the entry bar as bar 1 and
+    resolves timeout at the close of bar 16. The current event schema does not
+    support partial or multi-fill quantities.
+6.  **Backtest Score Inputs:** The Backtest adapter preserves raw numeric
+    indicator columns and separately derives seven causal trend-label columns
+    for `MA`, `MA cross`, `RSI`, `Stochastic`, `OBV`, `ATR`, and `Bollinger`.
+    Backtest scoring resolves those labels first; bare indicator names remain
+    only as compatibility fallback for synthetic fixtures. Its canonical MA
+    source is the first existing horizon pair: Swing `5/10`, Mid-term `4/12`.
 
 ## 6. Technical Indicator Logic
 
@@ -138,6 +160,30 @@ The application determines the current trend for indicators based on the followi
 *   **Down:** The trend is classified as "Down" if both %K and %D are below 30, or if %K has crossed below %D while both are below 50.
 *   **Sideways:** The trend is classified as "Sideways" if the lines are crossing frequently around the 50 level (indicating a "chop" zone) or if no clear up/down trend is established.
 
+#### ATR Trend
+*   **Condition:** Compares current normalized ATR (`ATR / close`) with its prior 20-period normalized-ATR baseline.
+*   **Classification:** Ratio `>= 1.5` is Strong Up, `1.1–<1.5` Up, `0.9–<1.1` Sideways, `0.67–<0.9` Down, and `<0.67` Strong Down. Missing or insufficient history is Unknown.
+
+#### OBV Trend
+*   **Condition:** Confirms OBV direction with price direction over the prior 10 periods.
+*   **Classification:** Confirmed price/OBV rise is Up (Strong Up when price gain exceeds 3%); confirmed fall is Down (Strong Down below -3%); disagreement or flat movement is Sideways.
+
+#### Bollinger Trend
+*   **Condition:** Classifies close price relative to the 20-period, 2-standard-deviation bands.
+*   **Classification:** Outside upper/lower band is Strong Up/Strong Down; inside bands, above/below the middle band is Up/Down. Narrow centered bands are Sideways. Missing values are Unknown.
+
+#### ADX Trend and Gate
+*   **Role:** ADX describes trend strength and is displayed as a gate, never as a voting indicator.
+*   **Trend display:** ADX `<20` is Sideways; rising ADX `>=20` is Up and rising ADX `>=25` is Strong Up; non-rising ADX `>=20` is Sideways.
+*   **Score gate:** ADX `<20` halves only the `trend_direction` contribution; ADX `>=20` keeps full weight. Missing, Unknown, or NaN ADX skips gating.
+
+### Current Technical Snapshot and Score
+*   **Snapshot:** One shared calculation produces enriched chart data, scorer signals, eight display report records, and one latest ADX value.
+*   **Voting dimensions:** `trend_direction` (MA, MA Cross), `momentum` (RSI, Stochastic), `volume` (OBV), and `volatility` (ATR, Bollinger) each start with equal weight `0.25`.
+*   **Aggregation:** Indicators within each available dimension are averaged; missing dimensions are omitted and remaining weights are renormalized. The result stays on the existing 0–100% scale.
+*   **ADX gate:** ADX is never a vote. ADX `<20` halves only `trend_direction`; ADX `>=20` keeps full weight; missing, Unknown, or NaN ADX skips gating.
+*   **Reuse:** Technical Analyze, Ticker Analyze, Portfolio Analyze, API synthesis, and Final Advice reuse the snapshot. Dropdown changes select a visualization only; they do not refetch or recalculate indicators.
+
 ## 7. Analyze Page - Technical Report
 
 The "Analyze Page" includes a "Technical Report" table that provides a snapshot of key technical indicators for the selected ticker. The logic for this report is dynamic and adapts based on the user's `Validation Day Range` input.
@@ -163,13 +209,15 @@ All indicators are calculated using a lookback period of **100 periods** (e.g., 
 -   **Stochastic (10, 3, 3):** Calculated using `calculate_stochastic`. The trend is determined by `calculate_stochastic_trend`.
 -   **RSI (14):** Calculated using `calculate_rsi`. The trend is determined by `calculate_rsi_trend`.
 -   **Moving Average (MA):** The latest values for the dynamically selected SMA pair are displayed. The trend is determined by `calculate_ma_trend`.
--   **MA Cross:** The last three cross events (Golden or Death) are displayed. The trend is the same as the MA trend.
+-   **MA Cross:** The last three cross events (Golden or Death) are displayed. The trend is determined independently by `calculate_ma_cross_trend`.
+-   **ADX, OBV, ATR, Bollinger:** Latest values and classified trends are displayed with their dimension and role; ADX is marked as a gate rather than a vote.
 
 ### 7.3. Historical Technical Context
 To provide context for statistical predictions, the app analyzes the technical state of the ticker at every historical "signal date" that resulted in the predicted outcome.
 
-- **Scoring:** Uses the same 0-100% point system based on 4 indicators (Stochastic, RSI, MA Spread, MA Cross).
-- **Selective Calculation:** For performance optimization, technical scores are only calculated for historical events where the outcome (`result`) matches the result category with the highest statistical frequency.
+- **Scoring:** Uses the legacy 0-100% point system based on four historical indicators (Stochastic, RSI, MA Spread, MA Cross), preserving prior historical classification behavior.
+- **Precomputation:** The full ticker history is processed once into a behavior-preserving as-of score table; historical event dates use binary-search lookups instead of rescanning every prefix.
+- **Selective Calculation:** Technical scores are only used for historical events where the outcome (`result`) matches the result category with the highest statistical frequency.
 - **Summary Grouping:**
     - **Up:** Score $\ge 53\%$.
     - **Sideway/Unknown:** $48\% \le \text{Score} < 53\%$.

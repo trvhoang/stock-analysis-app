@@ -1,0 +1,59 @@
+{
+  "audit_eligibility": {
+    "eligible": false,
+    "reasons": [
+      "OHLC ordering mismatch 1.03% exceeds 1.00%"
+    ],
+    "status": "invalid"
+  },
+  "certified_at": "2026-08-14T22:30:49.666550+07:00",
+  "empty": false,
+  "schema_version": 2,
+  "signal_sets": [
+    {
+      "combo": {
+        "adx_gate_mode": "hard",
+        "direction": "long",
+        "horizon": "swing",
+        "indicators": {
+          "momentum": [
+            "RSI"
+          ],
+          "trend_direction": [
+            "MA cross",
+            "Williams Alligator"
+          ],
+          "volume": [
+            "OBV"
+          ]
+        },
+        "strategy_id": "consensus_rsi_obv",
+        "theme_mode": null,
+        "theme_variant": "no-background-theme",
+        "threshold_score_buy": 60
+      },
+      "date_range": [
+        "2011-08-15",
+        "2026-08-14"
+      ],
+      "deflated_sharpe": 0.997202,
+      "direction": "long",
+      "horizon": "swing",
+      "metrics": [
+        "win_rate",
+        "profit",
+        "sharpe"
+      ],
+      "n": 156,
+      "p_value": 0.004995,
+      "profit": 204.9155,
+      "sharpe": 0.241595,
+      "theme_mode": null,
+      "theme_variant": "no-background-theme",
+      "vnindex_condition": null,
+      "win_rate": 52.564103
+    }
+  ],
+  "theme_variant": "no-background-theme",
+  "ticker": "STB"
+}

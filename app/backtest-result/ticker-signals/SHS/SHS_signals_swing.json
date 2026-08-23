@@ -1,0 +1,72 @@
+{
+  "audit_eligibility": {
+    "effective_date_range": [
+      null,
+      null
+    ],
+    "eligible": false,
+    "reasons": [
+      "ValueError: invalid backtest data: high contains non-positive prices"
+    ],
+    "source": "unavailable",
+    "status": "unavailable",
+    "warnings": []
+  },
+  "candidates": [],
+  "effective_data_range": {
+    "end": null,
+    "reason": "ValueError: invalid backtest data: high contains non-positive prices",
+    "start": null
+  },
+  "empty": true,
+  "evaluated_at": "2026-08-22T12:29:18.419524+07:00",
+  "evaluation_label": "Exploratory \u2014 gross",
+  "failure_reason": "ValueError: invalid backtest data: high contains non-positive prices",
+  "horizon": "swing",
+  "rejection_reason": null,
+  "requested_date_range": {
+    "end": "2026-08-22",
+    "reason": null,
+    "start": "2011-08-22"
+  },
+  "rulebook": {
+    "adx_minimum": 17,
+    "adx_period": 14,
+    "alligator_lags": [
+      5,
+      3,
+      2
+    ],
+    "alligator_periods": [
+      8,
+      5,
+      3
+    ],
+    "atr_period": 14,
+    "atr_sl_multiplier": 1.5,
+    "atr_tp_multiplier": 2.5,
+    "horizon": "swing",
+    "joint_trend_required": true,
+    "ma_kind": "EMA",
+    "ma_pair": [
+      5,
+      13
+    ],
+    "max_hold_bars": 22,
+    "min_exit_offset_bars": 3,
+    "min_n": 5,
+    "native_timeframe": "daily",
+    "rsi_period": 9,
+    "rsi_upcross_level": 52,
+    "rule_id": "swing_rulebook_v4",
+    "theme_sma_window": 50,
+    "volume_multiplier": 1.15,
+    "volume_window": 10,
+    "weekly_frequency": null
+  },
+  "schema_version": 4,
+  "split": null,
+  "terminal_state": "failed",
+  "ticker": "SHS",
+  "top_rulebook_ids": []
+}

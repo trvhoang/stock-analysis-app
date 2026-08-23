@@ -1,0 +1,17 @@
+{
+  "group_id": "de687297-874b-474c-92cf-b824eec9b540",
+  "group_name": "CH\u1ee8NG",
+  "metadata": {},
+  "schema_version": 1,
+  "tickers": [
+    "SSI",
+    "HCM",
+    "VND",
+    "FTS",
+    "MBS",
+    "VCI",
+    "TCX",
+    "SHS"
+  ],
+  "updated_at": "2026-08-14T22:34:50.512980+07:00"
+}

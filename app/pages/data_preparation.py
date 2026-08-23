@@ -3,14 +3,15 @@ import requests
 import zipfile
 import os
 import pandas as pd
-from sqlalchemy import create_engine, text, event
-from sqlalchemy.types import BigInteger
+from sqlalchemy import create_engine, text
 from datetime import datetime, timedelta
+from dataclasses import dataclass
+from pathlib import Path
 import pytz
-import shutil
 import tempfile
 import time
 import threading
+from typing import Callable
 
 # Import the high-performance `execute_values` helper from psycopg2
 from psycopg2.extras import execute_values
@@ -47,8 +48,13 @@ def get_engine_with_retry(database_url, retries=5, delay=5):
     while attempt < retries:
         try:
             engine = create_engine(database_url)
-            with engine.connect() as conn:
-                conn.execute(text("SELECT 1"))
+            connection = engine.raw_connection()
+            cursor = connection.cursor()
+            try:
+                cursor.execute(text("SELECT 1").text)
+            finally:
+                cursor.close()
+                connection.close()
             return engine
         except Exception as e:
             attempt += 1
@@ -58,293 +64,343 @@ def get_engine_with_retry(database_url, retries=5, delay=5):
                 raise
             time.sleep(delay)
 
-# Create trading_data table with BIGINT for numerical columns
+_CREATE_TRADING_DATA_SQL = text("""
+    CREATE TABLE IF NOT EXISTS trading_data (
+        ticker TEXT,
+        exchange TEXT,
+        date DATE,
+        open BIGINT,
+        high BIGINT,
+        low BIGINT,
+        close BIGINT,
+        volume BIGINT,
+        PRIMARY KEY (ticker, date)
+    )
+""")
+_ALTER_EXCHANGE_SQL = text(
+    "ALTER TABLE trading_data ADD COLUMN IF NOT EXISTS exchange TEXT"
+)
+_SCHEMA_COLUMNS_SQL = text("""
+    SELECT column_name, data_type
+    FROM information_schema.columns
+    WHERE table_name = 'trading_data'
+      AND column_name IN ('exchange', 'open', 'high', 'low', 'close', 'volume')
+""")
+_LATEST_DATES_SQL = text(
+    "SELECT ticker, MAX(date) FROM trading_data GROUP BY ticker"
+)
+_CREATE_STAGING_SQL = text("""
+    CREATE TEMPORARY TABLE ingestion_stage (
+        ticker TEXT NOT NULL,
+        exchange TEXT NOT NULL,
+        date DATE NOT NULL,
+        open BIGINT NOT NULL,
+        high BIGINT NOT NULL,
+        low BIGINT NOT NULL,
+        close BIGINT NOT NULL,
+        volume BIGINT NOT NULL,
+        PRIMARY KEY (ticker, date)
+    ) ON COMMIT DROP
+""")
+_INSERT_STAGE_SQL = text("""
+    INSERT INTO ingestion_stage (ticker, exchange, date, open, high, low, close, volume)
+    VALUES %s
+    ON CONFLICT (ticker, date) DO NOTHING
+""")
+_INSERT_TRADING_DATA_SQL = text("""
+    INSERT INTO trading_data (ticker, exchange, date, open, high, low, close, volume)
+    SELECT ticker, exchange, date, open, high, low, close, volume
+    FROM ingestion_stage
+    ON CONFLICT (ticker, date) DO NOTHING
+""")
+_CREATE_TICKER_DATE_INDEX_SQL = text(
+    "CREATE INDEX IF NOT EXISTS idx_ticker_date ON trading_data (ticker, date DESC)"
+)
+_CSV_COLUMNS = ("Ticker", "DTYYYYMMDD", "Open", "High", "Low", "Close", "Volume")
+
+
+@dataclass(frozen=True)
+class ExtractedSource:
+    """One downloaded source ready for staging; it has made no DB mutation."""
+
+    data_type: str
+    extract_path: Path
+    ticker_filter: str | None
+
+
+def _execute(cursor, statement, params=None) -> None:
+    """Execute one fixed sqlalchemy.text statement through a raw connection."""
+
+    cursor.execute(statement.text, params)
+
+
+def _ensure_schema(cursor) -> None:
+    """Create/verify the append-only table without touching existing rows."""
+
+    _execute(cursor, _CREATE_TRADING_DATA_SQL)
+    _execute(cursor, _ALTER_EXCHANGE_SQL)
+    _execute(cursor, _SCHEMA_COLUMNS_SQL)
+    columns = cursor.fetchall()
+    if len(columns) < 6:
+        raise ValueError("Incomplete database schema. Missing required columns.")
+    for column, data_type in columns:
+        expected = "text" if column == "exchange" else "bigint"
+        if str(data_type).lower() != expected:
+            raise ValueError(f"Invalid schema for trading_data: {column} is {data_type}")
+
+
 def init_db(engine):
-    with engine.connect() as conn:
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS trading_data (
-                ticker TEXT,
-                exchange TEXT,
-                date DATE,
-                open BIGINT,
-                high BIGINT,
-                low BIGINT,
-                close BIGINT,
-                volume BIGINT,
-                PRIMARY KEY (ticker, date)
-            );
-        """))
-        # Verify schema
-        
-        # Ensure the exchange column exists (handles updates to existing tables)
-        # Postgres 9.6+ supports ADD COLUMN IF NOT EXISTS
-        conn.execute(text("""
-            ALTER TABLE trading_data ADD COLUMN IF NOT EXISTS exchange TEXT;
-        """))
+    """Retain startup compatibility while using the project raw-connection standard."""
 
-        # Strict Schema Verification
-        result = conn.execute(text("""
-            SELECT column_name, data_type 
-            FROM information_schema.columns 
-            WHERE table_name = 'trading_data' 
-            AND column_name IN ('exchange', 'open', 'high', 'low', 'close', 'volume');
-        """)).fetchall()
-        
-        if len(result) < 6:
-            missing = 6 - len(result)
-            log_progress(f"Schema verification failed: {missing} columns missing from trading_data", "error")
-            raise ValueError("Incomplete database schema. Missing required columns.")
+    connection = engine.raw_connection()
+    cursor = connection.cursor()
+    try:
+        _ensure_schema(cursor)
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        cursor.close()
+        connection.close()
 
-        for col, dtype in result:
-            expected = 'text' if col == 'exchange' else 'bigint'
-            if dtype.lower() != expected:
-                log_progress(f"Column {col} is {dtype}, expected {expected.upper()}", "error")
-                raise ValueError(f"Invalid schema for trading_data: {col} is {dtype}")
-        conn.commit()
 
-# Function to get the last trading day (Monday to Friday)
 def get_last_trading_day(current_date):
-    if current_date.weekday() == 5:  # Saturday
+    if current_date.weekday() == 5:
         return current_date - timedelta(days=1)
-    elif current_date.weekday() == 6:  # Sunday
+    if current_date.weekday() == 6:
         return current_date - timedelta(days=2)
     return current_date
 
-# Function to determine default report date based on GMT+7 time
-def get_default_report_date():
-    tz = pytz.timezone('Asia/Ho_Chi_Minh')
-    now = datetime.now(tz)
-    current_time = now.time()
-    eight_pm = datetime.strptime("20:00", "%H:%M").time()
 
-    if current_time >= eight_pm:
+def get_default_report_date():
+    tz = pytz.timezone("Asia/Ho_Chi_Minh")
+    now = datetime.now(tz)
+    if now.time() >= datetime.strptime("20:00", "%H:%M").time():
         report_date = now.date()
     else:
         report_date = now.date() - timedelta(days=1)
         if now.weekday() == 0:
             report_date -= timedelta(days=2)
-
     return get_last_trading_day(report_date)
 
-# Function to clean up files
-def cleanup_files(zip_path, extract_path):
-    try:
-        if os.path.exists(zip_path):
-            os.remove(zip_path)
-            log_progress(f"Deleted ZIP file: {zip_path}")
-        if os.path.exists(extract_path):
-            shutil.rmtree(extract_path)
-            log_progress(f"Deleted extracted folder: {extract_path}")
-    except Exception as e:
-        log_progress(f"Error during cleanup: {str(e)}", "warning")
 
-# Function to process CSV file with chunking and ticker filtering
-def process_csv_file(file_path, cutoff_date, ticker_filter=None, chunk_size=10000, engine=None, exchange="Unknown"):
-    chunks = pd.read_csv(file_path, chunksize=chunk_size, dtype={"Open": "float64", "High": "float64", "Low": "float64", "Close": "float64", "Volume": "float64"})
-    total_rows = 0
-    filtered_rows = 0
-    last_chunk_dtypes = None
-    
-    with engine.begin() as conn:
-        conn.execute(text("""
-            CREATE TEMPORARY TABLE temp_chunk (
-                ticker TEXT,
-                exchange TEXT,
-                date DATE,
-                open BIGINT,
-                high BIGINT,
-                low BIGINT,
-                close BIGINT,
-                volume BIGINT
-            );
-        """))
+def _source_url(report_date, data_type: str) -> tuple[str, str | None]:
+    last_trading_day = get_last_trading_day(report_date)
+    ymd = last_trading_day.strftime("%Y%m%d")
+    dmy = last_trading_day.strftime("%d%m%Y")
+    if data_type == "stock":
+        return (
+            f"https://cafef1.mediacdn.vn/data/ami_data/{ymd}/CafeF.SolieuGD.Upto{dmy}.zip",
+            None,
+        )
+    if data_type == "index":
+        return (
+            f"https://cafef1.mediacdn.vn/data/ami_data/{ymd}/CafeF.Index.Upto{dmy}.zip",
+            "VNINDEX",
+        )
+    raise ValueError(f"Unknown data_type: {data_type}")
 
+
+def _download_and_extract_source(
+    report_date,
+    data_type: str,
+    root: Path,
+) -> ExtractedSource:
+    """Download/extract one source before the transaction starts."""
+
+    url, ticker_filter = _source_url(report_date, data_type)
+    zip_path = root / f"{data_type}.zip"
+    extract_path = root / data_type
+    log_progress(f"Downloading {data_type} data from {url}...")
+    response = requests.get(url, stream=True)
+    response.raise_for_status()
+    with zip_path.open("wb") as target:
+        for response_chunk in response.iter_content(chunk_size=8192):
+            target.write(response_chunk)
+    extract_path.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(zip_path, "r") as archive:
+        archive.extractall(extract_path)
+    return ExtractedSource(data_type, extract_path, ticker_filter)
+
+
+def _latest_dates(cursor) -> dict[str, object]:
+    _execute(cursor, _LATEST_DATES_SQL)
+    return {str(ticker).upper(): latest_date for ticker, latest_date in cursor.fetchall()}
+
+
+def _exchange_for_file(path: Path) -> str:
+    filename = path.name.upper()
+    if "HSX" in filename:
+        return "HSX"
+    if "HNX" in filename:
+        return "HNX"
+    if "UPCOM" in filename:
+        return "UPCOM"
+    return "Unknown"
+
+
+def _eligible_chunk(
+    chunk: pd.DataFrame,
+    latest_dates: dict[str, object],
+    cutoff_date,
+    *,
+    ticker_filter: str | None,
+    exchange: str,
+) -> pd.DataFrame:
+    """Keep only append-eligible source rows; existing dates never change."""
+
+    prepared = chunk.copy()
+    prepared["Ticker"] = prepared["Ticker"].astype(str).str.strip().str.upper()
+    prepared["DTYYYYMMDD"] = pd.to_datetime(
+        prepared["DTYYYYMMDD"], format="%Y%m%d", errors="raise"
+    ).dt.date
+    if ticker_filter is not None:
+        prepared = prepared.loc[prepared["Ticker"] == ticker_filter]
+    else:
+        prepared = prepared.loc[prepared["Ticker"].str.len() <= 7]
+    latest = prepared["Ticker"].map(latest_dates)
+    eligible = (latest.notna() & (prepared["DTYYYYMMDD"] > latest)) | (
+        latest.isna() & (prepared["DTYYYYMMDD"] >= cutoff_date)
+    )
+    prepared = prepared.loc[eligible].copy()
+    prepared["ticker"] = prepared["Ticker"]
+    prepared["date"] = prepared["DTYYYYMMDD"]
+    prepared["exchange"] = exchange
+    return prepared
+
+
+def _stage_chunk(cursor, chunk: pd.DataFrame) -> int:
+    if chunk.empty:
+        return 0
+    staged = chunk.copy()
+    # Database prices are immutable BIGINT values; UI scaling happens elsewhere.
+    staged["open"] = (staged["Open"] * 1000).round().astype("int64")
+    staged["high"] = (staged["High"] * 1000).round().astype("int64")
+    staged["low"] = (staged["Low"] * 1000).round().astype("int64")
+    staged["close"] = (staged["Close"] * 1000).round().astype("int64")
+    staged["volume"] = staged["Volume"].round().astype("int64")
+    staged = staged.drop_duplicates(subset=["ticker", "date"], keep="first")
+    columns = ["ticker", "exchange", "date", "open", "high", "low", "close", "volume"]
+    execute_values(cursor, _INSERT_STAGE_SQL.text, staged[columns].values.tolist())
+    return len(staged)
+
+
+def _stage_source(
+    cursor,
+    source: ExtractedSource,
+    latest_dates: dict[str, object],
+    cutoff_date,
+    chunk_size: int = 10_000,
+) -> int:
+    """Stage every eligible source row in the caller-owned transaction."""
+
+    staged_rows = 0
+    for csv_path in sorted(source.extract_path.glob("*.csv")):
+        exchange = _exchange_for_file(csv_path)
+        chunks = pd.read_csv(
+            csv_path,
+            chunksize=chunk_size,
+            dtype={"Open": "float64", "High": "float64", "Low": "float64", "Close": "float64", "Volume": "float64"},
+        )
         for chunk in chunks:
-            total_rows += len(chunk)
-            chunk.columns = ["Ticker", "DTYYYYMMDD", "Open", "High", "Low", "Close", "Volume"]
-            chunk["DTYYYYMMDD"] = pd.to_datetime(chunk["DTYYYYMMDD"], format="%Y%m%d").dt.date
-            chunk = chunk[chunk["DTYYYYMMDD"] >= cutoff_date]
-            if ticker_filter is not None:
-                chunk = chunk[chunk["Ticker"] == ticker_filter]
-            else:
-                chunk = chunk[chunk["Ticker"].str.len() <= 7]
-            filtered_rows += len(chunk)
-            
-            if not chunk.empty:
-                try:
-                    chunk["Open"] = (chunk["Open"] * 1000).round().astype('int64')
-                    chunk["High"] = (chunk["High"] * 1000).round().astype('int64')
-                    chunk["Low"] = (chunk["Low"] * 1000).round().astype('int64')
-                    chunk["Close"] = (chunk["Close"] * 1000).round().astype('int64')
-                    chunk["Volume"] = chunk["Volume"].round().astype('int64')
-                    
-                    # Assign the exchange captured from the filename
-                    # Assign the exchange and standardize column names
-                    chunk["exchange"] = exchange
-                    chunk.columns = ["ticker", "date", "open", "high", "low", "close", "volume", "exchange"]
-                    chunk = chunk.rename(columns={"Ticker": "ticker", "DTYYYYMMDD": "date", "Open": "open", "High": "high", "Low": "low", "Close": "close", "Volume": "volume"})
+            if len(chunk.columns) != len(_CSV_COLUMNS):
+                raise ValueError(f"Unexpected CSV structure: {csv_path.name}")
+            chunk.columns = _CSV_COLUMNS
+            eligible = _eligible_chunk(
+                chunk,
+                latest_dates,
+                cutoff_date,
+                ticker_filter=source.ticker_filter,
+                exchange=exchange,
+            )
+            staged_rows += _stage_chunk(cursor, eligible)
+    log_progress(f"Staged {staged_rows} append-eligible rows from {source.data_type}.")
+    return staged_rows
 
-                    # Deduplicate in Pandas
-                    chunk = chunk.drop_duplicates(subset=["ticker", "date"], keep="first")
 
-                    # Ensure columns match the SQL statement order: ticker, exchange, date, ...
-                    cols = ["ticker", "exchange", "date", "open", "high", "low", "close", "volume"]
-                    # DIRECT INSERTION USING PSYCOPG2
-                    # Bypass pandas.to_sql entirely to avoid SQLAlchemy/Pandas version conflicts
-                    with conn.connection.cursor() as cursor:
-                        execute_values(cursor, 
-                            "INSERT INTO temp_chunk (ticker, exchange, date, open, high, low, close, volume) VALUES %s", 
-                            chunk[cols].values.tolist())
-                    last_chunk_dtypes = chunk.dtypes
-                except Exception as e:
-                    log_progress(f"Error processing chunk in {os.path.basename(file_path)}: {str(e)}", "error")
-                    raise
+def _finalize_staged_rows(cursor) -> None:
+    _execute(cursor, _INSERT_TRADING_DATA_SQL)
+    _execute(cursor, _CREATE_TICKER_DATE_INDEX_SQL)
 
-        log_progress(f"Raw data rows in {os.path.basename(file_path)}: {total_rows}")
-        log_progress(f"Rows after filtering: {filtered_rows}")
-        if last_chunk_dtypes is not None:
-            log_progress(f"Processed chunk dtypes: {last_chunk_dtypes}")
-        
-        # Log temp_chunk contents
-        temp_count = conn.execute(text("SELECT COUNT(*) FROM temp_chunk")).fetchone()[0]
-        log_progress(f"Rows in temp_chunk before insert: {temp_count}")
-        
-        # Check for duplicates in temp_chunk
-        duplicates = conn.execute(text("""
-            SELECT ticker, date, COUNT(*) 
-            FROM temp_chunk 
-            GROUP BY ticker, date 
-            HAVING COUNT(*) > 1;
-        """)).fetchall()
-        if duplicates:
-            log_progress(f"Duplicates found in temp_chunk: {duplicates}", "warning")
-        
-        # Insert into trading_data
-        try:
-            result = conn.execute(text("""
-                INSERT INTO trading_data (ticker, exchange, date, open, high, low, close, volume)
-                SELECT ticker, exchange, date, open, high, low, close, volume
-                FROM temp_chunk
-                ON CONFLICT (ticker, date) DO NOTHING
-                RETURNING ticker;
-            """))
-            inserted_rows = result.rowcount
-            log_progress(f"Inserted {inserted_rows} rows into trading_data from {os.path.basename(file_path)}")
-        except Exception as e:
-            log_progress(f"Error inserting into trading_data: {str(e)}", "error")
-            raise
-        
-        # Verify trading_data contents
-        trading_count = conn.execute(text("SELECT COUNT(*) FROM trading_data")).fetchone()[0]
-        log_progress(f"Rows in trading_data after insert: {trading_count}")
-        
-        conn.execute(text("DROP TABLE temp_chunk;"))
 
-# Function to download and process data
-def download_and_process_data(report_date, gaps_of_data, data_type="stock", engine=None):
-    with tempfile.TemporaryDirectory() as temp_dir:
-        zip_path = os.path.join(temp_dir, "stock_data.zip")
-        extract_path = os.path.join(temp_dir, "extracted")
-        
-        try:
-            last_trading_day = get_last_trading_day(report_date)
-            ymd_to_date = last_trading_day.strftime("%Y%m%d")
-            dmy_to_date = last_trading_day.strftime("%d%m%Y")
-            if data_type == "stock":
-                url = f"https://cafef1.mediacdn.vn/data/ami_data/{ymd_to_date}/CafeF.SolieuGD.Upto{dmy_to_date}.zip"
-                ticker_filter = None
-            elif data_type == "index":
-                url = f"https://cafef1.mediacdn.vn/data/ami_data/{ymd_to_date}/CafeF.Index.Upto{dmy_to_date}.zip"
-                ticker_filter = "VNINDEX"
-            else:
-                raise ValueError(f"Unknown data_type: {data_type}")
-            
-            log_progress(f"Downloading {data_type} data from {url}...")
-            response = requests.get(url, stream=True)
-            response.raise_for_status()
-            with open(zip_path, "wb") as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
+def _report_phase(progress_callback: Callable[[int, str], None] | None, value, label):
+    if progress_callback is not None:
+        progress_callback(value, label)
 
-            log_progress(f"Extracting {data_type} data...")
-            os.makedirs(extract_path, exist_ok=True)
-            with zipfile.ZipFile(zip_path, "r") as zip_ref:
-                zip_ref.extractall(extract_path)
 
-            log_progress(f"Processing {data_type} data...")
-            cutoff_date = last_trading_day - timedelta(days=365 * gaps_of_data)
-            
-            for csv_file in os.listdir(extract_path):
-                if csv_file.endswith(".csv"):
-                    # Detect exchange from filename (e.g., CafeF.HSX.Upto10052024.csv)
-                    file_upper = csv_file.upper()
-                    if "HSX" in file_upper:
-                        detected_exchange = "HSX"
-                    elif "HNX" in file_upper:
-                        detected_exchange = "HNX"
-                    elif "UPCOM" in file_upper:
-                        detected_exchange = "UPCOM"
-                    else:
-                        detected_exchange = "Unknown"
-                        
-                    file_path = os.path.join(extract_path, csv_file)
-                    log_progress(f"Processing {csv_file} as {detected_exchange}...")
-                    process_csv_file(file_path, cutoff_date, ticker_filter, engine=engine, exchange=detected_exchange)
+def run_full_ingestion(report_date, gaps_of_data, engine, progress_callback=None):
+    """Append Stock and VN-Index data atomically, preserving all old rows."""
 
-            with engine.connect() as conn:
-                conn.execute(text("DROP INDEX IF EXISTS idx_ticker_date;"))
-                conn.execute(text("CREATE INDEX idx_ticker_date ON trading_data (ticker, date DESC);"))
-                conn.commit()
-                result = conn.execute(text("SELECT COUNT(*) FROM trading_data")).fetchone()
-                log_progress(f"Total rows in trading_data after {data_type} insert: {result[0]}")
-
-            log_progress(f"{data_type.capitalize()} data saved to database.")
-        except Exception as e:
-            raise
-        finally:
-            cleanup_files(zip_path, extract_path)
-
-# --- Centralized Ingestion Logic ---
-def run_full_ingestion(report_date, gaps_of_data, engine):
-    """
-    Headless function to run the full data ingestion process (Stocks + Indices).
-    Uses the module-level lock to ensure thread safety.
-    """
     if not data_prep_lock.acquire(blocking=False):
         log_progress("Data preparation is already in progress.", level="warning")
         return False
-        
+
+    connection = None
+    cursor = None
     try:
-        log_progress(f"Starting full data ingestion for report date: {report_date}")
-        with engine.connect() as conn:
-            log_progress("Resetting trading_data table for schema synchronization...")
-            conn.execute(text("DROP TABLE IF EXISTS trading_data;"))
-            conn.commit()
-        
-        init_db(engine)
-            
-        download_and_process_data(report_date, gaps_of_data, "stock", engine=engine)
-        download_and_process_data(report_date, gaps_of_data, "index", engine=engine)
-        
+        _report_phase(progress_callback, 0, "Starting data ingestion...")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            stock_source = _download_and_extract_source(report_date, "stock", root)
+            _report_phase(progress_callback, 20, "Stock source downloaded.")
+            index_source = _download_and_extract_source(report_date, "index", root)
+            _report_phase(progress_callback, 35, "VN-Index source downloaded.")
+
+            connection = engine.raw_connection()
+            cursor = connection.cursor()
+            _ensure_schema(cursor)
+            latest_dates = _latest_dates(cursor)
+            _execute(cursor, _CREATE_STAGING_SQL)
+            _report_phase(progress_callback, 50, "Schema and existing data preserved.")
+            cutoff_date = report_date - timedelta(days=365 * int(gaps_of_data))
+            _stage_source(cursor, stock_source, latest_dates, cutoff_date)
+            _report_phase(progress_callback, 70, "Stock data staged.")
+            _stage_source(cursor, index_source, latest_dates, cutoff_date)
+            _report_phase(progress_callback, 90, "VN-Index data staged.")
+            _finalize_staged_rows(cursor)
+            connection.commit()
         log_progress("Full data ingestion complete.", level="success")
+        _report_phase(progress_callback, 100, "Data ingestion complete.")
         return True
-    except Exception as e:
-        log_progress(f"Data ingestion failed: {str(e)}", level="error")
+    except Exception as error:
+        if connection is not None:
+            connection.rollback()
+        log_progress(f"Data ingestion failed: {error}", level="error")
         return False
     finally:
+        if cursor is not None:
+            cursor.close()
+        if connection is not None:
+            connection.close()
         data_prep_lock.release()
 
 # Data page logic
 def data_page(engine):
     st.header("Data Page")
     default_date = get_default_report_date()
-    report_date = st.date_input("Select Report Date", value=default_date)
-    gaps_of_data = st.number_input("Gaps of Data (Years)", min_value=1, value=10, step=1)
-    if st.button("Get Data"):
+    up_to_date_column, year_gaps_column, action_column = st.columns(3)
+    with up_to_date_column:
+        report_date = st.date_input("Up-to date", value=default_date)
+    with year_gaps_column:
+        gaps_of_data = st.number_input("Year gaps", min_value=1, value=15, step=1)
+    with action_column:
+        st.caption("Action")
+        get_data = st.button("Get data", use_container_width=True)
+
+    if get_data:
         if data_prep_lock.locked():
             st.warning("Data preparation is already in progress (triggered via API or UI).")
         else:
-            with st.spinner("Downloading and processing data..."):
-                run_full_ingestion(report_date, gaps_of_data, engine)
-
-            
+            progress_bar = st.progress(0, text="Starting data ingestion...")
+            with st.expander("Progress details", expanded=True):
+                completed = run_full_ingestion(
+                    report_date,
+                    gaps_of_data,
+                    engine,
+                    progress_callback=lambda value, label: progress_bar.progress(
+                        value, text=label
+                    ),
+                )
+            if not completed:
+                st.error("No new data was saved. Please rerun Get data manually.")

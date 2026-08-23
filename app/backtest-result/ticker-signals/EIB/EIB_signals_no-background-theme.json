@@ -1,0 +1,57 @@
+{
+  "audit_eligibility": {
+    "eligible": true,
+    "reasons": [],
+    "status": "clean"
+  },
+  "certified_at": "2026-08-14T23:49:55.275326+07:00",
+  "empty": false,
+  "schema_version": 2,
+  "signal_sets": [
+    {
+      "combo": {
+        "adx_gate_mode": "hard",
+        "direction": "long",
+        "horizon": "swing",
+        "indicators": {
+          "momentum": [
+            "RSI"
+          ],
+          "trend_direction": [
+            "MA cross",
+            "Williams Alligator"
+          ],
+          "volume": [
+            "OBV"
+          ]
+        },
+        "strategy_id": "consensus_rsi_obv",
+        "theme_mode": null,
+        "theme_variant": "no-background-theme",
+        "threshold_score_buy": 60
+      },
+      "date_range": [
+        "2011-08-15",
+        "2026-08-14"
+      ],
+      "deflated_sharpe": 0.965337,
+      "direction": "long",
+      "horizon": "swing",
+      "metrics": [
+        "win_rate",
+        "profit",
+        "sharpe"
+      ],
+      "n": 147,
+      "p_value": 0.010989,
+      "profit": 143.7504,
+      "sharpe": 0.178799,
+      "theme_mode": null,
+      "theme_variant": "no-background-theme",
+      "vnindex_condition": null,
+      "win_rate": 48.979592
+    }
+  ],
+  "theme_variant": "no-background-theme",
+  "ticker": "EIB"
+}

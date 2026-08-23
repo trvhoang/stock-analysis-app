@@ -1,0 +1,60 @@
+{
+  "audit_eligibility": {
+    "eligible": true,
+    "reasons": [],
+    "status": "clean"
+  },
+  "certified_at": "2026-08-14T22:30:14.956116+07:00",
+  "empty": false,
+  "schema_version": 2,
+  "signal_sets": [
+    {
+      "combo": {
+        "adx_gate_mode": "hard",
+        "direction": "long",
+        "horizon": "swing",
+        "indicators": {
+          "momentum": [
+            "RSI"
+          ],
+          "trend_direction": [
+            "MA cross",
+            "Williams Alligator"
+          ],
+          "volume": [
+            "OBV"
+          ]
+        },
+        "strategy_id": "consensus_rsi_obv",
+        "theme_mode": "AND",
+        "theme_variant": "background-theme",
+        "threshold_score_buy": 60
+      },
+      "date_range": [
+        "2018-06-04",
+        "2026-08-14"
+      ],
+      "deflated_sharpe": 0.958269,
+      "direction": "long",
+      "horizon": "swing",
+      "metrics": [
+        "win_rate",
+        "profit",
+        "sharpe"
+      ],
+      "n": 65,
+      "p_value": 0.000999,
+      "profit": 71.6904,
+      "sharpe": 0.248879,
+      "theme_mode": "AND",
+      "theme_variant": "background-theme",
+      "vnindex_condition": {
+        "mode": "AND",
+        "rule": "VN-Index close > SMA(50) (daily)"
+      },
+      "win_rate": 49.230769
+    }
+  ],
+  "theme_variant": "background-theme",
+  "ticker": "TCB"
+}
