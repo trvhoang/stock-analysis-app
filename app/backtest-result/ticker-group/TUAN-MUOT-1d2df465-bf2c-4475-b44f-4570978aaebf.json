@@ -1,0 +1,14 @@
+{
+  "group_id": "1d2df465-bf2c-4475-b44f-4570978aaebf",
+  "group_name": "TU\u1ea4N M\u01af\u1ee2T",
+  "metadata": {},
+  "schema_version": 1,
+  "tickers": [
+    "EIB",
+    "GEX",
+    "GEE",
+    "VIX",
+    "VGC"
+  ],
+  "updated_at": "2026-08-14T23:49:55.676867+07:00"
+}

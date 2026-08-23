@@ -1,0 +1,96 @@
+{
+  "audit_eligibility": {
+    "eligible": true,
+    "reasons": [],
+    "status": "clean"
+  },
+  "certified_at": "2026-08-14T22:29:57.522028+07:00",
+  "empty": false,
+  "schema_version": 2,
+  "signal_sets": [
+    {
+      "combo": {
+        "adx_gate_mode": "hard",
+        "direction": "long",
+        "horizon": "swing",
+        "indicators": {
+          "momentum": [
+            "RSI"
+          ],
+          "trend_direction": [
+            "MA cross",
+            "Williams Alligator"
+          ],
+          "volume": [
+            "OBV"
+          ]
+        },
+        "strategy_id": "consensus_rsi_obv",
+        "theme_mode": null,
+        "theme_variant": "no-background-theme",
+        "threshold_score_buy": 60
+      },
+      "date_range": [
+        "2011-08-15",
+        "2026-08-14"
+      ],
+      "deflated_sharpe": 0.989261,
+      "direction": "long",
+      "horizon": "swing",
+      "metrics": [
+        "win_rate"
+      ],
+      "n": 165,
+      "p_value": 0.004995,
+      "profit": 140.26,
+      "sharpe": 0.186326,
+      "theme_mode": null,
+      "theme_variant": "no-background-theme",
+      "vnindex_condition": null,
+      "win_rate": 50.909091
+    },
+    {
+      "combo": {
+        "adx_gate_mode": "hard",
+        "direction": "long",
+        "horizon": "swing",
+        "indicators": {
+          "momentum": [
+            "RSI"
+          ],
+          "trend_direction": [
+            "Williams Alligator"
+          ],
+          "volume": [
+            "OBV"
+          ]
+        },
+        "strategy_id": "alligator_rsi_obv",
+        "theme_mode": null,
+        "theme_variant": "no-background-theme",
+        "threshold_score_buy": 60
+      },
+      "date_range": [
+        "2011-08-15",
+        "2026-08-14"
+      ],
+      "deflated_sharpe": 0.997253,
+      "direction": "long",
+      "horizon": "swing",
+      "metrics": [
+        "profit",
+        "sharpe"
+      ],
+      "n": 186,
+      "p_value": 0.001998,
+      "profit": 178.3042,
+      "sharpe": 0.211301,
+      "theme_mode": null,
+      "theme_variant": "no-background-theme",
+      "vnindex_condition": null,
+      "win_rate": 50.0
+    }
+  ],
+  "theme_variant": "no-background-theme",
+  "ticker": "VCB"
+}

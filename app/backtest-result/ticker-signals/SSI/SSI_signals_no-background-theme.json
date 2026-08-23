@@ -1,0 +1,58 @@
+{
+  "audit_eligibility": {
+    "eligible": false,
+    "reasons": [
+      "OHLC ordering mismatch 2.96% exceeds 1.00%"
+    ],
+    "status": "invalid"
+  },
+  "certified_at": "2026-08-14T22:34:50.146269+07:00",
+  "empty": false,
+  "schema_version": 2,
+  "signal_sets": [
+    {
+      "combo": {
+        "adx_gate_mode": "hard",
+        "direction": "long",
+        "horizon": "swing",
+        "indicators": {
+          "momentum": [
+            "RSI"
+          ],
+          "trend_direction": [
+            "Williams Alligator"
+          ],
+          "volume": [
+            "OBV"
+          ]
+        },
+        "strategy_id": "alligator_rsi_obv",
+        "theme_mode": null,
+        "theme_variant": "no-background-theme",
+        "threshold_score_buy": 60
+      },
+      "date_range": [
+        "2011-08-15",
+        "2026-08-14"
+      ],
+      "deflated_sharpe": 0.964479,
+      "direction": "long",
+      "horizon": "swing",
+      "metrics": [
+        "win_rate",
+        "profit",
+        "sharpe"
+      ],
+      "n": 151,
+      "p_value": 0.01998,
+      "profit": 148.0552,
+      "sharpe": 0.168044,
+      "theme_mode": null,
+      "theme_variant": "no-background-theme",
+      "vnindex_condition": null,
+      "win_rate": 47.682119
+    }
+  ],
+  "theme_variant": "no-background-theme",
+  "ticker": "SSI"
+}

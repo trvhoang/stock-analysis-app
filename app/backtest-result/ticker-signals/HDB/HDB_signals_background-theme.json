@@ -1,0 +1,61 @@
+{
+  "audit_eligibility": {
+    "eligible": false,
+    "reasons": [
+      "OHLC ordering mismatch 2.34% exceeds 1.00%"
+    ],
+    "status": "invalid"
+  },
+  "certified_at": "2026-08-14T22:30:56.537933+07:00",
+  "empty": false,
+  "schema_version": 2,
+  "signal_sets": [
+    {
+      "combo": {
+        "adx_gate_mode": "hard",
+        "direction": "long",
+        "horizon": "swing",
+        "indicators": {
+          "momentum": [
+            "RSI"
+          ],
+          "trend_direction": [
+            "MA cross"
+          ],
+          "volume": [
+            "OBV"
+          ]
+        },
+        "strategy_id": "ma_cross_rsi_obv",
+        "theme_mode": "AND",
+        "theme_variant": "background-theme",
+        "threshold_score_buy": 60
+      },
+      "date_range": [
+        "2018-01-05",
+        "2026-08-14"
+      ],
+      "deflated_sharpe": 0.969921,
+      "direction": "long",
+      "horizon": "swing",
+      "metrics": [
+        "win_rate",
+        "profit",
+        "sharpe"
+      ],
+      "n": 59,
+      "p_value": 0.022977,
+      "profit": 85.5051,
+      "sharpe": 0.310915,
+      "theme_mode": "AND",
+      "theme_variant": "background-theme",
+      "vnindex_condition": {
+        "mode": "AND",
+        "rule": "VN-Index close > SMA(50) (daily)"
+      },
+      "win_rate": 57.627119
+    }
+  ],
+  "theme_variant": "background-theme",
+  "ticker": "HDB"
+}

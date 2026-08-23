@@ -67,8 +67,8 @@ Details on the role of each Python module within the `app/` directory.
     - **`COMMON_DELTA_FILTER_WHERE_CLAUSE`:** The standard `WHERE` clause for filtering results based on the user's `delta_target`.
 
 - **`common_functions.py`**:
-    - **Shared Analysis:** Contains `analyze_ticker` and indicator calculation logic.
-    - **Advice Synthesis:** Contains logic to generate Statistical, Technical, and Final advice strings used by both the UI and the API.
+    - **Shared Analysis:** Contains `analyze_ticker`, which builds one shared technical snapshot for the current OHLCV frame.
+    - **Advice Synthesis:** Generates Statistical, Technical, and Final advice strings used by both the UI and the API; current technical signals and the eight-record report are reused from the snapshot.
 
 - **`analyze_visualization.py`**:
     - **"Analyze" Page Logic:** Contains all functions for the "Ticker Analyze" and "Portfolio Analyze" tabs.
@@ -87,11 +87,11 @@ Details on the role of each Python module within the `app/` directory.
 - **`pages/result_visualization.py`**:
     - **"Result" Page Logic:** Contains functions to display general market statistics, such as top tickers by volume or trading value.
 
-- **`pages/technical_analysis.py`**:
-    - **Technical UI Logic:** Handles calculations and trend classification requests specifically for the UI, consuming shared functions from `commons/common_functions.py`.
+- **`commons/technical_analysis.py`**:
+    - **Indicator Engine:** Owns the eight indicator calculators, trend classifiers, dimension metadata, dimension-aware score aggregation, ADX gate, and `build_technical_snapshot()`.
 
 - **`pages/technical_visualization.py`**:
-    - **"Technical Analyze" Page Logic:** Handles the UI for the technical analysis page. **It uses `st.session_state` to cache calculation results, preventing redundant computations when UI elements are toggled.** It renders Plotly charts (Price, Volume, and indicators like RSI).
+    - **"Technical Analyze" Page Logic:** Fetches OHLCV once per analysis key, caches the shared snapshot in `st.session_state`, and renders permanent candlestick/volume charts plus one selected visualization for MA, MA Cross, RSI, Stochastic, ADX, OBV, ATR, or Bollinger Bands. UI prices are displayed in k VND; export paths retain raw BIGINT prices.
 
     - **`apis/`**:
     - **`routes.py`**: Defines RESTful endpoints for ticker analysis and programmatic data updates.

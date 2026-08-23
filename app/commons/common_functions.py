@@ -6,7 +6,9 @@ from datetime import datetime, timedelta
 from commons.common_queries import BASE_DELTA_CALC_CTE, COMMON_DELTA_FILTER_WHERE_CLAUSE, DELTA_UP_THRESHOLD, DELTA_DOWN_THRESHOLD
 from commons.technical_analysis import (
     fetch_data, calculate_stochastic, calculate_rsi, calculate_ma_cross,
-    calculate_ma_trend, calculate_ma_cross_trend
+    calculate_ma_trend, calculate_ma_cross_trend,
+    build_technical_snapshot, calculate_dimension_technical_score,
+    get_latest_adx_value,
 )
 
 # Centralized Trend Keys for consistency
@@ -173,25 +175,18 @@ def analyze_ticker(ticker, day_range, result_day_range, engine):
         df_tech = fetch_data(ticker, tech_timeframe, 100, engine)
         tech_trend = "Unknown"
         tech_score = 0
-        
+        technical_signals = []
+        technical_report = []
+        adx_value = None
+
         if not df_tech.empty:
-            tech_data_list = []
-            # Run basic indicators
-            df_tech, stoch_trend = calculate_stochastic(df_tech)
-            tech_data_list.append([0, "Stoch", "", stoch_trend])
-            
-            df_tech, rsi_trend = calculate_rsi(df_tech, length=14)
-            tech_data_list.append([1, "RSI", "", rsi_trend])
-            
-            df_tech = calculate_ma_cross(df_tech, [(s_ma, l_ma)])
-            short_col, long_col, sig_col = f'SMA_{s_ma}', f'SMA_{l_ma}', f'cross_{s_ma}_{l_ma}'
-            
-            if short_col in df_tech.columns and long_col in df_tech.columns:
-                tech_data_list.append([2, "MA", "", calculate_ma_trend(df_tech, short_col, long_col)])
-            if sig_col in df_tech.columns:
-                tech_data_list.append([3, "Cross", "", calculate_ma_cross_trend(df_tech, sig_col)])
-            
-            _, tech_trend, tech_score = generate_technical_advice(tech_data_list)
+            technical_snapshot = build_technical_snapshot(df_tech, s_ma, l_ma)
+            technical_signals = technical_snapshot["signals"]
+            technical_report = technical_snapshot["report"]
+            adx_value = technical_snapshot["adx_value"]
+            _, tech_trend, tech_score = generate_technical_advice(
+                technical_signals, adx_value=adx_value
+            )
 
         return {
             "ticker": ticker,
@@ -210,7 +205,12 @@ def analyze_ticker(ticker, day_range, result_day_range, engine):
             "max_down_delta": result["max_down_delta"],
             "stat_trend": stat_trend,
             "tech_trend": tech_trend,
-            "tech_score": tech_score
+            "tech_score": tech_score,
+            # These are plain Python values intended for API/UI reuse; the
+            # enriched DataFrame stays local to avoid serializing chart data.
+            "technical_signals": technical_signals,
+            "technical_report": technical_report,
+            "technical_adx_value": adx_value,
         }
     except Exception as e:
         # Avoid flooding logs with tracebacks for expected missing data/columns
@@ -239,19 +239,16 @@ def provide_advice(validation_days, result_days, analysis_results):
     emoji = TREND_EMOJIS.get(trend, "")
     return f"Based on historical data, after a {validation_days}-day delta of {latest_delta:.2f}%, the stock is more likely to go **{trend} {emoji}** in the next {result_days} days.", trend
 
-def generate_technical_advice(tech_data):
+def generate_technical_advice(tech_data, adx_value=None):
     """Generates technical advice string, trend key, and score."""
     if not tech_data:
         return "Not enough data for technical advice.", "Unknown", 0
 
-    trend_map = {
-        "Strong Up": 4, "Overbought (Up)": 4, "Up": 3,
-        "Sideways": 2, "Unknown": 2, "None": 2,
-        "Down": 1, "Strong Down": 0, "Oversold (Down)": 0
-    }
-
-    total_score = sum(trend_map.get(item[3], 2) for item in tech_data)
-    percentage = (total_score / (len(tech_data) * 4)) * 100
+    percentage, _, count = calculate_dimension_technical_score(
+        tech_data, adx_value=adx_value
+    )
+    if count == 0:
+        return "No valid indicators found.", "Unknown", 0
     
     if percentage > 70: trend = "Strong Up"
     elif 53 <= percentage <= 70: trend = "Up"
@@ -260,7 +257,7 @@ def generate_technical_advice(tech_data):
     else: trend = "Strong Down"
     
     emoji = TREND_EMOJIS.get(trend, "")
-    display = f"Based on {len(tech_data)} indicators, the overall trend is **{trend} {emoji}** (Score: {percentage:.0f}%)."
+    display = f"Based on {count} indicators, the overall trend is **{trend} {emoji}** (Score: {percentage:.0f}%)."
     return display, trend, percentage
 
 def generate_final_advice(ticker, statistical_trend, technical_trend):
@@ -297,32 +294,44 @@ def synthesize_all_advice(stats_data, validation_days, result_days, engine):
     # 1. Get Statistical Advice
     stat_msg, stat_trend = provide_advice(validation_days, result_days, stats_data)
     
-    # 2. Perform Technical Analysis
-    if validation_days < 15:
-        tech_timeframe, s_ma, l_ma = 'Day', 5, 10
+    # 2. Reuse the current technical snapshot produced by analyze_ticker.
+    # Legacy callers that only provide statistical fields still use the
+    # original fetch/calculation fallback below for compatibility.
+    if "technical_signals" in stats_data:
+        tech_data = stats_data.get("technical_signals") or []
+        adx_value = stats_data.get("technical_adx_value")
     else:
-        tech_timeframe, s_ma, l_ma = 'Week', 4, 12
-        
-    df_tech = fetch_data(ticker, tech_timeframe, 100, engine)
-    tech_data = []
-    
-    if not df_tech.empty:
-        # Run indicators and collect trend data
-        df_tech, stoch_trend = calculate_stochastic(df_tech)
-        tech_data.append([0, "Stochastic", "", stoch_trend])
-        
-        df_tech, rsi_trend = calculate_rsi(df_tech, length=14)
-        tech_data.append([1, "RSI14", "", rsi_trend])
-        
-        df_tech = calculate_ma_cross(df_tech, [(s_ma, l_ma)])
-        short_col, long_col, sig_col = f'SMA_{s_ma}', f'SMA_{l_ma}', f'cross_{s_ma}_{l_ma}'
-        
-        if short_col in df_tech.columns and long_col in df_tech.columns:
-            tech_data.append([2, "MA", "", calculate_ma_trend(df_tech, short_col, long_col)])
-        if sig_col in df_tech.columns:
-            tech_data.append([3, "MA cross", "", calculate_ma_cross_trend(df_tech, sig_col)])
+        if validation_days < 15:
+            tech_timeframe, s_ma, l_ma = 'Day', 5, 10
+        else:
+            tech_timeframe, s_ma, l_ma = 'Week', 4, 12
 
-    tech_msg, tech_trend, _ = generate_technical_advice(tech_data)
+        df_tech = fetch_data(ticker, tech_timeframe, 100, engine)
+        tech_data = []
+        adx_value = None
+
+        if not df_tech.empty:
+            # Compatibility path for callers that predate the shared
+            # snapshot fields. New API/UI calls never enter this branch.
+            df_tech, stoch_trend = calculate_stochastic(df_tech)
+            tech_data.append([0, "Stochastic", "", stoch_trend])
+
+            df_tech, rsi_trend = calculate_rsi(df_tech, length=14)
+            tech_data.append([1, "RSI14", "", rsi_trend])
+
+            df_tech = calculate_ma_cross(df_tech, [(s_ma, l_ma)])
+            short_col, long_col, sig_col = f'SMA_{s_ma}', f'SMA_{l_ma}', f'cross_{s_ma}_{l_ma}'
+
+            if short_col in df_tech.columns and long_col in df_tech.columns:
+                tech_data.append([2, "MA", "", calculate_ma_trend(df_tech, short_col, long_col)])
+            if sig_col in df_tech.columns:
+                tech_data.append([3, "MA cross", "", calculate_ma_cross_trend(df_tech, sig_col)])
+
+            adx_value = get_latest_adx_value(df_tech)
+
+    tech_msg, tech_trend, _ = generate_technical_advice(
+        tech_data, adx_value=adx_value
+    )
     
     # 3. Get Final Advice
     final_msg = generate_final_advice(ticker, stat_trend, tech_trend)

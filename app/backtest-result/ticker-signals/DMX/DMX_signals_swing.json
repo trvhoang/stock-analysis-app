@@ -1,0 +1,80 @@
+{
+  "audit_eligibility": {
+    "effective_date_range": [
+      "2026-08-06",
+      "2026-08-21"
+    ],
+    "eligible": true,
+    "reasons": [],
+    "source": "fresh_v3_raw_history",
+    "status": "clean",
+    "warnings": []
+  },
+  "candidates": [],
+  "effective_data_range": {
+    "end": "2026-08-21",
+    "reason": null,
+    "start": "2026-08-06"
+  },
+  "empty": true,
+  "evaluated_at": "2026-08-23T10:02:51.133850+07:00",
+  "evaluation_label": "Exploratory \u2014 gross",
+  "failure_reason": null,
+  "horizon": "swing",
+  "rejection_reason": "No rulebook has no-theme training n >= 5.",
+  "requested_date_range": {
+    "end": "2026-08-23",
+    "reason": null,
+    "start": "2011-08-23"
+  },
+  "rulebook": {
+    "adx_minimum": 17,
+    "adx_period": 14,
+    "alligator_lags": [
+      5,
+      3,
+      2
+    ],
+    "alligator_periods": [
+      8,
+      5,
+      3
+    ],
+    "atr_period": 14,
+    "atr_sl_multiplier": 1.5,
+    "atr_tp_multiplier": 2.5,
+    "horizon": "swing",
+    "joint_trend_required": true,
+    "ma_kind": "EMA",
+    "ma_pair": [
+      5,
+      13
+    ],
+    "max_hold_bars": 22,
+    "min_exit_offset_bars": 3,
+    "min_n": 5,
+    "native_timeframe": "daily",
+    "rsi_period": 9,
+    "rsi_upcross_level": 52,
+    "rule_id": "swing_rulebook_v4",
+    "theme_sma_window": 50,
+    "volume_multiplier": 1.15,
+    "volume_window": 10,
+    "weekly_frequency": null
+  },
+  "schema_version": 4,
+  "split": {
+    "method": "chronological_65_35",
+    "test": {
+      "end": "2026-08-21",
+      "start": "2026-08-17"
+    },
+    "train": {
+      "end": "2026-08-14",
+      "start": "2026-08-06"
+    }
+  },
+  "terminal_state": "empty",
+  "ticker": "DMX",
+  "top_rulebook_ids": []
+}

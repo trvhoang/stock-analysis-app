@@ -1,0 +1,51 @@
+{
+  "error_text": null,
+  "job_id": "e1126ca77a524ad2aa527f7f75837211",
+  "output_paths": [
+    "backtest-result/ticker-signals/MSN/MSN_signals_swing.json",
+    "backtest-result/ticker-signals/MCH/MCH_signals_swing.json",
+    "backtest-result/ticker-signals/MML/MML_signals_swing.json",
+    "backtest-result/ticker-signals/MSR/MSR_signals_swing.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 4,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/MSN/MSN_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "MSN"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/MCH/MCH_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "MCH"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/MML/MML_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "MML"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/MSR/MSR_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "MSR"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "group_id": "22b95767-1c27-4c95-9550-0e723fb21092",
+  "group_name": "MASAN",
+  "metadata": {},
+  "schema_version": 1,
+  "tickers": [
+    "MCH",
+    "MML",
+    "MSN",
+    "MSR"
+  ],
+  "updated_at": "2026-08-23T09:58:30.091439+07:00"
+}

@@ -1,0 +1,41 @@
+{
+  "error_text": null,
+  "job_id": "f60675ff05374e19865fb8a0c256af60",
+  "output_paths": [
+    "backtest-result/ticker-signals/FPT/FPT_signals_midterm.json",
+    "backtest-result/ticker-signals/VCB/VCB_signals_midterm.json",
+    "backtest-result/ticker-signals/REE/REE_signals_midterm.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 4,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/FPT/FPT_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "FPT"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VCB/VCB_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "VCB"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/REE/REE_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "REE"
+    }
+  ]
+}

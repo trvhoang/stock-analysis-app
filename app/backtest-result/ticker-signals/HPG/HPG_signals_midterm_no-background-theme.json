@@ -1,0 +1,72 @@
+{
+  "audit_eligibility": {
+    "effective_date_range": [
+      null,
+      null
+    ],
+    "eligible": false,
+    "reasons": [
+      "Regenerate under amended rulebook."
+    ],
+    "source": "unavailable",
+    "status": "unavailable",
+    "warnings": []
+  },
+  "candidates": [],
+  "effective_data_range": {
+    "end": null,
+    "reason": "Regenerate under amended rulebook.",
+    "start": null
+  },
+  "empty": true,
+  "evaluated_at": "2026-08-22T01:49:53.426670+07:00",
+  "evaluation_label": "Exploratory \u2014 gross",
+  "failure_reason": null,
+  "horizon": "midterm",
+  "rejection_reason": "Regenerate under amended rulebook.",
+  "requested_date_range": {
+    "end": null,
+    "reason": "Regenerate under amended rulebook.",
+    "start": null
+  },
+  "rulebook": {
+    "adx_minimum": 20,
+    "adx_period": 14,
+    "alligator_lags": [
+      8,
+      5,
+      3
+    ],
+    "alligator_periods": [
+      13,
+      8,
+      5
+    ],
+    "atr_period": 14,
+    "atr_sl_multiplier": 1.5,
+    "atr_tp_multiplier": 2.5,
+    "horizon": "midterm",
+    "joint_trend_required": true,
+    "ma_kind": "SMA",
+    "ma_pair": [
+      8,
+      21
+    ],
+    "max_hold_bars": 16,
+    "min_exit_offset_bars": 1,
+    "min_n": 5,
+    "native_timeframe": "weekly",
+    "rsi_period": 14,
+    "rsi_upcross_level": 65,
+    "rule_id": "midterm_rulebook_v4",
+    "theme_sma_window": 20,
+    "volume_multiplier": 1.3,
+    "volume_window": 8,
+    "weekly_frequency": "W-FRI"
+  },
+  "schema_version": 4,
+  "split": null,
+  "terminal_state": "requires_regeneration",
+  "ticker": "HPG",
+  "top_rulebook_ids": []
+}

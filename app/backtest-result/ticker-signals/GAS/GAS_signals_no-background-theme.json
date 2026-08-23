@@ -1,0 +1,59 @@
+{
+  "audit_eligibility": {
+    "eligible": false,
+    "reasons": [
+      "OHLC ordering mismatch 3.65% exceeds 1.00%"
+    ],
+    "status": "invalid"
+  },
+  "certified_at": "2026-08-15T00:30:21.718640+07:00",
+  "empty": false,
+  "schema_version": 2,
+  "signal_sets": [
+    {
+      "combo": {
+        "adx_gate_mode": "hard",
+        "direction": "long",
+        "horizon": "swing",
+        "indicators": {
+          "momentum": [
+            "RSI"
+          ],
+          "trend_direction": [
+            "MA cross",
+            "Williams Alligator"
+          ],
+          "volume": [
+            "OBV"
+          ]
+        },
+        "strategy_id": "consensus_rsi_obv",
+        "theme_mode": null,
+        "theme_variant": "no-background-theme",
+        "threshold_score_buy": 60
+      },
+      "date_range": [
+        "2012-05-21",
+        "2026-08-14"
+      ],
+      "deflated_sharpe": 0.961438,
+      "direction": "long",
+      "horizon": "swing",
+      "metrics": [
+        "win_rate",
+        "profit",
+        "sharpe"
+      ],
+      "n": 143,
+      "p_value": 0.036963,
+      "profit": 155.0199,
+      "sharpe": 0.212214,
+      "theme_mode": null,
+      "theme_variant": "no-background-theme",
+      "vnindex_condition": null,
+      "win_rate": 51.048951
+    }
+  ],
+  "theme_variant": "no-background-theme",
+  "ticker": "GAS"
+}

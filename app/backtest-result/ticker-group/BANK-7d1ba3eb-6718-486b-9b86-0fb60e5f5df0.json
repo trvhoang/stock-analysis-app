@@ -1,0 +1,19 @@
+{
+  "group_id": "7d1ba3eb-6718-486b-9b86-0fb60e5f5df0",
+  "group_name": "BANK",
+  "metadata": {},
+  "schema_version": 1,
+  "tickers": [
+    "ACB",
+    "BID",
+    "CTG",
+    "HDB",
+    "MBB",
+    "SHB",
+    "STB",
+    "TCB",
+    "VCB",
+    "VIB"
+  ],
+  "updated_at": "2026-08-23T12:56:27.040393+07:00"
+}

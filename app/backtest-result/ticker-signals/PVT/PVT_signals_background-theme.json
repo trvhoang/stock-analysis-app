@@ -1,0 +1,61 @@
+{
+  "audit_eligibility": {
+    "eligible": false,
+    "reasons": [
+      "OHLC ordering mismatch 1.68% exceeds 1.00%"
+    ],
+    "status": "invalid"
+  },
+  "certified_at": "2026-08-15T00:30:50.581538+07:00",
+  "empty": false,
+  "schema_version": 2,
+  "signal_sets": [
+    {
+      "combo": {
+        "adx_gate_mode": "hard",
+        "direction": "long",
+        "horizon": "swing",
+        "indicators": {
+          "momentum": [
+            "RSI"
+          ],
+          "trend_direction": [
+            "Williams Alligator"
+          ],
+          "volume": [
+            "OBV"
+          ]
+        },
+        "strategy_id": "alligator_rsi_obv",
+        "theme_mode": "AND",
+        "theme_variant": "background-theme",
+        "threshold_score_buy": 60
+      },
+      "date_range": [
+        "2011-08-15",
+        "2026-08-14"
+      ],
+      "deflated_sharpe": 0.999504,
+      "direction": "long",
+      "horizon": "swing",
+      "metrics": [
+        "win_rate",
+        "profit",
+        "sharpe"
+      ],
+      "n": 131,
+      "p_value": 0.004995,
+      "profit": 270.1317,
+      "sharpe": 0.329228,
+      "theme_mode": "AND",
+      "theme_variant": "background-theme",
+      "vnindex_condition": {
+        "mode": "AND",
+        "rule": "VN-Index close > SMA(50) (daily)"
+      },
+      "win_rate": 52.671756
+    }
+  ],
+  "theme_variant": "background-theme",
+  "ticker": "PVT"
+}
