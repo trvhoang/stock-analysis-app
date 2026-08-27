@@ -1,0 +1,21 @@
+{
+  "error_text": null,
+  "job_id": "a61dd8b812e343d88a1abc8e326dbb46",
+  "output_paths": [
+    "backtest-result/ticker-signals/VNINDEX/VNINDEX_signals_swing.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 4,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VNINDEX/VNINDEX_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "VNINDEX"
+    }
+  ]
+}

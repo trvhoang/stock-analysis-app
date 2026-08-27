@@ -1,0 +1,139 @@
+{
+  "audit_eligibility": {
+    "effective_date_range": [
+      "2011-08-24",
+      "2026-08-24"
+    ],
+    "eligible": true,
+    "reasons": [],
+    "source": "fresh_v3_raw_history",
+    "status": "clean",
+    "warnings": [
+      "date gap of 4890 calendar days before 2025-05-13",
+      "date gap of 10 calendar days before 2026-02-23"
+    ]
+  },
+  "candidates": [
+    {
+      "preferred_variant": "no-background-theme",
+      "rulebook_id": "swing_rulebook_v4__adx",
+      "selected_gates": [
+        "rulebook_adx_gate"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "unavailable",
+          "test": {
+            "n": 18,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -41.64721794843462,
+            "sharpe": -0.4208849166170655,
+            "win_rate": 27.77777777777778
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 0,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 0.0,
+            "sharpe": null,
+            "win_rate": 0.0
+          },
+          "training_dsr": null
+        },
+        "no-background-theme": {
+          "dsr_status": "unavailable",
+          "test": {
+            "n": 26,
+            "p_value": 0.6463536463536463,
+            "p_value_status": "informational",
+            "profit_pct": -4.355642284449544,
+            "sharpe": -0.024776132096543602,
+            "win_rate": 34.61538461538461
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 5,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -5.047140819196394,
+            "sharpe": -0.1125964714250912,
+            "win_rate": 40.0
+          },
+          "training_dsr": null
+        }
+      }
+    }
+  ],
+  "effective_data_range": {
+    "end": "2026-08-24",
+    "reason": null,
+    "start": "2011-08-24"
+  },
+  "empty": false,
+  "evaluated_at": "2026-08-24T20:56:34.487826+07:00",
+  "evaluation_label": "Exploratory \u2014 gross",
+  "failure_reason": null,
+  "horizon": "swing",
+  "rejection_reason": null,
+  "requested_date_range": {
+    "end": "2026-08-24",
+    "reason": null,
+    "start": "2011-08-24"
+  },
+  "rulebook": {
+    "adx_minimum": 17,
+    "adx_period": 14,
+    "alligator_lags": [
+      5,
+      3,
+      2
+    ],
+    "alligator_periods": [
+      8,
+      5,
+      3
+    ],
+    "atr_period": 14,
+    "atr_sl_multiplier": 1.5,
+    "atr_tp_multiplier": 2.5,
+    "horizon": "swing",
+    "joint_trend_required": true,
+    "ma_kind": "EMA",
+    "ma_pair": [
+      5,
+      13
+    ],
+    "max_hold_bars": 22,
+    "min_exit_offset_bars": 3,
+    "min_n": 5,
+    "native_timeframe": "daily",
+    "rsi_period": 9,
+    "rsi_upcross_level": 52,
+    "rule_id": "swing_rulebook_v4",
+    "theme_sma_window": 50,
+    "volume_multiplier": 1.15,
+    "volume_window": 10,
+    "weekly_frequency": null
+  },
+  "schema_version": 4,
+  "split": {
+    "method": "calendar_10y_5y",
+    "test": {
+      "end": "2026-08-24",
+      "start": "2025-05-13"
+    },
+    "train": {
+      "end": "2011-12-23",
+      "start": "2011-08-24"
+    }
+  },
+  "terminal_state": "success",
+  "ticker": "VPL",
+  "top_rulebook_ids": [
+    "swing_rulebook_v4__adx"
+  ]
+}

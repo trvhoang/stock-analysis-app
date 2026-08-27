@@ -9,7 +9,7 @@ import math
 from typing import Iterator
 
 from .catalog import CatalogRevision
-from .contracts import ExecutionContract, PredicateSpec, PrimitiveSpec, RulebookDefinition, RulebookEvaluation, RuntimeBudget, canonical_json, rulebook_id
+from .contracts import EvaluationSplit, ExecutionContract, PredicateSpec, PrimitiveSpec, RulebookDefinition, RulebookEvaluation, RuntimeBudget, canonical_json, rulebook_id
 from .execution import ExecutionInterrupted, execute_rulebook
 from .features import FeatureResolution, compose_entry_mask, compose_technical_exit_mask
 from .history import HistorySnapshot, make_evaluation_split
@@ -165,11 +165,15 @@ def scheduled_candidates(space: CandidateSpace, assignment: FrontierAssignment) 
         canonical = layout.base + local
         yield global_slot, stratum.stratum_id, canonical, space.definition_at(canonical)
 
-def discover_and_evaluate(snapshot: HistorySnapshot, features: FeatureResolution, space: CandidateSpace, assignment: FrontierAssignment, *, monotonic: object) -> DiscoveryResult:
+def discover_and_evaluate(snapshot: HistorySnapshot, features: FeatureResolution, space: CandidateSpace, assignment: FrontierAssignment, *, monotonic: object, split: EvaluationSplit | None = None, execution_contract: ExecutionContract | None = None) -> DiscoveryResult:
     """Evaluate only frozen slots; deadline leaves current slot uncommitted."""
     if not isinstance(snapshot, HistorySnapshot) or not isinstance(features, FeatureResolution): raise ValueError("discovery requires HistorySnapshot and FeatureResolution")
     if not callable(monotonic): raise ValueError("monotonic must be callable")
-    split = make_evaluation_split(snapshot); attempted=[]; frozen=[]; outcomes=[]; evaluations=[]
+    split = make_evaluation_split(snapshot) if split is None else split
+    execution_contract = ExecutionContract() if execution_contract is None else execution_contract
+    if not isinstance(split, EvaluationSplit) or not isinstance(execution_contract, ExecutionContract):
+        raise ValueError("discovery requires frozen split and execution contract")
+    attempted=[]; frozen=[]; outcomes=[]; evaluations=[]
     for slot, _, canonical, definition in scheduled_candidates(space, assignment):
         if float(monotonic()) >= 16_200:
             return DiscoveryResult("time_budget_exhausted", space.size, len(attempted), slot, slot, space.size-len(attempted), tuple(attempted), tuple(frozen), tuple(outcomes), tuple(evaluations))
@@ -191,7 +195,7 @@ def discover_and_evaluate(snapshot: HistorySnapshot, features: FeatureResolution
         if isinstance(test, ExecutionInterrupted):
             attempted.pop(); frozen.pop(); return DiscoveryResult("time_budget_exhausted", space.size, len(attempted), slot, slot, space.size-len(attempted), tuple(attempted), tuple(frozen), tuple(outcomes), tuple(evaluations))
         test_metrics = partition_metrics(test)
-        evaluations.append(RulebookEvaluation(definition, snapshot.ticker, features.plan.snapshot, space.catalog.catalog_hash, split, ExecutionContract(), features.plan.build_contract, features.plan.profile, features.receipt, train_metrics, test_metrics, training_trades=train, test_trades=test))
+        evaluations.append(RulebookEvaluation(definition, snapshot.ticker, features.plan.snapshot, space.catalog.catalog_hash, split, execution_contract, features.plan.build_contract, features.plan.profile, features.receipt, train_metrics, test_metrics, training_trades=train, test_trades=test))
         outcomes.append((slot, "qualified" if qualifies(train_metrics, test_metrics) else "test_threshold"))
     next_slot = assignment.start_slot + assignment.attempt_count
     state = "frontier_exhausted_no_qualified_candidate" if next_slot == space.size else "no_qualified_candidate_within_budget"

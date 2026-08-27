@@ -1,0 +1,61 @@
+{
+  "error_text": null,
+  "job_id": "ecf411031bb64288bad39308756d0d17",
+  "output_paths": [
+    "backtest-result/ticker-signals/EIB/EIB_signals_swing.json",
+    "backtest-result/ticker-signals/GEE/GEE_signals_swing.json",
+    "backtest-result/ticker-signals/GEX/GEX_signals_swing.json",
+    "backtest-result/ticker-signals/VGC/VGC_signals_swing.json",
+    "backtest-result/ticker-signals/VIX/VIX_signals_swing.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 4,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/EIB/EIB_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "EIB"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/GEE/GEE_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "GEE"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/GEX/GEX_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "GEX"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VGC/VGC_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "VGC"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VIX/VIX_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "VIX"
+    }
+  ]
+}

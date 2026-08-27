@@ -3,12 +3,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
+from datetime import date
+from decimal import Decimal
 import hashlib
+import json
+import os
+from pathlib import Path
 import re
+import tempfile
 from typing import Literal
 
 from .contracts import (
     EvaluationSplit,
+    EvaluationPartition,
     ExecutionContract,
     FeatureResolutionReceipt,
     FeatureSnapshot,
@@ -17,7 +24,9 @@ from .contracts import (
     canonical_json,
 )
 from .history import HistorySnapshot
-from .search import FrontierAssignment
+from .metrics import rank_qualified, select_timing_distinct_top_three
+from .search import FrontierAssignment, StratumAssignment
+from .storage import write_selection_snapshot
 
 
 CampaignState = Literal["queued", "running", "cancelling", "cancelled", "blocked", "interrupted", "completed", "completed_with_errors", "failed"]
@@ -25,6 +34,7 @@ HistoricalItemState = Literal["queued", "running", "retry_pending", "qualified",
 _OPERATIONS = frozenset({"discover", "qualify", "current_scan"})
 _ITEM_STATES = frozenset({"queued", "running", "retry_pending", "qualified", "no_qualified_candidate_within_budget", "time_budget_exhausted", "frontier_exhausted_no_qualified_candidate", "data_ineligible", "source_changed", "failed", "cancelled", "not_started_budget_limited"})
 _HASH = re.compile(r"^[0-9a-f]{64}$")
+_RECEIPT_ID = re.compile(r"^frpr_[0-9a-f]{64}$")
 _TERMINAL = frozenset({"cancelled", "completed", "completed_with_errors", "failed"})
 _TRANSITIONS = {
     "queued": frozenset({"running", "cancelled", "blocked", "failed"}),
@@ -37,6 +47,7 @@ _TRANSITIONS = {
     "completed_with_errors": frozenset(),
     "failed": frozenset(),
 }
+_MANIFEST_SCHEMA_VERSION = 1
 
 
 def _hash(value: object, name: str) -> str:
@@ -55,6 +66,22 @@ def _members(value: object) -> tuple[str, ...]:
     if not members or any(not isinstance(item, str) or not item or item != item.upper() for item in members) or len(set(members)) != len(members):
         raise ValueError("frozen_members must be unique uppercase tickers")
     return members
+
+
+def _receipt_ids(value: object, *, require_nonempty: bool) -> tuple[str, ...]:
+    if isinstance(value, (str, bytes)):
+        raise ValueError("feature receipt IDs must be an ordered tuple")
+    try:
+        receipt_ids = tuple(value)
+    except TypeError as error:
+        raise ValueError("feature receipt IDs must be an ordered tuple") from error
+    if (
+        (require_nonempty and not receipt_ids)
+        or len(set(receipt_ids)) != len(receipt_ids)
+        or any(not isinstance(item, str) or not _RECEIPT_ID.fullmatch(item) for item in receipt_ids)
+    ):
+        raise ValueError("feature receipt IDs are invalid")
+    return receipt_ids
 
 
 @dataclass(frozen=True)
@@ -153,6 +180,10 @@ class CampaignItem:
     def __post_init__(self) -> None:
         if not isinstance(self.ticker, str) or not self.ticker or self.ticker != self.ticker.upper() or self.state not in _ITEM_STATES:
             raise ValueError("historical item state or ticker is invalid")
+        if self.artifact_id is not None and (
+            not isinstance(self.artifact_id, str) or not self.artifact_id
+        ):
+            raise ValueError("historical item artifact_id is invalid")
 
 
 @dataclass(frozen=True)
@@ -178,10 +209,17 @@ class CampaignManifest:
             raise ValueError("manifest requires a valid request and state")
         if not isinstance(self.campaign_id, str) or not re.fullmatch(r"fcmp_[0-9a-f]{64}", self.campaign_id):
             raise ValueError("manifest campaign_id is invalid")
+        if self.campaign_id != f"fcmp_{request_hash(self.request)}":
+            raise ValueError("manifest campaign_id does not match its frozen request")
         if tuple(item.ticker for item in self.items) != self.request.frozen_members or any(not isinstance(item, CampaignItem) for item in self.items):
             raise ValueError("manifest items must preserve frozen member order")
         if any(isinstance(value, bool) or not isinstance(value, int) or value < 0 for value in (self.lease_epoch, self.chain_attempted_count, self.unsearched_count)):
             raise ValueError("manifest counters must be non-negative integers")
+        object.__setattr__(
+            self,
+            "feature_receipt_ids",
+            _receipt_ids(self.feature_receipt_ids, require_nonempty=False),
+        )
         assignment = self.request.frontier_assignment
         if assignment is not None:
             frontier_size = sum(item.size for item in assignment.strata)
@@ -249,7 +287,12 @@ def transition(manifest: CampaignManifest, target: CampaignState) -> CampaignMan
     return replace(manifest, state=target)
 
 
-def continue_discovery(parent: CampaignManifest, *, verified_source: HistorySnapshot) -> CampaignRequest:
+def continue_discovery(
+    parent: CampaignManifest,
+    *,
+    verified_source: HistorySnapshot,
+    verified_feature_receipt_ids: tuple[str, ...],
+) -> CampaignRequest:
     """Create a linked, source-identical next discovery window from its cursor."""
 
     if not isinstance(parent, CampaignManifest) or parent.request.operation != "discover" or parent.state not in {"completed", "completed_with_errors"}:
@@ -261,6 +304,9 @@ def continue_discovery(parent: CampaignManifest, *, verified_source: HistorySnap
     source = parent.request.source_snapshots[0]
     if (verified_source.ticker, verified_source.fingerprint, verified_source.requested_start, verified_source.requested_as_of, verified_source.first_date, verified_source.as_of_date) != (source.ticker, source.raw_history_fingerprint, source.requested_start, source.requested_as_of, source.first_date, source.as_of_date):
         raise ValueError("cannot continue changed frozen source")
+    parent_receipt_ids = _receipt_ids(parent.feature_receipt_ids, require_nonempty=True)
+    if _receipt_ids(verified_feature_receipt_ids, require_nonempty=True) != parent_receipt_ids:
+        raise ValueError("cannot continue mismatched feature receipt")
     assignment = parent.request.frontier_assignment
     assert assignment is not None
     frontier_size = sum(item.size for item in assignment.strata)
@@ -276,4 +322,532 @@ def continue_discovery(parent: CampaignManifest, *, verified_source: HistorySnap
     )
 
 
-__all__ = ["CampaignItem", "CampaignManifest", "CampaignRequest", "CampaignState", "FeatureResolutionReceipt", "HistoricalItemState", "SelectionSnapshot", "continue_discovery", "create_manifest", "request_hash", "transition"]
+def _contained_root(root: Path) -> Path:
+    if not isinstance(root, Path) or not root.is_absolute():
+        raise ValueError("Flexible storage root must be absolute")
+    root.mkdir(parents=True, exist_ok=True)
+    return root.resolve()
+
+
+def _campaign_path(root: Path, campaign_id: str, *parts: str) -> Path:
+    if not isinstance(campaign_id, str) or not re.fullmatch(r"fcmp_[0-9a-f]{64}", campaign_id):
+        raise ValueError("campaign_id is invalid")
+    base = _contained_root(root)
+    path = (base / "campaigns" / campaign_id).joinpath(*parts).resolve()
+    if base not in path.parents:
+        raise ValueError("campaign path escapes Flexible root")
+    return path
+
+
+def _write_atomic(path: Path, payload: dict[str, object]) -> Path:
+    material = canonical_json(payload)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        dir=path.parent, mode="w", encoding="utf-8", delete=False
+    ) as stream:
+        temporary = Path(stream.name)
+        stream.write(material)
+        stream.flush()
+        os.fsync(stream.fileno())
+    try:
+        os.replace(temporary, path)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+    return path
+
+
+def _write_immutable(path: Path, payload: dict[str, object]) -> Path:
+    material = canonical_json(payload)
+    if path.exists():
+        if path.read_text(encoding="utf-8") != material:
+            raise ValueError("immutable campaign item already differs")
+        return path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        dir=path.parent, mode="w", encoding="utf-8", delete=False
+    ) as stream:
+        temporary = Path(stream.name)
+        stream.write(material)
+        stream.flush()
+        os.fsync(stream.fileno())
+    try:
+        os.link(temporary, path)
+    except FileExistsError:
+        if path.read_text(encoding="utf-8") != material:
+            raise ValueError("immutable campaign item already differs")
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+    return path
+
+
+def _decode_canonical(value: object) -> object:
+    if isinstance(value, list):
+        return [_decode_canonical(item) for item in value]
+    if not isinstance(value, dict):
+        return value
+    if set(value) == {"$date"} and isinstance(value["$date"], str):
+        return date.fromisoformat(value["$date"])
+    if set(value) == {"$decimal"} and isinstance(value["$decimal"], str):
+        return Decimal(value["$decimal"])
+    if set(value) == {"$float"} and isinstance(value["$float"], str):
+        return float(value["$float"])
+    return {key: _decode_canonical(item) for key, item in value.items()}
+
+
+def _mapping(value: object, name: str) -> dict[str, object]:
+    if not isinstance(value, dict) or not all(isinstance(key, str) for key in value):
+        raise ValueError(f"{name} is invalid")
+    return value
+
+
+def _snapshot_from_dict(value: object) -> FeatureSnapshot:
+    payload = _mapping(value, "source snapshot")
+    return FeatureSnapshot(**payload)
+
+
+def _partition_from_dict(value: object) -> EvaluationPartition:
+    return EvaluationPartition(**_mapping(value, "evaluation partition"))
+
+
+def _assignment_from_dict(value: object) -> FrontierAssignment | None:
+    if value is None:
+        return None
+    payload = _mapping(value, "frontier assignment")
+    strata = tuple(
+        StratumAssignment(**_mapping(item, "frontier stratum"))
+        for item in payload.pop("strata", [])
+    )
+    expected_hash = payload.pop("assignment_hash", None)
+    assignment = FrontierAssignment(strata=strata, **payload)
+    if expected_hash != assignment.assignment_hash:
+        raise ValueError("frontier assignment hash is invalid")
+    return assignment
+
+
+def _request_from_payload(value: object) -> CampaignRequest:
+    payload = _mapping(value, "campaign request")
+    identity = _mapping(payload.get("identity"), "campaign request identity")
+    runtime = _mapping(payload.get("runtime_provenance"), "campaign runtime provenance")
+    split_payload = _mapping(identity.pop("split", None), "evaluation split")
+    selection_payload = _mapping(identity.pop("selection_policy", None), "selection policy")
+    return CampaignRequest(
+        operation=identity.pop("operation"),
+        frozen_members=tuple(identity.pop("frozen_members")),
+        source_snapshots=tuple(
+            _snapshot_from_dict(item) for item in identity.pop("source_snapshots")
+        ),
+        catalog_hash=identity.pop("catalog_hash"),
+        engine_revision=identity.pop("engine_revision"),
+        rulebook_ids=tuple(identity.pop("rulebook_ids")),
+        feature_build_contract_hashes=tuple(identity.pop("feature_build_contract_hashes")),
+        feature_plan_hashes=tuple(identity.pop("feature_plan_hashes")),
+        execution_contract=ExecutionContract(**_mapping(
+            identity.pop("execution_contract"), "execution contract"
+        )),
+        split=EvaluationSplit(
+            method=split_payload["method"],
+            requested_test_cutoff=split_payload["requested_test_cutoff"],
+            training=_partition_from_dict(split_payload["training"]),
+            test=_partition_from_dict(split_payload["test"]),
+        ),
+        runtime_budget=RuntimeBudget(**_mapping(
+            identity.pop("runtime_budget"), "runtime budget"
+        )),
+        selection_policy=SelectionPolicy(**selection_payload),
+        per_ticker_budget=identity.pop("per_ticker_budget"),
+        frontier_assignment=_assignment_from_dict(identity.pop("frontier_assignment")),
+        qualification_revision=identity.pop("qualification_revision"),
+        group_snapshot=tuple(identity.pop("group_snapshot")),
+        parent_campaign_id=identity.pop("parent_campaign_id"),
+        execution_window_id=identity.pop("execution_window_id"),
+        submitted_at=runtime.get("submitted_at"),
+        cache_choice=runtime.get("cache_choice"),
+        cache_path=runtime.get("cache_path"),
+        cache_age_seconds=runtime.get("cache_age_seconds"),
+    )
+
+
+def _manifest_payload(manifest: CampaignManifest) -> dict[str, object]:
+    return {
+        "schema_version": _MANIFEST_SCHEMA_VERSION,
+        "artifact_kind": "flexible_campaign_manifest",
+        "manifest": {
+            "campaign_id": manifest.campaign_id,
+            "request": {
+                "identity": manifest.request.to_identity_dict(),
+                "runtime_provenance": {
+                    "submitted_at": manifest.request.submitted_at,
+                    "cache_choice": manifest.request.cache_choice,
+                    "cache_path": manifest.request.cache_path,
+                    "cache_age_seconds": manifest.request.cache_age_seconds,
+                },
+            },
+            "state": manifest.state,
+            "items": [item.__dict__ for item in manifest.items],
+            "lease_epoch": manifest.lease_epoch,
+            "next_slot": manifest.next_slot,
+            "uncommitted_slot": manifest.uncommitted_slot,
+            "chain_attempted_count": manifest.chain_attempted_count,
+            "unsearched_count": manifest.unsearched_count,
+            "feature_receipt_ids": list(manifest.feature_receipt_ids),
+            "selection_snapshot_id": manifest.selection_snapshot_id,
+            "safe_error_code": manifest.safe_error_code,
+            "safe_error_message": manifest.safe_error_message,
+        },
+    }
+
+
+def write_campaign_manifest(root: Path, manifest: CampaignManifest) -> Path:
+    """Atomically checkpoint one mutable manifest around immutable request data."""
+
+    if not isinstance(manifest, CampaignManifest):
+        raise ValueError("manifest must be CampaignManifest")
+    return _write_atomic(
+        _campaign_path(root, manifest.campaign_id, "manifest.json"),
+        _manifest_payload(manifest),
+    )
+
+
+def read_campaign_manifest(root: Path, campaign_id: str) -> CampaignManifest:
+    """Read and validate a versioned Flexible campaign checkpoint."""
+
+    try:
+        payload = _decode_canonical(json.loads(
+            _campaign_path(root, campaign_id, "manifest.json").read_text(encoding="utf-8")
+        ))
+    except (OSError, json.JSONDecodeError, ValueError) as error:
+        raise ValueError("campaign manifest is unreadable") from error
+    document = _mapping(payload, "campaign manifest")
+    if (
+        document.get("schema_version") != _MANIFEST_SCHEMA_VERSION
+        or document.get("artifact_kind") != "flexible_campaign_manifest"
+    ):
+        raise ValueError("campaign manifest version is invalid")
+    data = _mapping(document.get("manifest"), "campaign manifest body")
+    if data.get("campaign_id") != campaign_id:
+        raise ValueError("campaign manifest identity is invalid")
+    items = tuple(
+        CampaignItem(**_mapping(item, "campaign item")) for item in data.get("items", [])
+    )
+    return CampaignManifest(
+        request=_request_from_payload(data.get("request")),
+        campaign_id=campaign_id,
+        state=data.get("state"),
+        items=items,
+        lease_epoch=data.get("lease_epoch"),
+        next_slot=data.get("next_slot"),
+        uncommitted_slot=data.get("uncommitted_slot"),
+        chain_attempted_count=data.get("chain_attempted_count"),
+        unsearched_count=data.get("unsearched_count"),
+        feature_receipt_ids=tuple(data.get("feature_receipt_ids", [])),
+        selection_snapshot_id=data.get("selection_snapshot_id"),
+        safe_error_code=data.get("safe_error_code"),
+        safe_error_message=data.get("safe_error_message"),
+    )
+
+
+def _item_path(root: Path, manifest: CampaignManifest, ticker: str) -> Path:
+    try:
+        ordinal = manifest.request.frozen_members.index(ticker)
+    except ValueError as error:
+        raise ValueError("campaign item ticker is not frozen") from error
+    return _campaign_path(root, manifest.campaign_id, "items", f"{ordinal:04d}-{ticker}.json")
+
+
+def write_campaign_item(root: Path, manifest: CampaignManifest, item: CampaignItem) -> Path:
+    """Write one immutable worker-owned item artifact before a manifest checkpoint."""
+
+    if not isinstance(manifest, CampaignManifest) or not isinstance(item, CampaignItem):
+        raise ValueError("campaign item requires a manifest and CampaignItem")
+    return _write_immutable(
+        _item_path(root, manifest, item.ticker),
+        {
+            "schema_version": _MANIFEST_SCHEMA_VERSION,
+            "artifact_kind": "flexible_campaign_item",
+            "campaign_id": manifest.campaign_id,
+            "item": item.__dict__,
+        },
+    )
+
+
+def write_campaign_selection_snapshot(
+    root: Path,
+    manifest: CampaignManifest,
+    snapshot: SelectionSnapshot,
+) -> CampaignManifest:
+    """Write immutable terminal selection evidence before its manifest reference."""
+
+    if (
+        not isinstance(manifest, CampaignManifest)
+        or manifest.request.operation != "discover"
+        or manifest.state not in {"completed", "completed_with_errors"}
+        or manifest.uncommitted_slot is not None
+    ):
+        raise ValueError("selection snapshot requires terminal discovery")
+    if not isinstance(snapshot, SelectionSnapshot):
+        raise ValueError("selection snapshot is invalid")
+    snapshot_payload = snapshot.to_dict()
+    snapshot_id = hashlib.sha256(
+        canonical_json(snapshot_payload).encode("utf-8")
+    ).hexdigest()
+    if manifest.selection_snapshot_id is not None:
+        if manifest.selection_snapshot_id != snapshot_id:
+            raise ValueError("terminal discovery already has a selection snapshot")
+        if not _selection_snapshot_is_verified(root, manifest):
+            raise ValueError("existing selection snapshot is unavailable")
+        return manifest
+    snapshot_path = write_selection_snapshot(
+        root,
+        manifest.campaign_id,
+        snapshot_payload,
+    )
+    updated = replace(manifest, selection_snapshot_id=snapshot_path.stem)
+    write_campaign_manifest(root, updated)
+    return updated
+
+
+def _read_campaign_item(root: Path, manifest: CampaignManifest, ticker: str) -> CampaignItem | None:
+    path = _item_path(root, manifest, ticker)
+    if not path.is_file():
+        return None
+    try:
+        payload = _decode_canonical(json.loads(path.read_text(encoding="utf-8")))
+        document = _mapping(payload, "campaign item artifact")
+        if (
+            document.get("schema_version") != _MANIFEST_SCHEMA_VERSION
+            or document.get("artifact_kind") != "flexible_campaign_item"
+            or document.get("campaign_id") != manifest.campaign_id
+        ):
+            raise ValueError("campaign item artifact is invalid")
+        item = CampaignItem(**_mapping(document.get("item"), "campaign item"))
+        if item.ticker != ticker:
+            raise ValueError("campaign item ticker is invalid")
+        return item
+    except (OSError, json.JSONDecodeError, ValueError) as error:
+        raise ValueError("campaign item artifact is invalid") from error
+
+
+def _selection_snapshot_is_verified(root: Path, manifest: CampaignManifest) -> bool:
+    """Return whether a manifest's claimed immutable selection evidence exists."""
+
+    selection_snapshot_id = manifest.selection_snapshot_id
+    if selection_snapshot_id is None:
+        return True
+    if not isinstance(selection_snapshot_id, str) or not _HASH.fullmatch(selection_snapshot_id):
+        return False
+    try:
+        document = _decode_canonical(json.loads(
+            _campaign_path(
+                root,
+                manifest.campaign_id,
+                "selections",
+                f"{selection_snapshot_id}.json",
+            ).read_text(encoding="utf-8")
+        ))
+        payload = _mapping(document, "selection snapshot artifact")
+        snapshot = _mapping(payload.get("snapshot"), "selection snapshot")
+        return (
+            payload.get("schema_version") == _MANIFEST_SCHEMA_VERSION
+            and payload.get("artifact_kind") == "flexible_selection_snapshot"
+            and payload.get("selection_snapshot_id") == selection_snapshot_id
+            and hashlib.sha256(canonical_json(snapshot).encode("utf-8")).hexdigest()
+            == selection_snapshot_id
+        )
+    except (OSError, json.JSONDecodeError, ValueError):
+        return False
+
+
+def _is_linked_continuation(parent: CampaignManifest, child: CampaignManifest) -> bool:
+    """Return whether a child preserves every frozen parent semantic field."""
+
+    parent_request = parent.request
+    child_request = child.request
+    parent_assignment = parent_request.frontier_assignment
+    child_assignment = child_request.frontier_assignment
+    if (
+        parent_request.operation != "discover"
+        or child_request.operation != "discover"
+        or child_request.parent_campaign_id != parent.campaign_id
+        or parent_assignment is None
+        or child_assignment is None
+        or parent.next_slot is None
+        or parent.uncommitted_slot is not None
+        or child_assignment.start_slot != parent.next_slot
+    ):
+        return False
+    frozen_fields = (
+        "frozen_members",
+        "source_snapshots",
+        "catalog_hash",
+        "engine_revision",
+        "rulebook_ids",
+        "feature_build_contract_hashes",
+        "feature_plan_hashes",
+        "execution_contract",
+        "split",
+        "runtime_budget",
+        "selection_policy",
+        "per_ticker_budget",
+        "qualification_revision",
+        "group_snapshot",
+    )
+    assignment_fields = (
+        "candidate_space_hash",
+        "candidate_space_algorithm_version",
+        "frontier_seed",
+        "source_ticker",
+        "strata",
+        "stratum_multiplier",
+        "stratum_offset",
+        "algorithm_version",
+        "stratification_revision",
+    )
+    return (
+        all(
+            getattr(parent_request, field_name) == getattr(child_request, field_name)
+            for field_name in frozen_fields
+        )
+        and all(
+            getattr(parent_assignment, field_name) == getattr(child_assignment, field_name)
+            for field_name in assignment_fields
+        )
+        and child_request.cache_choice is None
+        and child_request.cache_path is None
+        and child_request.cache_age_seconds is None
+    )
+
+
+def read_campaign_chain(root: Path, campaign_id: str) -> tuple[CampaignManifest, ...]:
+    """Read a child and its verified, immutable discovery-parent chain."""
+
+    current = read_campaign_manifest(root, campaign_id)
+    chain = [current]
+    seen = {current.campaign_id}
+    while current.request.parent_campaign_id is not None:
+        parent_id = current.request.parent_campaign_id
+        if parent_id in seen:
+            raise ValueError("campaign parent chain is cyclic")
+        parent = read_campaign_manifest(root, parent_id)
+        if parent.state not in {"completed", "completed_with_errors"}:
+            raise ValueError("campaign parent is not terminal")
+        if not _is_linked_continuation(parent, current):
+            raise ValueError("campaign parent continuation is incompatible")
+        if not _selection_snapshot_is_verified(root, parent):
+            raise ValueError("campaign parent selection snapshot is unavailable")
+        chain.append(parent)
+        seen.add(parent.campaign_id)
+        current = parent
+    return tuple(reversed(chain))
+
+
+def build_campaign_selection_snapshot(
+    chain: tuple[CampaignManifest, ...],
+    evaluations: tuple[object, ...],
+    *,
+    ledger_digest: str,
+    evaluation_digest: str,
+) -> SelectionSnapshot:
+    """Recompute one terminal snapshot from all verified chain evaluations."""
+
+    if (
+        isinstance(chain, (str, bytes))
+        or not chain
+        or any(not isinstance(manifest, CampaignManifest) for manifest in chain)
+    ):
+        raise ValueError("selection chain must contain campaign manifests")
+    if isinstance(evaluations, (str, bytes)) or not isinstance(evaluations, tuple):
+        raise ValueError("selection evaluations must be an immutable tuple")
+    _hash(ledger_digest, "ledger_digest")
+    _hash(evaluation_digest, "evaluation_digest")
+    for parent, child in zip(chain, chain[1:]):
+        if (
+            parent.state not in {"completed", "completed_with_errors"}
+            or parent.selection_snapshot_id is None
+            or not _is_linked_continuation(parent, child)
+        ):
+            raise ValueError("selection chain parent is invalid")
+    latest = chain[-1]
+    if (
+        latest.request.operation != "discover"
+        or latest.state not in {"completed", "completed_with_errors"}
+        or latest.uncommitted_slot is not None
+    ):
+        raise ValueError("selection snapshot requires terminal discovery")
+    source = latest.request.source_snapshots[0]
+    if any(
+        getattr(evaluation, "ticker", None) != source.ticker
+        or getattr(
+            getattr(evaluation, "source_snapshot", None),
+            "raw_history_fingerprint",
+            getattr(evaluation, "source_fingerprint", None),
+        ) != source.raw_history_fingerprint
+        for evaluation in evaluations
+    ):
+        raise ValueError("selection evidence is outside frozen campaign scope")
+    scope = canonical_json({
+        "ticker": source.ticker,
+        "source_fingerprint": source.raw_history_fingerprint,
+        "split": latest.request.split.to_identity_dict(),
+        "execution_revision": latest.request.execution_contract.execution_revision,
+    })
+    ranked = rank_qualified(evaluations)
+    selection = select_timing_distinct_top_three(
+        evaluations,
+        latest.request.selection_policy,
+    )
+    blockers = tuple(
+        {
+            "blocked_rulebook_id": blocked_id,
+            "representative_rulebook_id": representative_id,
+            "overlap_numerator": evidence.overlap_numerator,
+            "overlap_denominator": evidence.overlap_denominator,
+        }
+        for blocked_id, representative_id, evidence in selection.blockers
+    )
+    return SelectionSnapshot(
+        "frontier_exhausted"
+        if latest.unsearched_count == 0
+        else "complete_assigned_window",
+        ledger_digest,
+        evaluation_digest,
+        scope,
+        latest.request.selection_policy.policy_revision,
+        latest.request.selection_policy.pairing_algorithm_revision,
+        tuple(item.rulebook_id for item in ranked),
+        tuple(item.rulebook_id for item in selection.selected),
+        blockers,
+    )
+
+
+def reconcile_campaign_manifest(root: Path, campaign_id: str) -> CampaignManifest:
+    """Adopt verified worker artifacts and fail manifest claims missing their artifact."""
+
+    manifest = read_campaign_manifest(root, campaign_id)
+    reconciled: list[CampaignItem] = []
+    for item in manifest.items:
+        try:
+            persisted = _read_campaign_item(root, manifest, item.ticker)
+        except ValueError:
+            persisted = None
+        if persisted is not None:
+            reconciled.append(persisted)
+        elif item.artifact_id is not None:
+            reconciled.append(CampaignItem(item.ticker, "failed"))
+        else:
+            reconciled.append(item)
+    updated = replace(manifest, items=tuple(reconciled))
+    if not _selection_snapshot_is_verified(root, updated):
+        updated = replace(
+            updated,
+            state="failed",
+            safe_error_code="ARTIFACT.SELECTION_SNAPSHOT_UNAVAILABLE",
+            safe_error_message="selection snapshot unavailable",
+        )
+    if updated != manifest:
+        write_campaign_manifest(root, updated)
+    return updated
+
+
+__all__ = ["CampaignItem", "CampaignManifest", "CampaignRequest", "CampaignState", "FeatureResolutionReceipt", "HistoricalItemState", "SelectionSnapshot", "build_campaign_selection_snapshot", "continue_discovery", "create_manifest", "read_campaign_chain", "read_campaign_manifest", "reconcile_campaign_manifest", "request_hash", "transition", "write_campaign_item", "write_campaign_manifest", "write_campaign_selection_snapshot"]

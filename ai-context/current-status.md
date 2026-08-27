@@ -133,8 +133,64 @@ This document provides a snapshot of the project's current state, including fini
   Frozen CampaignRequest/Manifest contracts, semantic request hashes, lifecycle
   transitions, item-state validation, and source-verified Continue cursors are
   isolated in `flexible_rulebook.campaigns`. Cache diagnostics do not affect
-  identity. Focused Docker evidence passes 8/8 plus compilation; durable
-  manifest persistence and reconciliation are next within Task 1.
+  identity. Versioned mutable manifests now atomically round-trip and bind their
+  campaign ID to the frozen request; worker-owned immutable item artifacts are
+  reconciled so verified orphans are adopted and missing/corrupt claims become
+  item failures. Continue requires the parent’s exact non-empty persisted
+  FeatureResolutionReceipt ID tuple after fresh frozen-source verification;
+  a mismatch cannot create a child or advance its cursor. Focused Docker
+  evidence passes 15/15 plus compilation. Reconciliation also verifies a
+  claimed immutable SelectionSnapshot's schema, ID, and content digest; a
+  missing claim safely fails the campaign. A terminal committed discovery
+  writes its immutable SelectionSnapshot before atomically checkpointing its
+  ID; nonterminal discovery is rejected. A linked child campaign owns its new
+  higher-ranked snapshot, while the parent checkpoint rejects replacement.
+  A chain reader accepts only contiguous discovery parents with preserved
+  frozen semantics, terminal state, and verified immutable SelectionSnapshots.
+  Selection recomputation now accepts typed evaluation evidence only from the
+  full committed parent chain and applies the frozen training-only
+  timing-distinct policy. Focused Docker evidence passes 23/23 plus
+  compilation. Receipt-bound Resume remains within Task 1.
+- **Flexible Campaigns Task 2: started (2026-08-27).** `runner.py` supplies
+  durable idempotent submit/read plus legal cancellation transitions: duplicate
+  frozen requests attach to their existing campaign, queued cancellation is
+  terminal before worker claim, and running cancellation becomes `cancelling`.
+  The global one-worker lease is atomic, increments the claim epoch, blocks a
+  different campaign, and permits only the owner to release it. Focused Docker
+  runner evidence passes 6/6; full Flexible evidence passes 125/125 plus
+  compilation. Heartbeat is atomic and timezone-aware; stale recovery verifies
+  the exact campaign/epoch, marks it interrupted, and releases the worker.
+  Explicit Resume reuses the persisted request/assignment and obtains a new
+  lease epoch only from documented recoverable states. Focused Docker runner
+  evidence passes 7/7; full Flexible evidence passes 126/126 plus compilation.
+  The coordinator now accepts an injected campaign service, persists only an
+  identity/epoch-compatible returned checkpoint, and releases the lease after
+  terminal work. Focused Docker runner evidence passes 8/8; full Flexible
+  evidence passes 127/127 plus compilation. Before any injected service runs,
+  `runner.py` fresh-loads and exactly verifies each persisted source and the
+  active FeatureBuildContract, then supplies only verified sources to that
+  service. A changed/unavailable source or unavailable feature revision safely
+  blocks the campaign without cursor advance and releases its lease. Focused
+  Docker runner evidence passes 12/12; full Flexible evidence passes 131/131
+  plus compilation. Isolated subprocess wiring and receipt-resolution/matching
+  remain. Runner-level Continue now accepts only the persisted terminal parent,
+  fresh-verifies its frozen source/contract, and creates its linked queued child
+  through the existing receipt-bound cursor contract. Corrected history creates
+  no child and leaves the parent unchanged. Focused Docker runner evidence
+  passes 14/14; full Flexible evidence passes 133/133 plus compilation.
+- **Campaign service prerequisite (2026-08-27).** Discovery evaluation now
+  accepts and records a caller-supplied frozen `EvaluationSplit` and
+  `ExecutionContract`, rather than reconstructing their provenance when a
+  campaign service invokes it. Focused Docker search evidence passes 8/8; full
+  Flexible evidence passes 134/134 plus compilation. Concrete
+  service/artifact-checkpointing and isolated worker wiring remain.
+- **Campaign receipt checkpoint (2026-08-27).** `ReceiptCheckpointService`
+  requires one runner-verified discovery source, resolves only a receipt matching
+  the frozen source/FeaturePlan/FeatureBuildContract, writes that immutable
+  receipt before returning its checkpoint, and rejects a different persisted
+  receipt. Focused Docker runner evidence passes 15/15; full Flexible evidence
+  passes 135/135 plus compilation. Candidate evaluation artifacts and isolated
+  worker wiring remain.
 - **Validate Positions Phase A: complete and verified (2026-08-22).** The
   four-tab page retains View Signals as a read-only popover in Collect and
   Validate, adds an inert Validate Positions tab, and presents each logical

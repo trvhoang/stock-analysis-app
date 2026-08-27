@@ -1,0 +1,21 @@
+{
+  "config": {
+    "end_date": "2026-08-24",
+    "group_name": "N/A",
+    "horizon": "midterm",
+    "output_dir": "backtest-result/ticker-signals",
+    "permutation_block_size": 20,
+    "permutation_count": 1000,
+    "permutation_seed": 42,
+    "request_type": "backtest_batch_v4",
+    "start_date": "2011-08-24",
+    "tickers": [
+      "VNINDEX"
+    ],
+    "worker_count": 6
+  },
+  "factory_ref": "backtest_engine.pipeline:run_backtest_batch_from_env",
+  "job_id": "cb20ce909b5e417bb810561ba4cac1be",
+  "schema_version": 4,
+  "status_dir": "backtest-status"
+}

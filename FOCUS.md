@@ -49,8 +49,75 @@ Current Scan plan.
 campaign contract now freezes semantic request identity, ignores cache/runtime
 diagnostics in request hashing, validates discovery-only frontier assignment,
 enforces legal campaign and item states, and creates source-verified linked
-Continue windows with contiguous cursor accounting. Focused Docker evidence is
-8/8 plus compilation. Durable manifest persistence and reconciliation remain.
+Continue windows with contiguous cursor accounting. Continue now also requires
+an exact, non-empty, freshly verified FeatureResolutionReceipt ID tuple before
+it can create a child request. Campaign reconciliation also validates any
+claimed immutable SelectionSnapshot schema, ID, and content digest; a missing
+claim becomes a safe campaign failure. A terminal committed discovery now
+writes its immutable SelectionSnapshot before atomically checkpointing its ID
+into the manifest; nonterminal discovery is rejected. Focused Docker evidence
+is 23/23 plus compilation. A linked child campaign writes its own immutable
+higher-ranked snapshot; a parent checkpoint cannot be replaced. Durable
+versioned manifest persistence now atomically
+round-trips frozen request identity, validates the campaign ID against that
+identity, and reconciles worker-owned item artifacts: verified orphans are
+adopted while missing/corrupt claimed artifacts become item failures. Receipt-
+bound Resume remains within Task 1. Selection recomputation now accepts typed
+evaluation evidence only from the full committed parent chain and applies the
+frozen training-only timing-distinct policy. A chain reader accepts only contiguous discovery
+parents with preserved frozen semantics, terminal state, and verified immutable
+SelectionSnapshots.
+
+**Active work:** Flexible Campaigns Task 2 has begun with durable idempotent
+submit/read APIs and legal cancellation state handling. A duplicate frozen
+request attaches to its existing queued campaign; queued cancellation is
+terminal before a worker claim, while a running campaign becomes cancelling.
+The global one-worker lease is atomic, increments the claim epoch, blocks a
+different campaign, and permits only the owner to release it. Focused Docker
+runner evidence is 6/6; full Flexible evidence is 125/125 plus compilation.
+Heartbeat is atomic and timezone-aware; stale recovery verifies the exact
+campaign/epoch, marks it interrupted, and releases the worker. Explicit Resume
+reuses the persisted request/assignment and obtains a new lease epoch only from
+the documented recoverable states. Focused Docker runner evidence is 7/7; full
+Flexible evidence is 126/126 plus compilation. The coordinator now accepts an
+injected campaign service, persists only an identity/epoch-compatible returned
+checkpoint, and releases the lease after terminal work. Focused Docker runner
+evidence is 8/8; full Flexible evidence is 127/127 plus compilation. Isolated
+subprocess wiring remains. Before any service execution, the runner now
+fresh-loads and exactly verifies every frozen source and the active feature-build
+contract, passes only those verified sources to the service, and safely blocks
+on source change/unavailability or unavailable feature revision without cursor
+advance; it then releases the lease. Focused Docker runner evidence is 12/12;
+full Flexible evidence is 131/131 plus compilation. Receipt resolution/matching
+and real isolated worker execution remain. Runner-level Continue now reads only
+the persisted terminal parent, fresh-verifies its frozen source/contract, and
+creates the linked queued window through the existing receipt-bound cursor
+contract; corrected history creates no child and leaves the parent unchanged.
+Focused Docker runner evidence is 14/14; full Flexible evidence is 133/133 plus
+compilation.
+
+**Campaign service prerequisite (2026-08-27):** discovery evaluation now accepts
+and records a caller-supplied frozen `EvaluationSplit` and `ExecutionContract`,
+rather than reconstructing their provenance when a campaign service invokes it.
+Focused Docker search evidence is 8/8; full Flexible evidence is 134/134 plus
+compilation. Concrete service/artifact checkpointing and isolated worker wiring
+remain.
+
+**Campaign receipt checkpoint (2026-08-27):** `ReceiptCheckpointService` now
+requires one runner-verified discovery source, resolves only a receipt matching
+the frozen source/FeaturePlan/FeatureBuildContract, writes that immutable receipt
+before returning its checkpoint, and rejects a different persisted receipt.
+Focused Docker runner evidence is 15/15; full Flexible evidence is 135/135 plus
+compilation. Frozen-frontier candidate-to-ledger conversion now emits compact
+receipt/assignment/stratum/outcome provenance only for committed slots; the full
+Flexible Docker gate then passed 136/136 plus compilation. Receipt-bound ledger
+chunk persistence is now exposed through the service boundary, and campaign-item
+checkpointing writes the immutable worker-owned item artifact before returning
+the coordinator's updated manifest checkpoint. Focused campaign evidence is
+24/24 plus compilation. The remaining Task 2 work is to compose receipt
+resolution, candidate evaluation, ledger and item checkpoints into one concrete
+discovery service, then add the isolated subprocess worker/watchdog and fault
+classification paths.
 Approved design:
 `docs/superpowers/specs/2026-08-25-flexible-rulebook-design.md`. Execution
 sequence remains `docs/superpowers/plans/2026-08-25-flexible-rulebook-core.md`
@@ -70,9 +137,10 @@ behavior. The amendment now adds FeaturePlan/FeatureResolutionReceipt digest
 proof for cache eviction and continuation, a reference-executor oracle with an
 exact-parity-gated event fast path, and an optional exact-prefix append extension
 that remains disabled until its benchmark gate passes. Core Tasks 1–7 and
-Campaigns Task 1 contract layer now exist; durable campaign persistence/
-reconciliation, runner, service, benchmark, and UI remain for ordered later
-tasks.
+Campaigns Task 1 contract, durable persistence/reconciliation, and receipt-bound
+Continue now exist; receipt-bound Resume reconciliation, runner, service,
+benchmark, and UI remain
+for ordered later tasks.
 
 **Completed UI change:** Collect Signals now has named-Group Edit Group draft
 editing: Add/Remove members in a popover and atomically Save, including an

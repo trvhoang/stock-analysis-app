@@ -10,6 +10,7 @@ import unittest
 from flexible_rulebook.contracts import EvaluationPartition, EvaluationSplit, ExecutionContract, FeatureBuildContract, FeaturePlan, FeatureProfile, FeatureResolutionReceipt, FeatureSnapshot, PartitionMetrics, PredicateSpec, PrimitiveSpec, RulebookDefinition, RulebookEvaluation
 from flexible_rulebook.execution import CompletedTrade
 from flexible_rulebook.storage import append_ledger_chunk, iter_signal_set_paths, read_signal_set, resolve_flexible_root, write_feature_resolution_receipt, write_rulebook_definition, write_selection_snapshot, write_signal_set
+from flexible_rulebook.service import persist_discovery_ledger
 
 
 class FlexibleRulebookStorageTests(unittest.TestCase):
@@ -84,6 +85,18 @@ class FlexibleRulebookStorageTests(unittest.TestCase):
             second = write_feature_resolution_receipt(Path(directory), "campaign-1", "VCB", receipt)
             self.assertEqual(first.relative_to(Path(directory)).parts[:3], ("campaigns", "campaign-1", "features"))
         self.assertEqual(first, second)
+
+    def test_service_persists_ledger_only_after_receipt_artifact(self) -> None:
+        receipt = self._receipt()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_feature_resolution_receipt(root, "campaign-1", "VCB", receipt)
+            path = persist_discovery_ledger(
+                root, campaign_id="campaign-1", ticker="VCB",
+                rows=(self._ledger_row(receipt.receipt_id),),
+            )
+            exists = path.is_file()
+        self.assertTrue(exists)
 
     def test_rejected_ledger_row_stays_compact(self) -> None:
         receipt = self._receipt(); row = self._ledger_row(receipt.receipt_id)

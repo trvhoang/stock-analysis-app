@@ -1,0 +1,74 @@
+{
+  "error_text": null,
+  "job_id": "1463530aa14a43f8b83756c927699809",
+  "output_paths": [
+    "backtest-result/ticker-signals/BSR/BSR_signals_midterm.json",
+    "backtest-result/ticker-signals/GAS/GAS_signals_midterm.json",
+    "backtest-result/ticker-signals/PLX/PLX_signals_midterm.json",
+    "backtest-result/ticker-signals/PVD/PVD_signals_midterm.json",
+    "backtest-result/ticker-signals/PVS/PVS_signals_midterm.json",
+    "backtest-result/ticker-signals/PVT/PVT_signals_midterm.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 4,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/BSR/BSR_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "BSR"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/GAS/GAS_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "GAS"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/PLX/PLX_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "PLX"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/PVD/PVD_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "PVD"
+    },
+    {
+      "attempts": 2,
+      "error_texts": [
+        "ValueError: invalid backtest data: high contains non-positive prices",
+        "ValueError: invalid backtest data: high contains non-positive prices"
+      ],
+      "output_paths": [
+        "backtest-result/ticker-signals/PVS/PVS_signals_midterm.json"
+      ],
+      "state": "failed",
+      "ticker": "PVS"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/PVT/PVT_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "PVT"
+    }
+  ]
+}
