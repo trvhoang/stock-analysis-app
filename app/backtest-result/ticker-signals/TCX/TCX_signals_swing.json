@@ -2,7 +2,7 @@
   "audit_eligibility": {
     "effective_date_range": [
       "2025-10-21",
-      "2026-08-21"
+      "2026-08-26"
     ],
     "eligible": true,
     "reasons": [],
@@ -46,12 +46,12 @@
         "no-background-theme": {
           "dsr_status": "available",
           "test": {
-            "n": 5,
+            "n": 6,
             "p_value": null,
             "p_value_status": "not_estimated_n_le_block_size",
-            "profit_pct": -0.9078370818335788,
-            "sharpe": -0.02664299451330308,
-            "win_rate": 40.0
+            "profit_pct": 9.788586952374693,
+            "sharpe": 0.21632512509348054,
+            "win_rate": 50.0
           },
           "theme_mode": null,
           "theme_variant": "no-background-theme",
@@ -392,20 +392,20 @@
     }
   ],
   "effective_data_range": {
-    "end": "2026-08-21",
+    "end": "2026-08-26",
     "reason": null,
     "start": "2025-10-21"
   },
   "empty": false,
-  "evaluated_at": "2026-08-22T12:29:13.227922+07:00",
+  "evaluated_at": "2026-08-26T23:00:01.378393+07:00",
   "evaluation_label": "Exploratory \u2014 gross",
   "failure_reason": null,
   "horizon": "swing",
   "rejection_reason": null,
   "requested_date_range": {
-    "end": "2026-08-22",
+    "end": "2026-08-26",
     "reason": null,
-    "start": "2011-08-22"
+    "start": "2011-08-26"
   },
   "rulebook": {
     "adx_minimum": 17,
@@ -446,11 +446,11 @@
   "split": {
     "method": "chronological_65_35",
     "test": {
-      "end": "2026-08-21",
-      "start": "2026-05-07"
+      "end": "2026-08-26",
+      "start": "2026-05-11"
     },
     "train": {
-      "end": "2026-05-06",
+      "end": "2026-05-08",
       "start": "2025-10-21"
     }
   },

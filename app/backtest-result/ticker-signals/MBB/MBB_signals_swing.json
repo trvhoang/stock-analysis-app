@@ -2,7 +2,7 @@
   "audit_eligibility": {
     "effective_date_range": [
       "2011-11-01",
-      "2026-08-21"
+      "2026-08-26"
     ],
     "eligible": false,
     "reasons": [
@@ -39,12 +39,12 @@
         "background-theme": {
           "dsr_status": "available",
           "test": {
-            "n": 73,
-            "p_value": 0.3336663336663337,
+            "n": 71,
+            "p_value": 0.3676323676323676,
             "p_value_status": "informational",
-            "profit_pct": 19.742547907913917,
-            "sharpe": 0.0642679261079252,
-            "win_rate": 46.57534246575342
+            "profit_pct": 15.500512733518722,
+            "sharpe": 0.05346135643889743,
+            "win_rate": 46.478873239436616
           },
           "theme_mode": "AND",
           "theme_variant": "background-theme",
@@ -61,12 +61,12 @@
         "no-background-theme": {
           "dsr_status": "available",
           "test": {
-            "n": 115,
-            "p_value": 0.36163836163836166,
+            "n": 114,
+            "p_value": 0.34065934065934067,
             "p_value_status": "informational",
-            "profit_pct": 14.74488278975112,
-            "sharpe": 0.025412127173029427,
-            "win_rate": 43.47826086956522
+            "profit_pct": 16.631689193959105,
+            "sharpe": 0.029155189062743867,
+            "win_rate": 43.859649122807014
           },
           "theme_mode": null,
           "theme_variant": "no-background-theme",
@@ -92,12 +92,12 @@
         "background-theme": {
           "dsr_status": "available",
           "test": {
-            "n": 74,
-            "p_value": 0.0989010989010989,
+            "n": 72,
+            "p_value": 0.11588411588411589,
             "p_value_status": "informational",
-            "profit_pct": 39.983965567915945,
-            "sharpe": 0.12325680900936593,
-            "win_rate": 48.64864864864865
+            "profit_pct": 35.741930393520754,
+            "sharpe": 0.11614181891303736,
+            "win_rate": 48.61111111111111
           },
           "theme_mode": "AND",
           "theme_variant": "background-theme",
@@ -114,12 +114,12 @@
         "no-background-theme": {
           "dsr_status": "available",
           "test": {
-            "n": 87,
-            "p_value": 0.04095904095904096,
+            "n": 85,
+            "p_value": 0.04595404595404595,
             "p_value_status": "informational",
-            "profit_pct": 52.75561906209335,
-            "sharpe": 0.13109869985119565,
-            "win_rate": 48.275862068965516
+            "profit_pct": 48.51358388769816,
+            "sharpe": 0.12559779203527624,
+            "win_rate": 48.23529411764706
           },
           "theme_mode": null,
           "theme_variant": "no-background-theme",
@@ -252,12 +252,12 @@
         "background-theme": {
           "dsr_status": "available",
           "test": {
-            "n": 60,
-            "p_value": 0.16083916083916083,
+            "n": 58,
+            "p_value": 0.25574425574425574,
             "p_value_status": "informational",
-            "profit_pct": 25.052576148218016,
-            "sharpe": 0.0965989963148931,
-            "win_rate": 48.333333333333336
+            "profit_pct": 20.810540973822825,
+            "sharpe": 0.08584733556040774,
+            "win_rate": 48.275862068965516
           },
           "theme_mode": "AND",
           "theme_variant": "background-theme",
@@ -274,12 +274,12 @@
         "no-background-theme": {
           "dsr_status": "available",
           "test": {
-            "n": 72,
-            "p_value": 0.07492507492507493,
+            "n": 70,
+            "p_value": 0.1068931068931069,
             "p_value_status": "informational",
-            "profit_pct": 32.505524759669626,
-            "sharpe": 0.0960440112680769,
-            "win_rate": 47.22222222222222
+            "profit_pct": 28.26348958527443,
+            "sharpe": 0.08770238374075805,
+            "win_rate": 47.14285714285714
           },
           "theme_mode": null,
           "theme_variant": "no-background-theme",
@@ -843,20 +843,20 @@
     }
   ],
   "effective_data_range": {
-    "end": "2026-08-21",
+    "end": "2026-08-26",
     "reason": null,
     "start": "2011-11-01"
   },
   "empty": false,
-  "evaluated_at": "2026-08-23T12:56:53.447350+07:00",
+  "evaluated_at": "2026-08-26T22:59:10.193623+07:00",
   "evaluation_label": "Exploratory \u2014 gross",
   "failure_reason": null,
   "horizon": "swing",
   "rejection_reason": null,
   "requested_date_range": {
-    "end": "2026-08-23",
+    "end": "2026-08-26",
     "reason": null,
-    "start": "2011-08-23"
+    "start": "2011-08-26"
   },
   "rulebook": {
     "adx_minimum": 17,
@@ -897,11 +897,11 @@
   "split": {
     "method": "chronological_65_35",
     "test": {
-      "end": "2026-08-21",
-      "start": "2021-06-16"
+      "end": "2026-08-26",
+      "start": "2021-06-21"
     },
     "train": {
-      "end": "2021-06-15",
+      "end": "2021-06-18",
       "start": "2011-11-01"
     }
   },

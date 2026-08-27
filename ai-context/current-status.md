@@ -56,6 +56,85 @@ This document provides a snapshot of the project's current state, including fini
   Legacy V3 artifacts and job sidecars have been replaced by
   `requires_regeneration` markers without payload parsing; fresh VCB Swing
   collection succeeded with 15 candidates and a clean audit.
+- **Flexible Rulebook Core Plan Tasks 3–7 verified complete (2026-08-27).**
+  This is a new isolated daily Swing research subsystem, not a V3 extension.
+  Task 1 is complete: the isolated `flexible_rulebook` package supplies immutable portable
+  rulebook, feature-source/build, split, budget, metric, and evaluation
+  contracts; full-SHA-256 canonical rulebook IDs; and display-only deterministic
+  animal aliases. Its Docker contract gate passes 25/25 and container
+  compilation passes. Task 2 adds Flexible-owned bounded history quality,
+  ordered raw-OHLCV fingerprints, evidence anchors, and deterministic native-bar
+  splits. It may call only the existing bounded raw-history loader; it imports no
+  V3 validation or audit logic. Malformed raw data is invalid; >1% OHLC ordering
+  mismatch or >=15% adjacent close discontinuity is display-only; warnings stay
+  usable. Focused Docker contracts/history evidence passes 36/36 and container
+  compilation passes. Catalog-v1 now locks EMA 3/8, 5/13, 5/21, 8/21;
+  RSI 5/9/14 at 50/52/55; breakout 10/20/40; volume 5/10/20 at
+  1.10/1.20/1.30; ADX(14) at 15/20/25; mirrored exits; ATR(14); and timeouts
+  10/15/22/30 with BUY/gate caps two. `features.py` now resolves only
+  source/contract-compatible computed primitive components, constructs a
+  request-scoped receipt, and never persists raw OHLCV/masks/trades. Cache age
+  only offers reuse after a fresh source fingerprint. Corrupt, partial, locked,
+  low-space, write, and non-deterministic build states retain safe in-memory or
+  prior valid components. Task 4 has fixed `atr-wilder-v1` ATR(14), reference
+  execution, and an inert event-plan identity guard. Its fixtures cover
+  next-open, E+3, technical queue/discard, trailing, gaps, deadline precedence,
+  sparse/dense signals, interruption, and source/receipt/mask/partition checks.
+  Host and canonical Docker focused Flexible gate pass 73/73 plus compilation.
+  Task 6 now has its finite ATR automatic variant: stop 2.0×, target 3.0×,
+  trailing absent; no-price-exit remains permitted by the approved optional
+  price-exit grammar. Its first lazy CandidateSpace/ticker-seeded affine
+  frontier Docker tests pass 4/4. Task 6 is now complete: lazy multi-axis
+  CandidateSpace, seeded structural quota order, continuation-safe affine slots,
+  deadline terminal truth, compact rejections, and frozen typed train/test
+  evidence. Core Docker gate passes 80/80 plus compilation. Task 7 now writes
+  immutable definitions and qualified/explicitly-saved signal evidence, requires
+  frozen assignment provenance plus a prewritten feature receipt for ledger
+  outcomes, records verified immutable Continue selection chains, and excludes
+  cache paths from signal-set traversal. Core Flexible Docker gate passes 96/96
+  plus compilation. Campaign manifest/resume cursor wiring belongs to the
+  dependent Campaigns and Current Scan plan. Task 5 is complete: immutable train/test
+  trade evidence, scope validation, first-overlap pairing, exact 75% duplicate
+  filtering, and training-only Top 3 selection. Focused Flexible gate passes
+  56/56 plus compilation. Core portable-rulebook
+  discovery/qualification must finish before durable campaigns/current Group
+  BUY Scan/UI. The approved amendment adds lazy seeded
+  structurally stratified CandidateSpace/FrontierAssignment discovery,
+  cursor-based continuation, native-bar split boundaries, explicit exit
+  precedence, and Top-3 training timing distinctness: one-to-one paired training
+  holding windows are hard near-duplicates at overlap_ratio >= 0.75; training
+  metrics choose the representative and test remains evidence.
+  
+  Every new operation fresh-loads/fingerprints ordered raw OHLCV before
+  indicator-cache use. Individual PrimitiveComponents persist/reuse only after
+  exact source/build-contract validation; FeatureBundles are request-scoped
+  assembly only. <=24 hours gives an explicit Reuse/Recalculate choice, while
+  expired/missing/corrupt/mismatched components rebuild. Continue/Resume
+  validates its frozen source and either uses/rebuilds identical primitives
+  without prompting or stops as source_changed; it never moves to latest data.
+  Historical evidence uses append-safe prefix anchors, and Top-3 membership is
+  stored only in immutable campaign-chain SelectionSnapshots: a completed cap is
+  `complete_assigned_window`, never a global-search claim.
+  The performance amendment freezes a FeaturePlan/FeatureResolutionReceipt before
+  a candidate commits, so Resume/Continue after cache eviction must reproduce
+  identical component digests. It keeps a reference executor as the oracle;
+  event-driven execution and exact-prefix append extension are optional,
+  disabled until deterministic parity and measured benchmark gates pass. Fixed
+  candidate caps require cold p99 preflight plus at least 100 maximal-slot
+  samples; warm cache cannot increase the search scope.
+  Each ticker has a 4h30 candidate-admission deadline and 4h55 normal terminal
+  limit, with fixed benchmark-backed caps/quotas unaffected by cache warmth.
+  The standalone UI is planned as radio/selectbox workspaces, not eager tabs.
+  No V3, database schema, Docker, dependency, campaign, or UI source may change.
+  Design: `docs/superpowers/specs/2026-08-25-flexible-rulebook-design.md`.
+  Plans: `docs/superpowers/plans/2026-08-25-flexible-rulebook-core.md` then
+  `docs/superpowers/plans/2026-08-25-flexible-rulebook-campaigns-and-current-scan.md`.
+- **Flexible Campaigns and Current Scan Task 1: in progress (2026-08-27).**
+  Frozen CampaignRequest/Manifest contracts, semantic request hashes, lifecycle
+  transitions, item-state validation, and source-verified Continue cursors are
+  isolated in `flexible_rulebook.campaigns`. Cache diagnostics do not affect
+  identity. Focused Docker evidence passes 8/8 plus compilation; durable
+  manifest persistence and reconciliation are next within Task 1.
 - **Validate Positions Phase A: complete and verified (2026-08-22).** The
   four-tab page retains View Signals as a read-only popover in Collect and
   Validate, adds an inert Validate Positions tab, and presents each logical
@@ -68,10 +147,10 @@ This document provides a snapshot of the project's current state, including fini
   `docs/superpowers/specs/2026-08-22-validate-positions-risk-phase-b-design.md`.
   Its executable plan is
   `docs/superpowers/plans/2026-08-22-validate-positions-risk-phase-b.md`.
-  Phase B implementation is in progress. Current focused Docker evidence is
-  44/44 plus post-formatting risk module evidence 4/4; final contract review
-  and completion documentation remain. Risk suggestion text uses one line per
-  horizon and a one-decimal score. Legacy
+  Phase B is complete and verified (2026-08-25). Focused Docker evidence is
+  68/68 plus container compilation; final evidence is
+  `docs/superpowers/reports/2026-08-25-validate-positions-phase-b-verification.md`.
+  Risk suggestion text uses one line per horizon and a one-decimal score. Legacy
   records remain historical P&L only, with no Phase B evaluation dependency.
   Parent Horizon historical Tasks 7--9 remain separately governed; V2 deletion
   remains unapproved.
@@ -622,9 +701,12 @@ still block Validate Positions after amendment implementation completes. Validat
 monitoring uses only selected candidate gates with equal weights, plus the
 preferred VN-Index treatment factor when present.
 
-**Status:** Tasks 0--6 and Task 7 Steps 1--5 are complete. Task 7's required
-manual V3 proof is next; Tasks 8--9 remain blocked by that proof and the
-ordered plan.
+**Completion override (2026-08-25):** The Horizon Rulebook Signal Redesign is
+complete through its approved schema-4 exploratory replacement, verified at
+`docs/superpowers/reports/2026-08-22-horizon-v3-exploratory-multi-rulebook-verification.md`.
+The historical Task 7--9 wording below is retained only as implementation
+history; it is not active work. Original V2 deletion remains unapproved and
+was not performed.
 
 - Task 0 repaired diagnostics and published the read-only literal-roster
   report: `docs/superpowers/reports/2026-08-15-v3-price-audit.md`.
@@ -806,9 +888,9 @@ Plan:
 
 ### Completed — Validate Positions Risk and Trade-row Presentation Phase A (2026-08-22)
 
-**Status:** Phase A is complete and verified against the current schema-4 V3
-replacement. Phase B remains deferred until a separate approved risk formula
-contract.
+**Status:** Phase A and Phase B are complete and verified against the current
+schema-4 V3 replacement. Phase B evidence:
+`docs/superpowers/reports/2026-08-25-validate-positions-phase-b-verification.md`.
 
 - Phase A adds the unavailable-risk-model tab and collapsible BUY/SELL rows.
   `View Signals` stays a read-only popover in Collect and Validate, so the page
@@ -1258,6 +1340,11 @@ Verification:
 6.  **Define explanation of Final Advice:** Keep as a later documentation refinement after the UI workflow plan.
 
 ---
-*Last Updated: 2026-08-21 (Horizon Rulebook Signal Redesign Tasks 0--9 must
-fully close before Validate Positions Phase A begins; V3-only cutover alone is
-insufficient.)*
+*Last Updated: 2026-08-26 (Flexible Rulebook Core Plan Task 2 complete: isolated
+history quality/fingerprint/anchor/split adapter, combined Docker gate 36/36,
+compilation pass; Task 3 FeatureStore/lazy-mask slice passes 7/7 while catalog
+settings and primitive cache remain blocked. The amended design/ordered plans lock 75%
+training-overlap Top-3 distinctness, fresh-source per-primitive cache reuse,
+FeaturePlan/receipt-verified frozen Continue, under-five-hour maximal-slot
+budgeting, parity-gated fast execution, and UI contract. Horizon Rulebook Signal Redesign schema-4 replacement and Validate
+Positions Phase B are complete. Original V2 deletion remains unapproved.)*

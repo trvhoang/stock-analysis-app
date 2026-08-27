@@ -2,7 +2,7 @@
   "audit_eligibility": {
     "effective_date_range": [
       "2014-01-24",
-      "2026-08-21"
+      "2026-08-26"
     ],
     "eligible": true,
     "reasons": [],
@@ -142,12 +142,12 @@
         "background-theme": {
           "dsr_status": "available",
           "test": {
-            "n": 33,
-            "p_value": 0.8591408591408591,
+            "n": 32,
+            "p_value": 0.7222777222777222,
             "p_value_status": "informational",
-            "profit_pct": -14.982030357629585,
-            "sharpe": -0.10102670499292149,
-            "win_rate": 30.303030303030305
+            "profit_pct": -10.00482563107661,
+            "sharpe": -0.0696230008022809,
+            "win_rate": 31.25
           },
           "theme_mode": "AND",
           "theme_variant": "background-theme",
@@ -164,12 +164,12 @@
         "no-background-theme": {
           "dsr_status": "available",
           "test": {
-            "n": 48,
-            "p_value": 0.11488511488511488,
+            "n": 47,
+            "p_value": 0.07792207792207792,
             "p_value_status": "informational",
-            "profit_pct": 32.532723573545354,
-            "sharpe": 0.12486297866808146,
-            "win_rate": 43.75
+            "profit_pct": 37.50992830009833,
+            "sharpe": 0.14720257128676842,
+            "win_rate": 44.680851063829785
           },
           "theme_mode": null,
           "theme_variant": "no-background-theme",
@@ -196,10 +196,10 @@
           "dsr_status": "available",
           "test": {
             "n": 62,
-            "p_value": 0.002997002997002997,
+            "p_value": 0.001998001998001998,
             "p_value_status": "informational",
-            "profit_pct": 56.3711084513775,
-            "sharpe": 0.19280157585505758,
+            "profit_pct": 56.7877689673623,
+            "sharpe": 0.19456646735684352,
             "win_rate": 51.61290322580645
           },
           "theme_mode": "AND",
@@ -217,12 +217,12 @@
         "no-background-theme": {
           "dsr_status": "available",
           "test": {
-            "n": 88,
-            "p_value": 0.028971028971028972,
+            "n": 89,
+            "p_value": 0.04295704295704296,
             "p_value_status": "informational",
-            "profit_pct": 78.91675546686186,
-            "sharpe": 0.16501217018278908,
-            "win_rate": 48.86363636363637
+            "profit_pct": 74.5396358224155,
+            "sharpe": 0.15417142923819988,
+            "win_rate": 48.31460674157304
           },
           "theme_mode": null,
           "theme_variant": "no-background-theme",
@@ -519,12 +519,12 @@
         "background-theme": {
           "dsr_status": "available",
           "test": {
-            "n": 23,
-            "p_value": 0.9630369630369631,
+            "n": 22,
+            "p_value": 0.9330669330669331,
             "p_value_status": "informational",
-            "profit_pct": -17.612474455915695,
-            "sharpe": -0.19776034196862846,
-            "win_rate": 30.434782608695656
+            "profit_pct": -12.635269729362719,
+            "sharpe": -0.14916600238955247,
+            "win_rate": 31.818181818181817
           },
           "theme_mode": "AND",
           "theme_variant": "background-theme",
@@ -541,12 +541,12 @@
         "no-background-theme": {
           "dsr_status": "available",
           "test": {
-            "n": 32,
-            "p_value": 0.1928071928071928,
+            "n": 31,
+            "p_value": 0.14785214785214784,
             "p_value_status": "informational",
-            "profit_pct": 11.508630487735541,
-            "sharpe": 0.07018196317108356,
-            "win_rate": 40.625
+            "profit_pct": 16.485835214288514,
+            "sharpe": 0.10398447656099949,
+            "win_rate": 41.935483870967744
           },
           "theme_mode": null,
           "theme_variant": "no-background-theme",
@@ -784,20 +784,20 @@
     }
   ],
   "effective_data_range": {
-    "end": "2026-08-21",
+    "end": "2026-08-26",
     "reason": null,
     "start": "2014-01-24"
   },
   "empty": false,
-  "evaluated_at": "2026-08-23T12:56:40.794190+07:00",
+  "evaluated_at": "2026-08-26T22:58:57.098440+07:00",
   "evaluation_label": "Exploratory \u2014 gross",
   "failure_reason": null,
   "horizon": "swing",
   "rejection_reason": null,
   "requested_date_range": {
-    "end": "2026-08-23",
+    "end": "2026-08-26",
     "reason": null,
-    "start": "2011-08-23"
+    "start": "2011-08-26"
   },
   "rulebook": {
     "adx_minimum": 17,
@@ -838,11 +838,11 @@
   "split": {
     "method": "chronological_65_35",
     "test": {
-      "end": "2026-08-21",
-      "start": "2022-03-28"
+      "end": "2026-08-26",
+      "start": "2022-04-01"
     },
     "train": {
-      "end": "2022-03-25",
+      "end": "2022-03-31",
       "start": "2014-01-24"
     }
   },

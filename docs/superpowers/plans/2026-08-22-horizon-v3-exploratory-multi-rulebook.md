@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.12, pandas, NumPy, Streamlit, unittest, Docker.
 
-**Status:** Complete on 2026-08-22. Verification evidence: `../reports/2026-08-22-horizon-v3-exploratory-multi-rulebook-verification.md`. Validate Positions remains blocked pending user direction.
+**Status:** Complete on 2026-08-22. Verification evidence: `../reports/2026-08-22-horizon-v3-exploratory-multi-rulebook-verification.md`. Validate Positions Phase B completed on 2026-08-25.
 
 ## Global Constraints
 

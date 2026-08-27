@@ -19,15 +19,15 @@
     "start": null
   },
   "empty": true,
-  "evaluated_at": "2026-08-22T12:29:18.375171+07:00",
+  "evaluated_at": "2026-08-26T23:00:06.885875+07:00",
   "evaluation_label": "Exploratory \u2014 gross",
   "failure_reason": "ValueError: invalid backtest data: high contains non-positive prices",
   "horizon": "swing",
   "rejection_reason": null,
   "requested_date_range": {
-    "end": "2026-08-22",
+    "end": "2026-08-26",
     "reason": null,
-    "start": "2011-08-22"
+    "start": "2011-08-26"
   },
   "rulebook": {
     "adx_minimum": 17,

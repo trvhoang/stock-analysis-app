@@ -2,7 +2,7 @@
   "audit_eligibility": {
     "effective_date_range": [
       "2017-12-15",
-      "2026-08-21"
+      "2026-08-26"
     ],
     "eligible": false,
     "reasons": [],
@@ -37,10 +37,10 @@
           "dsr_status": "available",
           "test": {
             "n": 37,
-            "p_value": 0.5204795204795205,
+            "p_value": 0.5294705294705294,
             "p_value_status": "informational",
-            "profit_pct": -1.6381524467191166,
-            "sharpe": -0.006476356458821833,
+            "profit_pct": -2.2419677932228055,
+            "sharpe": -0.008889756370965236,
             "win_rate": 37.83783783783784
           },
           "theme_mode": "AND",
@@ -59,10 +59,10 @@
           "dsr_status": "available",
           "test": {
             "n": 54,
-            "p_value": 0.31368631368631367,
+            "p_value": 0.31868131868131866,
             "p_value_status": "informational",
-            "profit_pct": 24.3344231145464,
-            "sharpe": 0.0621181269500311,
+            "profit_pct": 23.730607768042713,
+            "sharpe": 0.060678221904571984,
             "win_rate": 42.592592592592595
           },
           "theme_mode": null,
@@ -90,10 +90,10 @@
           "dsr_status": "available",
           "test": {
             "n": 36,
-            "p_value": 0.34965034965034963,
+            "p_value": 0.36063936063936064,
             "p_value_status": "informational",
-            "profit_pct": 9.044287963939636,
-            "sharpe": 0.03902892531905213,
+            "profit_pct": 8.440472617435947,
+            "sharpe": 0.03654396025516956,
             "win_rate": 44.44444444444444
           },
           "theme_mode": "AND",
@@ -112,10 +112,10 @@
           "dsr_status": "available",
           "test": {
             "n": 39,
-            "p_value": 0.5164835164835165,
+            "p_value": 0.5244755244755245,
             "p_value_status": "informational",
-            "profit_pct": -0.4785145148727792,
-            "sharpe": -0.001893933124720089,
+            "profit_pct": -1.082329861376468,
+            "sharpe": -0.004297131427545535,
             "win_rate": 41.02564102564102
           },
           "theme_mode": null,
@@ -250,10 +250,10 @@
           "dsr_status": "available",
           "test": {
             "n": 25,
-            "p_value": 0.43156843156843155,
+            "p_value": 0.4515484515484515,
             "p_value_status": "informational",
-            "profit_pct": 1.3487593592793976,
-            "sharpe": 0.007940502210168591,
+            "profit_pct": 0.7449440127757088,
+            "sharpe": 0.004405219776634715,
             "win_rate": 40.0
           },
           "theme_mode": "AND",
@@ -272,10 +272,10 @@
           "dsr_status": "available",
           "test": {
             "n": 28,
-            "p_value": 0.6263736263736264,
+            "p_value": 0.6383616383616384,
             "p_value_status": "informational",
-            "profit_pct": -6.136379104140185,
-            "sharpe": -0.03225187183659629,
+            "profit_pct": -6.740194450643874,
+            "sharpe": -0.03557029675217115,
             "win_rate": 39.285714285714285
           },
           "theme_mode": null,
@@ -729,20 +729,20 @@
     }
   ],
   "effective_data_range": {
-    "end": "2026-08-21",
+    "end": "2026-08-26",
     "reason": null,
     "start": "2017-12-15"
   },
   "empty": false,
-  "evaluated_at": "2026-08-22T12:29:18.301973+07:00",
+  "evaluated_at": "2026-08-26T23:00:06.813086+07:00",
   "evaluation_label": "Exploratory \u2014 gross",
   "failure_reason": null,
   "horizon": "swing",
   "rejection_reason": null,
   "requested_date_range": {
-    "end": "2026-08-22",
+    "end": "2026-08-26",
     "reason": null,
-    "start": "2011-08-22"
+    "start": "2011-08-26"
   },
   "rulebook": {
     "adx_minimum": 17,
@@ -783,11 +783,11 @@
   "split": {
     "method": "chronological_65_35",
     "test": {
-      "end": "2026-08-21",
-      "start": "2023-08-08"
+      "end": "2026-08-26",
+      "start": "2023-08-11"
     },
     "train": {
-      "end": "2023-08-07",
+      "end": "2023-08-10",
       "start": "2017-12-15"
     }
   },

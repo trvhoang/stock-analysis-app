@@ -2,7 +2,7 @@
   "audit_eligibility": {
     "effective_date_range": [
       "2020-11-10",
-      "2026-08-21"
+      "2026-08-26"
     ],
     "eligible": true,
     "reasons": [],
@@ -51,12 +51,12 @@
         "no-background-theme": {
           "dsr_status": "available",
           "test": {
-            "n": 40,
-            "p_value": 0.6343656343656343,
+            "n": 41,
+            "p_value": 0.6253746253746254,
             "p_value_status": "informational",
-            "profit_pct": -6.1352206827703135,
-            "sharpe": -0.03888194174051508,
-            "win_rate": 42.5
+            "profit_pct": -4.751137637787615,
+            "sharpe": -0.029693788605210717,
+            "win_rate": 43.90243902439025
           },
           "theme_mode": null,
           "theme_variant": "no-background-theme",
@@ -210,12 +210,12 @@
         "no-background-theme": {
           "dsr_status": "available",
           "test": {
-            "n": 39,
-            "p_value": 0.5674325674325674,
+            "n": 37,
+            "p_value": 0.6493506493506493,
             "p_value_status": "informational",
-            "profit_pct": -1.435234588654594,
-            "sharpe": -0.009760309938198241,
-            "win_rate": 43.58974358974359
+            "profit_pct": -6.395569851046911,
+            "sharpe": -0.04680823479864547,
+            "win_rate": 43.24324324324324
           },
           "theme_mode": null,
           "theme_variant": "no-background-theme",
@@ -722,20 +722,20 @@
     }
   ],
   "effective_data_range": {
-    "end": "2026-08-21",
+    "end": "2026-08-26",
     "reason": null,
     "start": "2020-11-10"
   },
   "empty": false,
-  "evaluated_at": "2026-08-23T12:57:10.989148+07:00",
+  "evaluated_at": "2026-08-26T22:59:27.959768+07:00",
   "evaluation_label": "Exploratory \u2014 gross",
   "failure_reason": null,
   "horizon": "swing",
   "rejection_reason": null,
   "requested_date_range": {
-    "end": "2026-08-23",
+    "end": "2026-08-26",
     "reason": null,
-    "start": "2011-08-23"
+    "start": "2011-08-26"
   },
   "rulebook": {
     "adx_minimum": 17,
@@ -776,11 +776,11 @@
   "split": {
     "method": "chronological_65_35",
     "test": {
-      "end": "2026-08-21",
-      "start": "2024-08-13"
+      "end": "2026-08-26",
+      "start": "2024-08-16"
     },
     "train": {
-      "end": "2024-08-12",
+      "end": "2024-08-15",
       "start": "2020-11-10"
     }
   },

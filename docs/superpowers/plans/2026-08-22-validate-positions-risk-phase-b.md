@@ -18,6 +18,9 @@ the existing fourth Backtest Lab tab.
 **Tech Stack:** Python 3.12, pandas, SQLAlchemy Core/text, PostgreSQL,
 Streamlit 1.32, unittest/AppTest, Docker.
 
+**Status:** Complete and verified on 2026-08-25. Evidence:
+`../reports/2026-08-25-validate-positions-phase-b-verification.md`.
+
 ## Global Constraints
 
 - Use only persisted completed DB bars; never current date, realtime, or
@@ -74,7 +77,7 @@ def theme_eligibility_for_dates(
   {"swing": 40.0}}` or `{"availability": "unavailable"}`. It never
   writes storage and never reads an artifact.
 
-- [ ] **Step 1: Write formula RED tests.**
+- [x] **Step 1: Write formula RED tests.**
 
 ```python
 def test_signal_score_at_or_below_stop_is_very_one_hundred():
@@ -97,13 +100,13 @@ Include exact band-boundary tests for `40`, `40.01`, `60`, `60.01`, `80`, and
 saved-match versus current-match drop; T+3 = third session strictly after the
 saved signal date; and Mid-term elapsed denominator `80`.
 
-- [ ] **Step 2: Run RED.**
+- [x] **Step 2: Run RED.**
 
 Run: `docker exec stock_app python -m unittest tests.test_backtest_position_risk -v`
 
 Expected: import failure because `position_risk` does not exist.
 
-- [ ] **Step 3: Add the pure theme helper and formula implementation.**
+- [x] **Step 3: Add the pure theme helper and formula implementation.**
 
 Move the data-frame-only VNINDEX alignment from private
 `early_warning._theme_facts` into `indicators.theme_eligibility_for_dates`.
@@ -151,13 +154,13 @@ match level comes from `monitoring_match_level`. For a no-signal position,
 build both registered no-theme frames and count boolean values for every name
 in `ENTRY_GATE_NAMES`; never use a saved artifact or reference.
 
-- [ ] **Step 4: Run GREEN.**
+- [x] **Step 4: Run GREEN.**
 
 Run: `docker exec stock_app python -m unittest tests.test_backtest_position_risk tests.test_backtest_early_warning tests.test_backtest_position_monitor -v`
 
 Expected: formula, theme alignment, existing replay, and SELL-monitor tests pass.
 
-- [ ] **Step 5: Self-review task boundary.**
+- [x] **Step 5: Self-review task boundary.**
 
 Confirm `position_risk.py` contains no storage writer, Streamlit import,
 artifact loader, legacy position store import, current-date call, or SELL
@@ -196,7 +199,7 @@ def validate_open_positions(
 }
 ```
 
-- [ ] **Step 1: Write batch RED tests.**
+- [x] **Step 1: Write batch RED tests.**
 
 ```python
 def test_candidates_include_only_open_manual_v4_and_pnl_only_records():
@@ -219,13 +222,13 @@ VNINDEX participates in latest-date equality and is cached; sequential result
 order; an unexpected second-row exception does not stop a third row; and
 missing input yields `Unavailable — risk score missing/invalid.`.
 
-- [ ] **Step 2: Run RED.**
+- [x] **Step 2: Run RED.**
 
 Run: `docker exec stock_app python -m unittest tests.test_backtest_position_risk -v`
 
 Expected: batch interface and candidate filtering are absent.
 
-- [ ] **Step 3: Implement batch orchestration.**
+- [x] **Step 3: Implement batch orchestration.**
 
 Scan only `<positions_dir>/<TICKER>/<TICKER>_manual_positions.json` through
 `load_manual_position_history`; do not call `load_all_positions` because it
@@ -252,13 +255,13 @@ after `entry_context["as_of_date"]` through the shared as-of date. Return
 `T+3 required` with no persistence call before the third session. For every
 other successful result call the injected persistence function once.
 
-- [ ] **Step 4: Run GREEN.**
+- [x] **Step 4: Run GREEN.**
 
 Run: `docker exec stock_app python -m unittest tests.test_backtest_position_risk -v`
 
 Expected: all formula, routing, cache, shared-date, and continuation cases pass.
 
-- [ ] **Step 5: Self-review database and legacy boundaries.**
+- [x] **Step 5: Self-review database and legacy boundaries.**
 
 Inspect the new SQL: `text()` plus `%(tickers)s`, raw connection closed in
 `finally`, uppercase inputs only. Confirm no V2 filename, artifact loader,
@@ -286,7 +289,7 @@ The writer accepts only a non-empty text, finds one manual record atomically,
 requires it to remain OPEN, writes only `risk_suggestion_text`, validates the
 history, and returns a deep copy. It is the only Phase B persistence writer.
 
-- [ ] **Step 1: Write persistence RED tests.**
+- [x] **Step 1: Write persistence RED tests.**
 
 ```python
 def test_risk_writer_overwrites_only_open_manual_position_text():
@@ -306,13 +309,13 @@ Cover invalid/blank writer text, missing ID, CLOSED writer rejection, BUY-date
 clear, CLOSED-to-OPEN clear, and position-validator rejection of a non-string
 risk field. Retain the existing V4 frozen risk-snapshot recalculation test.
 
-- [ ] **Step 2: Run RED.**
+- [x] **Step 2: Run RED.**
 
 Run: `docker exec stock_app python -m unittest tests.test_backtest_manual_position_store tests.test_backtest_position_overview -v`
 
 Expected: missing writer and stale risk text failures.
 
-- [ ] **Step 3: Implement narrow persistence changes.**
+- [x] **Step 3: Implement narrow persistence changes.**
 
 Validate optional `risk_suggestion_text` as a stripped non-empty string when
 present. New records omit it. In `update_manual_position`, remove the key when
@@ -325,13 +328,13 @@ Change `_risk_suggestion_text` to accept `record_source` from
 non-schema-4 saved reference before inspecting text. This retains legacy P&L
 rows while removing legacy risk-display dependency.
 
-- [ ] **Step 4: Run GREEN.**
+- [x] **Step 4: Run GREEN.**
 
 Run: `docker exec stock_app python -m unittest tests.test_backtest_manual_position_store tests.test_backtest_position_overview -v`
 
 Expected: persistence, invalidation, strike-through projection, and legacy-N/A tests pass.
 
-- [ ] **Step 5: Self-review storage safety.**
+- [x] **Step 5: Self-review storage safety.**
 
 Confirm only manual JSON files can receive `risk_suggestion_text`; a T+3
 result never calls the writer; Unavailable does. Confirm closing preserves
@@ -359,7 +362,7 @@ Extend `render_backtest_page` with injected defaults for these two callables;
 keep existing call sites valid. The page passes only selected candidate IDs to
 the batch service.
 
-- [ ] **Step 1: Write UI RED tests.**
+- [x] **Step 1: Write UI RED tests.**
 
 ```python
 def test_validate_positions_lists_only_two_eligible_open_positions_and_runs_selected_ids():
@@ -380,13 +383,13 @@ legacy candidate is absent; T+3 shows no prior-risk mutation; Unavailable and
 Failed exact copy; no header when service returns `None`; and overview session
 cache is cleared after at least one Updated/Unavailable write.
 
-- [ ] **Step 2: Run RED.**
+- [x] **Step 2: Run RED.**
 
 Run: `docker exec stock_app python -m unittest tests.test_backtest_page -v`
 
 Expected: placeholder-only tab fails control/result assertions.
 
-- [ ] **Step 3: Replace the placeholder with the injected UI.**
+- [x] **Step 3: Replace the placeholder with the injected UI.**
 
 Use checkbox labels `Validate <TICKER> — <POSITION_ID>` and preserve candidate
 order. Render an explicit error `Select one to five OPEN positions.` for an
@@ -402,14 +405,14 @@ persisted BUY risk text.
 Do not add a fifth tab, popover, worker, auto refresh, auto SELL, legacy
 selection, realtime source, or position edit action to this tab.
 
-- [ ] **Step 4: Run GREEN.**
+- [x] **Step 4: Run GREEN.**
 
 Run: `docker exec stock_app python -m unittest tests.test_backtest_page -v`
 
 Expected: existing Collect/Validate/Current Position regressions and new
 Validate Positions AppTests pass.
 
-- [ ] **Step 5: Self-review page behavior.**
+- [x] **Step 5: Self-review page behavior.**
 
 Confirm the existing View Signals popovers remain native and unchanged; the
 new tab has one manual Run action only; no legacy locator is passed to the
@@ -432,14 +435,14 @@ risk service; and no output changes a SELL suggestion.
 **Interfaces:** No new product interface. The report records commands and
 actual totals; never invent a pass count.
 
-- [ ] **Step 1: Run the focused regression gate.**
+- [x] **Step 1: Run the focused regression gate.**
 
 Run: `docker exec stock_app python -m unittest tests.test_backtest_position_risk tests.test_backtest_manual_position_store tests.test_backtest_position_overview tests.test_backtest_position_monitor tests.test_backtest_early_warning tests.test_backtest_page -v`
 
 Expected: every named test passes. Investigate every failure before changing a
 test or weakening any V3/position contract.
 
-- [ ] **Step 2: Run static and boundary checks.**
+- [x] **Step 2: Run static and boundary checks.**
 
 Run: `docker exec stock_app python -m compileall -q backtest_engine pages/backtest_lab.py`
 
@@ -453,7 +456,7 @@ Expected: compilation succeeds; first search has no matches; second search
 contains no Phase B SELL-write path; trailing-whitespace search has no output.
 Do not run Git checks.
 
-- [ ] **Step 3: Perform implementation self-criticism.**
+- [x] **Step 3: Perform implementation self-criticism.**
 
 Check the delivered code against every design rule: T+3 strict count, shared
 latest bar, no current date, raw BIGINT math, freeze-only schema-4 routing,
@@ -461,7 +464,7 @@ both manual horizons/four gates, cache key, exact text, persistence
 invalidation, CLOSED strike-through, and no legacy/SELL path. Fix each found
 issue and rerun affected tests.
 
-- [ ] **Step 4: Record evidence-based completion.**
+- [x] **Step 4: Record evidence-based completion.**
 
 Write the verification report with actual command output totals, changed files,
 the one shared-bar behavior, and known limits. Mark the Phase B plan complete

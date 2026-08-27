@@ -1,9 +1,78 @@
 # FOCUS.md
-# Updated: 2026-08-23
+# Updated: 2026-08-27
 
 ## Current Task
 
-**Validate Positions Risk — Phase B implementation in progress (2026-08-22).**
+**Horizon Rulebook Signal Redesign and Validate Positions Risk — Phase B are
+complete (2026-08-25).**
+
+Horizon V3 remains complete through its schema-4 replacement. Validate
+Positions Phase B is complete and verified by 68 focused Docker tests plus
+container compilation. Evidence:
+`docs/superpowers/reports/2026-08-25-validate-positions-phase-b-verification.md`.
+
+**Active work:** Flexible Rulebook Core Plan. Tasks 3 and 4 implementation is
+complete (2026-08-27): catalog-v1, causal FeatureStore/lazy masks, individual
+computed-component cache, receipt proof, reference execution, and inert
+identity-bound event-plan parity guard exist. Cache accepts only matching
+source/contract primitive keys; corrupt, partial, locked, low-space, and write
+failures stay uncached without ticker failure. Task 4 fixtures cover next-open,
+E+3, technical queue/discard, prior-high trailing, raw-open gaps, deadline
+precedence, sparse/dense masks, cancellation, and source/receipt/mask/partition
+event-plan rejection. Canonical Docker focused gate passes 73/73 plus
+compilation. Tasks 3–4 are verified complete.
+
+**Task 5 contract history (completed 2026-08-26):** its evidence contract is locked:
+`RulebookEvaluation` will own typed immutable `training_trades` and
+`test_trades` tuples, count-matched to each partition metric and excluded from
+`rulebook_id`. Sensitivity reads these tuples only; no aggregate inference or
+artifact lookup.
+
+**Task 5 complete (2026-08-26):** metrics now validates a single selection
+scope, pairs first inclusive trade-interval overlaps deterministically, records
+exact integer overlap evidence, and greedily retains at most three training-time
+distinct candidates under the fixed 75% rule. Focused Flexible Docker gate
+passes 56/56 with compilation. **Task 6 complete:** catalog-v1 fixes ATR
+stop `2.0×`, target `3.0×`, and no trailing. Its first lazy seed-free
+CandidateSpace and ticker-seeded affine traversal tests pass in Docker (4/4).
+Structural strata and discovery evaluation are complete: seeded stratum order,
+continuation-safe affine slots, budget terminal truth, and frozen train/test
+typed evidence. Core Docker gate passes 80/80 plus compilation. **Task 7 is
+complete:** Flexible-only schema-1 storage writes immutable definitions,
+qualified/explicitly-saved evidence, receipt-bound provenance ledgers, verified
+Continue selection chains, and excludes `cache/` from signal-set traversal.
+Full Flexible Docker gate passes 96/96 and all Flexible modules compile.
+Campaign manifests/resume cursors begin only in the dependent Campaigns and
+Current Scan plan.
+
+**Active work:** Flexible Campaigns and Current Scan plan, Task 1. Its isolated
+campaign contract now freezes semantic request identity, ignores cache/runtime
+diagnostics in request hashing, validates discovery-only frontier assignment,
+enforces legal campaign and item states, and creates source-verified linked
+Continue windows with contiguous cursor accounting. Focused Docker evidence is
+8/8 plus compilation. Durable manifest persistence and reconciliation remain.
+Approved design:
+`docs/superpowers/specs/2026-08-25-flexible-rulebook-design.md`. Execution
+sequence remains `docs/superpowers/plans/2026-08-25-flexible-rulebook-core.md`
+then `docs/superpowers/plans/2026-08-25-flexible-rulebook-campaigns-and-current-scan.md`.
+
+**Flexible Rulebook planning amendment (2026-08-26):** approved review repair
+now locks a lazy seeded structurally stratified CandidateSpace/FrontierAssignment
+search, persisted continuation cursor, portable cross-ticker reuse, native-bar
+split boundary, explicit technical/price exit precedence, and 75%-overlap
+training timing distinctness for Top 3. It also defines fresh-source-validated
+reusable per-primitive indicator components (with request-scoped bundles only),
+the <=24-hour Reuse/Recalculate prompt, frozen-source Continue/Resume safety,
+append-safe historical evidence anchors, immutable campaign-chain selection
+snapshots, a 4h55 per-ticker normal terminal limit with 4h30 candidate admission
+stop, benchmark-backed maximal-slot caps, and standalone radio-workspace UI
+behavior. The amendment now adds FeaturePlan/FeatureResolutionReceipt digest
+proof for cache eviction and continuation, a reference-executor oracle with an
+exact-parity-gated event fast path, and an optional exact-prefix append extension
+that remains disabled until its benchmark gate passes. Core Tasks 1–7 and
+Campaigns Task 1 contract layer now exist; durable campaign persistence/
+reconciliation, runner, service, benchmark, and UI remain for ordered later
+tasks.
 
 **Completed UI change:** Collect Signals now has named-Group Edit Group draft
 editing: Add/Remove members in a popover and atomically Save, including an
@@ -96,11 +165,11 @@ Phase B is governed by the approved
 `docs/superpowers/specs/2026-08-22-validate-positions-risk-phase-b-design.md`
 and executable plan
 `docs/superpowers/plans/2026-08-22-validate-positions-risk-phase-b.md`.
-Implementation is in progress. Current focused Docker evidence is 44/44 plus
-the post-formatting risk module suite 4/4; final contract review and
-completion documentation remain. Risk suggestion text renders each available
+Implementation is complete. Focused Docker verification passes 68 tests and
+container compilation passes. Risk suggestion text renders each available
 horizon on its own line with a one-decimal score. Its saved-set boundary is
-current schema-4 V3 artifacts.
+current schema-4 V3 artifacts. Completion evidence:
+`docs/superpowers/reports/2026-08-25-validate-positions-phase-b-verification.md`.
 Verification is recorded in
 `docs/superpowers/reports/2026-08-22-validate-positions-phase-a-verification.md`.
 
@@ -124,9 +193,12 @@ with a clean audit, calendar 10y/5y split, 15 candidates, and Top 3 evidence.
 Audit-ineligible rulebooks are display-only and blocked both in the UI and at
 the schema-4 signal-backed position boundary.
 
-**Stopping point:** Phase B code is in progress. Finish verification and
-implementation self-review before marking it complete. The text below is
-historical context only.
+**Stopping point:** Phase B is complete. Flexible Rulebook Core Plan Task 3's
+generic FeatureStore/lazy-mask slice passes its focused gate. Catalog-v1 finite
+settings and persistent primitive cache remain blocked. Task 4 needs a
+definition-owned ATR primitive/period before it can freeze entry ATR. It must
+not enumerate candidates or depend on cache resolution.
+The text below is historical context only.
 
 Replace the current three compact strategy IDs with one deterministic,
 long-only rulebook per horizon. Swing is daily EMA(5/13), RSI(9) upcross 52,
@@ -258,10 +330,10 @@ Plan: `docs/superpowers/plans/2026-08-16-validate-positions-risk-and-trade-rows.
 - [x] Task 5: introduce V3 horizon-qualified terminal artifacts and remove V2 current-artifact support.
 - [x] Task 6: V3 replay/UI and horizon-qualified saved-set position boundary.
 - [x] Review the V3 gate/statistics amendment design and write its executable amendment plan.
-- [ ] Implement and verify the approved V3 gate/statistics amendment.
-- [ ] Task 7: evidence/report complete; required manual nonempty V3 proof pending rerun under the amended rulebook.
-- [ ] Task 8: user-triggered CLI bulk backfill and terminal tracker.
-- [ ] Task 9: exact V2 cleanup and temporary-roster removal after separate approval.
+- [x] Implement and verify the approved V3 schema-4 exploratory replacement.
+- [x] Task 7: evidence/report complete under the replacement plan.
+- [x] Task 8: replacement-plan terminal artifact/job transition complete.
+- [x] Task 9: V3 plan closure complete; V2 deletion remains explicitly outside scope and unapproved.
 
 Design:
 `docs/superpowers/specs/2026-08-15-horizon-rulebook-signal-redesign-design.md`.

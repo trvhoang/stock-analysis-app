@@ -2,7 +2,7 @@
   "audit_eligibility": {
     "effective_date_range": [
       "2017-07-07",
-      "2026-08-21"
+      "2026-08-26"
     ],
     "eligible": false,
     "reasons": [
@@ -36,10 +36,10 @@
           "dsr_status": "available",
           "test": {
             "n": 35,
-            "p_value": 0.23676323676323677,
+            "p_value": 0.23776223776223776,
             "p_value_status": "informational",
-            "profit_pct": 19.291257323971408,
-            "sharpe": 0.09385310185977754,
+            "profit_pct": 19.046378620781066,
+            "sharpe": 0.09273300698761643,
             "win_rate": 48.57142857142857
           },
           "theme_mode": "AND",
@@ -58,10 +58,10 @@
           "dsr_status": "available",
           "test": {
             "n": 59,
-            "p_value": 0.029970029970029972,
+            "p_value": 0.03196803196803197,
             "p_value_status": "informational",
-            "profit_pct": 44.63019798819769,
-            "sharpe": 0.11386888880050436,
+            "profit_pct": 44.38531928500735,
+            "sharpe": 0.11328173738141455,
             "win_rate": 49.152542372881356
           },
           "theme_mode": null,
@@ -88,12 +88,12 @@
         "background-theme": {
           "dsr_status": "available",
           "test": {
-            "n": 38,
-            "p_value": 0.3886113886113886,
+            "n": 37,
+            "p_value": 0.6433566433566433,
             "p_value_status": "informational",
-            "profit_pct": 3.353390535303412,
-            "sharpe": 0.015871493942920856,
-            "win_rate": 39.473684210526315
+            "profit_pct": -4.12434350057015,
+            "sharpe": -0.020264906472171062,
+            "win_rate": 37.83783783783784
           },
           "theme_mode": "AND",
           "theme_variant": "background-theme",
@@ -110,12 +110,12 @@
         "no-background-theme": {
           "dsr_status": "available",
           "test": {
-            "n": 42,
-            "p_value": 0.2087912087912088,
+            "n": 41,
+            "p_value": 0.3206793206793207,
             "p_value_status": "informational",
-            "profit_pct": 13.08905104067799,
-            "sharpe": 0.05644589557888156,
-            "win_rate": 40.476190476190474
+            "profit_pct": 5.6113170048044285,
+            "sharpe": 0.025001432628493293,
+            "win_rate": 39.02439024390244
           },
           "theme_mode": null,
           "theme_variant": "no-background-theme",
@@ -248,12 +248,12 @@
         "background-theme": {
           "dsr_status": "available",
           "test": {
-            "n": 29,
-            "p_value": 0.052947052947052944,
+            "n": 28,
+            "p_value": 0.059940059940059943,
             "p_value_status": "informational",
-            "profit_pct": 30.74733330638045,
-            "sharpe": 0.18577552688520116,
-            "win_rate": 48.275862068965516
+            "profit_pct": 23.269599270506887,
+            "sharpe": 0.1463350436448344,
+            "win_rate": 46.42857142857143
           },
           "theme_mode": "AND",
           "theme_variant": "background-theme",
@@ -270,12 +270,12 @@
         "no-background-theme": {
           "dsr_status": "available",
           "test": {
-            "n": 32,
+            "n": 31,
             "p_value": 0.000999000999000999,
             "p_value_status": "informational",
-            "profit_pct": 41.626284483003666,
-            "sharpe": 0.22777775536755465,
-            "win_rate": 50.0
+            "profit_pct": 34.1485504471301,
+            "sharpe": 0.19341263516265378,
+            "win_rate": 48.38709677419355
           },
           "theme_mode": null,
           "theme_variant": "no-background-theme",
@@ -474,14 +474,14 @@
           "theme_mode": "AND",
           "theme_variant": "background-theme",
           "training": {
-            "n": 64,
+            "n": 65,
             "p_value": 0.000999000999000999,
             "p_value_status": "informational",
-            "profit_pct": 159.7258105379356,
-            "sharpe": 0.3458478842435436,
-            "win_rate": 56.25
+            "profit_pct": 168.06532057644256,
+            "sharpe": 0.3593024451398546,
+            "win_rate": 56.92307692307692
           },
-          "training_dsr": 0.9955300386994587
+          "training_dsr": 0.9967161231250006
         },
         "no-background-theme": {
           "dsr_status": "available",
@@ -496,14 +496,14 @@
           "theme_mode": null,
           "theme_variant": "no-background-theme",
           "training": {
-            "n": 72,
+            "n": 73,
             "p_value": 0.000999000999000999,
             "p_value_status": "informational",
-            "profit_pct": 175.32617858668922,
-            "sharpe": 0.3277211384089774,
-            "win_rate": 55.55555555555556
+            "profit_pct": 183.6656886251962,
+            "sharpe": 0.3394970237861238,
+            "win_rate": 56.16438356164384
           },
-          "training_dsr": 0.995989325023537
+          "training_dsr": 0.997008301052049
         }
       }
     },
@@ -728,20 +728,20 @@
     }
   ],
   "effective_data_range": {
-    "end": "2026-08-21",
+    "end": "2026-08-26",
     "reason": null,
     "start": "2017-07-07"
   },
   "empty": false,
-  "evaluated_at": "2026-08-22T12:29:16.337014+07:00",
+  "evaluated_at": "2026-08-26T23:00:04.566780+07:00",
   "evaluation_label": "Exploratory \u2014 gross",
   "failure_reason": null,
   "horizon": "swing",
   "rejection_reason": null,
   "requested_date_range": {
-    "end": "2026-08-22",
+    "end": "2026-08-26",
     "reason": null,
-    "start": "2011-08-22"
+    "start": "2011-08-26"
   },
   "rulebook": {
     "adx_minimum": 17,
@@ -782,11 +782,11 @@
   "split": {
     "method": "chronological_65_35",
     "test": {
-      "end": "2026-08-21",
-      "start": "2023-06-12"
+      "end": "2026-08-26",
+      "start": "2023-06-16"
     },
     "train": {
-      "end": "2023-06-09",
+      "end": "2023-06-15",
       "start": "2017-07-07"
     }
   },

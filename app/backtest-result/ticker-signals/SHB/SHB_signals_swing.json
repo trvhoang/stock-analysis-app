@@ -2,7 +2,7 @@
   "audit_eligibility": {
     "effective_date_range": [
       "2021-10-11",
-      "2026-08-21"
+      "2026-08-26"
     ],
     "eligible": true,
     "reasons": [],
@@ -82,12 +82,12 @@
         "background-theme": {
           "dsr_status": "available",
           "test": {
-            "n": 21,
+            "n": 22,
             "p_value": 0.000999000999000999,
             "p_value_status": "informational",
-            "profit_pct": 29.202712705520117,
-            "sharpe": 0.28101266822417875,
-            "win_rate": 52.38095238095239
+            "profit_pct": 26.714359570850842,
+            "sharpe": 0.24785856703082407,
+            "win_rate": 50.0
           },
           "theme_mode": "AND",
           "theme_variant": "background-theme",
@@ -104,12 +104,12 @@
         "no-background-theme": {
           "dsr_status": "available",
           "test": {
-            "n": 25,
-            "p_value": 0.04295704295704296,
+            "n": 26,
+            "p_value": 0.11588411588411589,
             "p_value_status": "informational",
-            "profit_pct": 36.00214515078786,
-            "sharpe": 0.26015410794849203,
-            "win_rate": 48.0
+            "profit_pct": 33.513792016118586,
+            "sharpe": 0.2353134841146985,
+            "win_rate": 46.15384615384615
           },
           "theme_mode": null,
           "theme_variant": "no-background-theme",
@@ -722,20 +722,20 @@
     }
   ],
   "effective_data_range": {
-    "end": "2026-08-21",
+    "end": "2026-08-26",
     "reason": null,
     "start": "2021-10-11"
   },
   "empty": false,
-  "evaluated_at": "2026-08-23T12:56:55.379844+07:00",
+  "evaluated_at": "2026-08-26T22:59:12.104534+07:00",
   "evaluation_label": "Exploratory \u2014 gross",
   "failure_reason": null,
   "horizon": "swing",
   "rejection_reason": null,
   "requested_date_range": {
-    "end": "2026-08-23",
+    "end": "2026-08-26",
     "reason": null,
-    "start": "2011-08-23"
+    "start": "2011-08-26"
   },
   "rulebook": {
     "adx_minimum": 17,
@@ -776,11 +776,11 @@
   "split": {
     "method": "chronological_65_35",
     "test": {
-      "end": "2026-08-21",
-      "start": "2024-12-09"
+      "end": "2026-08-26",
+      "start": "2024-12-11"
     },
     "train": {
-      "end": "2024-12-06",
+      "end": "2024-12-10",
       "start": "2021-10-11"
     }
   },

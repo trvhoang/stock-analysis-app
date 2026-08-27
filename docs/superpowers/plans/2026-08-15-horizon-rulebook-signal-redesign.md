@@ -1,5 +1,11 @@
 # Horizon Rulebook Signal Redesign Implementation Plan
 
+> **Status:** Superseded historical plan. The Horizon Rulebook Signal Redesign
+> completed through the schema-4 replacement plan
+> `2026-08-22-horizon-v3-exploratory-multi-rulebook.md`, verified on
+> 2026-08-22. Original V2-deletion Tasks 8--9 remain intentionally unexecuted
+> because V2 deletion was never approved; they are not active work.
+
 > **Active-policy amendment:** This plan is the historical original V3 plan.
 > Its entry-gate, ADX, `min_n`, PSR, and DSR rules are superseded by
 > [2026-08-21 Horizon Rulebook V3 Gate and Statistics Update](2026-08-21-horizon-rulebook-v3-gate-statistics-update.md).

@@ -1,0 +1,30 @@
+{
+  "config": {
+    "end_date": "2026-08-26",
+    "group_name": "BANK",
+    "horizon": "swing",
+    "output_dir": "backtest-result/ticker-signals",
+    "permutation_block_size": 20,
+    "permutation_count": 1000,
+    "permutation_seed": 42,
+    "request_type": "backtest_batch_v4",
+    "start_date": "2011-08-26",
+    "tickers": [
+      "ACB",
+      "BID",
+      "CTG",
+      "HDB",
+      "MBB",
+      "SHB",
+      "STB",
+      "TCB",
+      "VCB",
+      "VIB"
+    ],
+    "worker_count": 6
+  },
+  "factory_ref": "backtest_engine.pipeline:run_backtest_batch_from_env",
+  "job_id": "3b158e7b1369472e8ec17059e47f9715",
+  "schema_version": 4,
+  "status_dir": "backtest-status"
+}
