@@ -24,6 +24,7 @@ def _candidate(gates, win_rate=60.0):
     execution = RulebookExecution(rulebook, gates)
     return {
         "rulebook_id": execution.rule_id,
+        "candidate_role": "baseline_control",
         "selected_gates": list(gates),
         "preferred_variant": "no-background-theme",
         "treatments": {
@@ -41,10 +42,13 @@ def _success_document():
         _candidate(("rulebook_joint_trend_pass",), 59.0),
     ]
     return {
+        "contract_version": "backtest_schema5_v1",
+        "partition_labels": {"training": "in-sample", "test": "historical test — previously observed"},
         "horizon": "swing", "terminal_state": "success", "empty": False,
         "failure_reason": None, "rejection_reason": None,
         "evaluation_label": "Exploratory — gross", "rulebook": rulebook_for("swing").to_dict(),
-        "audit_eligibility": {"source": "fresh_v3_raw_history", "eligible": True, "status": "clean", "reasons": [], "warnings": [], "effective_date_range": ["2011-01-03", "2026-01-02"]},
+        "audit_eligibility": {"source": "fresh_schema5_raw_history", "eligible": True, "status": "clean", "reasons": [], "warnings": [], "effective_date_range": ["2011-01-03", "2026-01-02"]},
+        "evidence_eligibility": {"status": "eligible", "eligible": True, "reasons": [], "common_as_of": "2026-01-02", "first_available_bar": "2011-01-03", "last_available_bar": "2026-01-02", "ticker_fingerprint": "a" * 64, "vnindex_fingerprint": "b" * 64, "observed_sessions": 3700, "expected_sessions": 3700, "coverage_ratio": 1.0, "max_gap_sessions": 0},
         "requested_date_range": {"start": "2011-01-03", "end": "2026-01-02", "reason": None},
         "effective_data_range": {"start": "2011-01-03", "end": "2026-01-02", "reason": None},
         "split": {"method": "calendar_10y_5y", "train": {"start": "2011-01-03", "end": "2021-01-01"}, "test": {"start": "2021-01-04", "end": "2026-01-02"}},
@@ -71,9 +75,10 @@ class SignalCatalogTests(unittest.TestCase):
             options = list_saved_signal_options("VCB", directory)
 
         self.assertEqual([row["Rulebook"] for row in catalog["valid"]], [
-            "swing_rulebook_v4__adx", "swing_rulebook_v4__rsi_upcross", "swing_rulebook_v4__volume",
+            "swing_rulebook_v5__adx", "swing_rulebook_v5__rsi_upcross", "swing_rulebook_v5__volume",
         ])
         self.assertTrue(all(row["Evaluation"] == "Exploratory — gross" for row in catalog["valid"]))
+        self.assertTrue(all(row["Evidence"] == "eligible" for row in catalog["valid"]))
         self.assertTrue(all(set(row["Treatments"]) == {"no-background-theme", "background-theme"} for row in catalog["valid"]))
         self.assertEqual(len(options), 3)
 

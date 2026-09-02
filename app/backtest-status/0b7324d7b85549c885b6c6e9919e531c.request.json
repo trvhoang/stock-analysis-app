@@ -1,0 +1,9 @@
+{
+  "error_text": "Regenerate under Backtest schema 5.",
+  "job_id": "0b7324d7b85549c885b6c6e9919e531c",
+  "output_paths": [],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "requires_regeneration",
+  "ticker_results": []
+}

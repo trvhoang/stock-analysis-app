@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import time
@@ -18,7 +19,7 @@ from commons.price_utils import PRICE_OUTPUT_UI, prepare_price_for_output, price
 from backtest_engine.config import DEFAULT_SIGNAL_DIR, BacktestBatchConfig
 from backtest_engine.job_runner import read_job_status, submit_backtest
 from backtest_engine.manual_position_store import (
-    build_v4_risk_snapshot,
+    build_v5_risk_snapshot,
     create_manual_position,
     delete_manual_position,
     update_manual_position,
@@ -42,6 +43,11 @@ from backtest_engine.result_store import (
     resolve_group_tickers,
 )
 from backtest_engine.signal_catalog import list_current_signal_set_rows
+from backtest_engine.signal_removal import (
+    SignalCandidateKey,
+    SignalRemovalBlockedError,
+    remove_saved_signal_candidates,
+)
 from backtest_engine.validation_advice import validate_saved_signals
 
 
@@ -65,6 +71,13 @@ _POSITION_TICKER_FILTER_KEY = "backtest_position_ticker_filter_v4"
 _VIEW_SIGNAL_TICKER_FILTER_KEY = "backtest_view_signal_ticker_filter_v4"
 _VIEW_SIGNAL_HORIZON_FILTER_KEY = "backtest_view_signal_horizon_filter_v4"
 _VIEW_SIGNAL_HORIZON_OPTIONS = ("Both", "Swing", "Mid-term")
+_VIEW_SIGNAL_COLUMNS_KEY = "backtest_view_signal_columns_v4"
+_VIEW_SIGNAL_SELECTED_KEYS_KEY = "backtest_view_signal_selected_keys_v4"
+_VIEW_SIGNAL_SELECT_ALL_VISIBLE_KEY = "backtest_view_signal_select_all_visible_v4"
+_VIEW_SIGNAL_CATALOG_SIGNATURE_KEY = "backtest_view_signal_catalog_signature_v4"
+_VIEW_SIGNAL_FEEDBACK_KEY = "backtest_view_signal_feedback_v4"
+_VIEW_SIGNAL_RESET_SELECTION_KEY = "backtest_view_signal_reset_selection_v4"
+_VIEW_SIGNAL_TABLE_GENERATION_KEY = "backtest_view_signal_table_generation_v4"
 _NEW_POSITION_TICKER_KEY = "backtest_new_position_ticker_v4"
 _NEW_POSITION_SAVED_SET_KEY = "backtest_position_saved_set_v4"
 _NEW_POSITION_VALIDATION_KEY = "backtest_new_position_validation_v4"
@@ -185,7 +198,7 @@ def format_job_status(status) -> str:
     return f"{status.state.title()} — {round(float(status.progress) * 100)}%"
 
 
-def _render_v4_artifact(path: str) -> None:
+def _render_v5_artifact(path: str) -> None:
     try:
         payload = load_rulebook_result(path)
     except (OSError, ValueError, json.JSONDecodeError):
@@ -328,7 +341,7 @@ def _render_collect(
         result_columns = st.columns(4)
         for index, path in enumerate(status.output_paths):
             with result_columns[index % 4]:
-                _render_v4_artifact(path)
+                _render_v5_artifact(path)
     if status.state in {"queued", "running"}:
         schedule_refresh_fn(True)
 
@@ -341,6 +354,10 @@ def _render_validation_result(
 ) -> None:
     """Render one completed ticker validation without changing its advice."""
 
+    unavailable_items = [
+        item for item in result["results"]
+        if item.get("availability") == "unavailable"
+    ]
     visible_items = [
         item for item in result["results"]
         if item.get("availability") == "available"
@@ -351,9 +368,11 @@ def _render_validation_result(
             or item.get("position_action", "expired BUY") == position_action
         )
     ]
-    if not visible_items:
+    if not visible_items and not unavailable_items:
         return
     st.subheader(ticker)
+    for item in unavailable_items:
+        st.warning(f"Validation unavailable: {item.get('reason', 'unknown reason')}")
     for item in visible_items:
         label = f"{HORIZON_LABELS[item['horizon']]} — {item['rulebook_id']} — {item['preferred_variant']}"
         with st.expander(label):
@@ -363,14 +382,22 @@ def _render_validation_result(
                 f"Monitoring: {monitoring['match_level']}% — "
                 f"{monitoring['match_classification'].replace('_', ' ')} | {action}"
             )
-            st.caption(f"{item['evaluation_label']} — training and test evidence")
-            if item.get("buy_block_reason") == "audit_ineligible":
-                st.warning("BUY is blocked: audit-ineligible raw history.")
+            labels = item.get("partition_labels", {})
+            st.caption(
+                f"{item['evaluation_label']} — "
+                f"{labels.get('training', 'in-sample')} / "
+                f"{labels.get('test', 'historical test — previously observed')}"
+            )
+            evidence = item.get("evidence_eligibility", {})
+            st.caption(f"Evidence: {evidence.get('status', 'unavailable')}")
+            if item.get("buy_block_reason") == "evidence_ineligible":
+                st.warning("BUY is blocked: current evidence is ineligible.")
             elif item.get("buy_block_reason") == "open_position":
                 st.caption("BUY is blocked: this saved rulebook already has an OPEN position.")
             st.json(
                 {
                     "audit_eligibility": item["audit_eligibility"],
+                    "evidence_eligibility": evidence,
                     "current_gates": item["current"],
                     "both_treatments": item["candidate"]["treatments"],
                 },
@@ -477,16 +504,18 @@ def _render_validate(
             _render_validation_result(ticker, result, allowed, position_action)
 
 
-_VIEW_SIGNAL_COLUMNS = (
-    "Ticker",
+_VIEW_SIGNAL_FIXED_COLUMNS = ("No", "Select", "Ticker")
+_VIEW_SIGNAL_OPTIONAL_COLUMNS = (
     "Horizon",
-    "Theme",
     "Train-test",
     "n",
     "Win rate %",
     "Profit %",
     "Sharpe",
+    "Evidence",
+    "Theme",
 )
+_VIEW_SIGNAL_DEFAULT_COLUMNS = _VIEW_SIGNAL_OPTIONAL_COLUMNS[:-2]
 
 
 def _view_metric(value: object, decimals: int | None = None) -> str:
@@ -504,6 +533,16 @@ def _view_signal_rows(
 
     output = []
     for row in rows:
+        ticker = row.get("Ticker")
+        horizon_label = row.get("Horizon")
+        rulebook_id = row.get("Rulebook")
+        if (
+            not isinstance(ticker, str) or not ticker
+            or horizon_label not in ("Swing", "Mid-term")
+            or not isinstance(rulebook_id, str) or not rulebook_id
+        ):
+            raise ValueError("catalog View Signals row has an invalid immutable identity")
+
         def paired(metric: str, decimals: int | None = None) -> str:
             return (
                 f"{_view_metric(row.get('Training ' + metric), decimals)} - "
@@ -512,8 +551,9 @@ def _view_signal_rows(
 
         output.append(
             {
-                "Ticker": row.get("Ticker"),
-                "Horizon": row.get("Horizon"),
+                "Ticker": ticker,
+                "Horizon": horizon_label,
+                "Evidence": row.get("Evidence", "unavailable"),
                 "Theme": (
                     "Included"
                     if row.get("Preferred treatment") == "background-theme"
@@ -526,9 +566,135 @@ def _view_signal_rows(
                 "Win rate %": paired("win rate %", 1),
                 "Profit %": paired("profit %", 1),
                 "Sharpe": paired("Sharpe", 1),
+                "_ticker": ticker,
+                "_horizon": "swing" if horizon_label == "Swing" else "midterm",
+                "_rulebook_id": rulebook_id,
             }
         )
     return output
+
+
+def _parse_view_signal_tickers(value: str) -> tuple[str, ...]:
+    """Normalize exact View Signals ticker-filter tokens without a batch limit."""
+
+    if not isinstance(value, str):
+        raise ValueError("ticker filter must be text")
+    tokens = [token.upper() for token in re.split(r"[\s,]+", value.strip()) if token]
+    return tuple(dict.fromkeys(tokens))
+
+
+def _view_signal_table_rows(
+    rows: Iterable[Mapping[str, object]],
+) -> list[dict[str, object]]:
+    """Add display-only visible ordinals and default unchecked selection."""
+
+    return [
+        {"No": index, "Select": False, **dict(row)}
+        for index, row in enumerate(rows, start=1)
+    ]
+
+
+def _view_signal_key(row: Mapping[str, object]) -> SignalCandidateKey:
+    """Return the private immutable candidate identity attached to one view row."""
+
+    ticker, horizon, rulebook_id = (
+        row.get("_ticker"), row.get("_horizon"), row.get("_rulebook_id"),
+    )
+    if (
+        not isinstance(ticker, str) or not ticker
+        or horizon not in HORIZON_OPTIONS
+        or not isinstance(rulebook_id, str) or not rulebook_id
+    ):
+        raise ValueError("View Signals row has an invalid immutable identity")
+    return SignalCandidateKey(ticker, horizon, rulebook_id)
+
+
+def _view_selected_key_tuples(value: object) -> set[tuple[str, str, str]]:
+    """Read only session-safe immutable selection tuples."""
+
+    if not isinstance(value, (set, tuple, list)):
+        return set()
+    return {
+        tuple(item)
+        for item in value
+        if isinstance(item, tuple) and len(item) == 3 and all(isinstance(part, str) for part in item)
+    }
+
+
+def _view_catalog_signature(rows: Iterable[Mapping[str, object]]) -> str:
+    """Return a stable change detector for the full current catalog projection."""
+
+    return json.dumps(list(rows), sort_keys=True, separators=(",", ":"), default=str)
+
+
+def _view_signal_table_widget_key(
+    visible_keys: tuple[tuple[str, str, str], ...],
+    selected_keys: tuple[tuple[str, str, str], ...],
+    visible_columns: tuple[str, ...],
+    generation: int = 0,
+) -> str:
+    """Build a deterministic native-editor key for its immutable display context."""
+
+    payload = json.dumps(
+        {
+            "visible_keys": visible_keys,
+            "selected_keys": selected_keys,
+            "visible_columns": visible_columns,
+            "generation": generation,
+        },
+        separators=(",", ":"),
+    )
+    digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    return f"backtest_view_signal_table_v4_{digest}"
+
+
+def _sync_view_signal_selection(
+    catalog_signature: str,
+    visible_keys: tuple[tuple[str, str, str], ...],
+) -> tuple[set[tuple[str, str, str]], bool]:
+    """Clear stale catalog/filter selection before View Signals widgets exist."""
+
+    reset_requested = bool(st.session_state.pop(_VIEW_SIGNAL_RESET_SELECTION_KEY, False))
+    catalog_changed = st.session_state.get(_VIEW_SIGNAL_CATALOG_SIGNATURE_KEY) != catalog_signature
+    if reset_requested or catalog_changed:
+        selected = set()
+        st.session_state[_VIEW_SIGNAL_TABLE_GENERATION_KEY] = (
+            int(st.session_state.get(_VIEW_SIGNAL_TABLE_GENERATION_KEY, 0)) + 1
+        )
+    else:
+        selected = _view_selected_key_tuples(st.session_state.get(_VIEW_SIGNAL_SELECTED_KEYS_KEY))
+        selected.intersection_update(visible_keys)
+    st.session_state[_VIEW_SIGNAL_CATALOG_SIGNATURE_KEY] = catalog_signature
+    st.session_state[_VIEW_SIGNAL_SELECTED_KEYS_KEY] = selected
+    st.session_state[_VIEW_SIGNAL_SELECT_ALL_VISIBLE_KEY] = (
+        bool(visible_keys) and selected == set(visible_keys)
+    )
+    return selected, reset_requested or catalog_changed
+
+
+def _apply_view_select_all_visible(
+    visible_keys: tuple[tuple[str, str, str], ...],
+) -> None:
+    """Synchronize the native header selection control with visible identities."""
+
+    st.session_state[_VIEW_SIGNAL_SELECTED_KEYS_KEY] = (
+        set(visible_keys)
+        if st.session_state.get(_VIEW_SIGNAL_SELECT_ALL_VISIBLE_KEY, False)
+        else set()
+    )
+
+
+def _view_feedback() -> None:
+    feedback = st.session_state.pop(_VIEW_SIGNAL_FEEDBACK_KEY, None)
+    if not isinstance(feedback, Mapping):
+        return
+    message = feedback.get("message")
+    if not isinstance(message, str) or not message:
+        return
+    if feedback.get("level") == "success":
+        st.success(message)
+    else:
+        st.error(message)
 
 
 def _filter_view_signal_rows(
@@ -538,11 +704,11 @@ def _filter_view_signal_rows(
 ) -> list[dict[str, object]]:
     """Return projected View Signals rows matching both local UI filters."""
 
-    ticker = ticker_filter.strip().upper()
+    tickers = set(_parse_view_signal_tickers(ticker_filter))
     return [
         dict(row)
         for row in rows
-        if (not ticker or ticker in str(row.get("Ticker", "")).upper())
+        if (not tickers or str(row.get("Ticker", "")).upper() in tickers)
         and (
             horizon_filter == "Both"
             or row.get("Horizon") == horizon_filter
@@ -550,17 +716,21 @@ def _filter_view_signal_rows(
     ]
 
 
-def _render_view(signal_dir: str) -> None:
+def _render_view(
+    signal_dir: str,
+    positions_dir: str = "backtest-positions",
+    *,
+    remove_fn: Callable = remove_saved_signal_candidates,
+    rerun_fn: Callable = st.rerun,
+) -> None:
     st.subheader("View Signals")
+    _view_feedback()
     catalog = list_current_signal_set_rows(signal_dir)
-    ticker_column, horizon_column = st.columns(2)
+    ticker_column, horizon_column, columns_column = st.columns(3)
     with ticker_column:
         ticker_filter = st.text_input(
             "Ticker",
-            max_chars=3,
             key=_VIEW_SIGNAL_TICKER_FILTER_KEY,
-            on_change=_uppercase_ticker_state,
-            args=(_VIEW_SIGNAL_TICKER_FILTER_KEY,),
         )
     with horizon_column:
         horizon_filter = st.selectbox(
@@ -568,16 +738,115 @@ def _render_view(signal_dir: str) -> None:
             _VIEW_SIGNAL_HORIZON_OPTIONS,
             key=_VIEW_SIGNAL_HORIZON_FILTER_KEY,
         )
+    with columns_column:
+        selected_columns = st.multiselect(
+            "Columns",
+            _VIEW_SIGNAL_OPTIONAL_COLUMNS,
+            default=_VIEW_SIGNAL_DEFAULT_COLUMNS,
+            key=_VIEW_SIGNAL_COLUMNS_KEY,
+        )
+    projected_rows = _view_signal_rows(catalog["valid"])
     rows = _filter_view_signal_rows(
-        _view_signal_rows(catalog["valid"]),
+        projected_rows,
         ticker_filter,
         horizon_filter,
     )
     if rows:
-        st.dataframe(
-            pd.DataFrame(rows, columns=_VIEW_SIGNAL_COLUMNS),
+        table_rows = _view_signal_table_rows(rows)
+        visible_keys = tuple(
+            (key.ticker, key.horizon, key.rulebook_id)
+            for key in (_view_signal_key(row) for row in table_rows)
+        )
+        selected, ignore_editor_selection = _sync_view_signal_selection(
+            _view_catalog_signature(projected_rows), visible_keys,
+        )
+        for row, key in zip(table_rows, visible_keys, strict=True):
+            row["Select"] = key in selected
+        visible_columns = (*_VIEW_SIGNAL_FIXED_COLUMNS, *selected_columns)
+        toolbar = st.empty()
+        table_key = _view_signal_table_widget_key(
+            visible_keys,
+            tuple(sorted(selected)),
+            visible_columns,
+            int(st.session_state.get(_VIEW_SIGNAL_TABLE_GENERATION_KEY, 0)),
+        )
+        edited = st.data_editor(
+            pd.DataFrame(table_rows).loc[:, visible_columns],
+            hide_index=True,
             use_container_width=True,
             height=720,
+            key=table_key,
+            column_config={
+                "Select": st.column_config.CheckboxColumn("Select"),
+                "No": st.column_config.NumberColumn("No", format="%d"),
+            },
+            disabled=[column for column in visible_columns if column != "Select"],
+        )
+        if ignore_editor_selection:
+            selected = set()
+        else:
+            selected = {
+                visible_keys[index]
+                for index, record in enumerate(edited.to_dict("records"))
+                if bool(record.get("Select"))
+            }
+        st.session_state[_VIEW_SIGNAL_SELECTED_KEYS_KEY] = selected
+        st.session_state[_VIEW_SIGNAL_SELECT_ALL_VISIBLE_KEY] = (
+            bool(visible_keys) and selected == set(visible_keys)
+        )
+        selected_keys = tuple(
+            SignalCandidateKey(*key)
+            for key in visible_keys if key in selected
+        )
+        with toolbar.container():
+            selection_column, removal_column = st.columns((6, 1))
+            with selection_column:
+                st.checkbox(
+                    "Select all visible",
+                    key=_VIEW_SIGNAL_SELECT_ALL_VISIBLE_KEY,
+                    on_change=_apply_view_select_all_visible,
+                    args=(visible_keys,),
+                )
+            with removal_column:
+                remove_selected = st.button(
+                    "🗑️",
+                    help=f"Remove selected signals ({len(selected_keys)})",
+                    disabled=not selected_keys,
+                    key="backtest_view_signal_remove_v4",
+                )
+        if remove_selected:
+            try:
+                result = remove_fn(
+                    selected_keys, signal_dir=signal_dir, positions_dir=positions_dir,
+                )
+            except SignalRemovalBlockedError as error:
+                protected = "; ".join(
+                    f"{item.ticker} / {item.horizon} / {item.rulebook_id}"
+                    for item in error.protected
+                )
+                st.session_state[_VIEW_SIGNAL_FEEDBACK_KEY] = {
+                    "level": "error",
+                    "message": f"Removal blocked by saved position reference: {protected}",
+                }
+            except (OSError, TypeError, ValueError) as error:
+                st.session_state[_VIEW_SIGNAL_FEEDBACK_KEY] = {
+                    "level": "error",
+                    "message": f"Unable to remove selected signals: {error}",
+                }
+            else:
+                st.session_state[_VIEW_SIGNAL_FEEDBACK_KEY] = {
+                    "level": "success",
+                    "message": f"Removed {len(result.removed)} saved signal(s).",
+                }
+            st.session_state[_VIEW_SIGNAL_SELECTED_KEYS_KEY] = set()
+            st.session_state[_VIEW_SIGNAL_RESET_SELECTION_KEY] = True
+            rerun_fn()
+    else:
+        st.button(
+            "🗑️",
+            help="Remove selected signals (0)",
+            disabled=True,
+            key="backtest_view_signal_remove_v4",
         )
     for warning in catalog["warnings"]:
         st.warning(warning)
@@ -585,7 +854,7 @@ def _render_view(signal_dir: str) -> None:
 
 def _position_horizon(position: dict[str, object]) -> str | None:
     reference = position.get("signal_reference")
-    if isinstance(reference, dict) and reference.get("schema_version") == 4:
+    if isinstance(reference, dict) and reference.get("schema_version") == 5:
         horizon = reference.get("horizon")
         return str(horizon) if horizon in HORIZON_LABELS else None
     return None
@@ -594,7 +863,7 @@ def _position_horizon(position: dict[str, object]) -> str | None:
 def _saved_set_label(position: dict[str, object]) -> str:
     reference = position.get("signal_reference")
     horizon = _position_horizon(position)
-    if isinstance(reference, dict) and reference.get("schema_version") == 4 and horizon:
+    if isinstance(reference, dict) and reference.get("schema_version") == 5 and horizon:
         return f"{HORIZON_LABELS[horizon]} — {reference['rulebook_id']} — {reference['preferred_variant']}"
     return "Historical saved set" if horizon is None else f"Historical saved set — {HORIZON_LABELS[horizon]}"
 
@@ -608,7 +877,7 @@ def _display_position_rows(rows: list[dict[str, object]]) -> list[dict[str, obje
     } for row in rows]
 
 
-def _validated_v4_candidates(validation: object, ticker: str) -> dict[str, dict[str, object]]:
+def _validated_v5_candidates(validation: object, ticker: str) -> dict[str, dict[str, object]]:
     validation = _validation_result_for_ticker(validation, ticker)
     if validation is None:
         return {}
@@ -689,7 +958,7 @@ def _create_position_from_form(
     create_manual_position(
         ticker, buy_price, buy_date, quantity=quantity or None, signal_reference=item["signal_reference"],
         entry_context={"match_level": monitoring["match_level"], "current_price": _raw_current_value(current["latest_close"], "current latest_close"), "as_of_date": current["as_of_date"]},
-        risk_snapshot=build_v4_risk_snapshot(item["horizon"], _raw_current_value(current["latest_atr"], "current latest_atr"), buy_price),
+        risk_snapshot=build_v5_risk_snapshot(item["horizon"], _raw_current_value(current["latest_atr"], "current latest_atr"), buy_price),
         positions_dir=positions_dir, **sell_values,
     )
 
@@ -758,7 +1027,8 @@ def _display_price(value: object) -> object:
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return "-"
     try:
-        return prepare_price_for_output(value, PRICE_OUTPUT_UI)
+        displayed = prepare_price_for_output(value, PRICE_OUTPUT_UI)
+        return "-" if pd.isna(displayed) else displayed
     except (TypeError, ValueError):
         return "-"
 
@@ -1230,7 +1500,7 @@ def _render_new_position_section(
         ).strip().upper()
         validation = st.session_state.get(_NEW_POSITION_VALIDATION_KEY)
         validation_for_ticker = _validation_result_for_ticker(validation, ticker)
-        candidates = _validated_v4_candidates(validation_for_ticker, ticker)
+        candidates = _validated_v5_candidates(validation_for_ticker, ticker)
         validation_error = st.session_state.get(_NEW_POSITION_VALIDATION_ERROR_KEY)
         if ticker and isinstance(validation_error, str):
             st.warning(f"Saved signal sets could not be refreshed: {validation_error}")
@@ -1593,10 +1863,11 @@ def render_backtest_page(
     manual_delete_fn: Callable = delete_manual_position,
     risk_candidates_fn: Callable = list_validate_position_candidates,
     validate_positions_fn: Callable = validate_open_positions,
+    remove_signals_fn: Callable = remove_saved_signal_candidates,
     rerun_fn: Callable = st.rerun,
     **_unused,
 ) -> None:
-    """Render schema-4 exploratory collection, replay, and position history."""
+    """Render schema-5 exploratory collection, replay, and position history."""
 
     st.title("Backtest Lab")
     collect, view_signals, validate, positions, validate_positions = st.tabs(
@@ -1620,7 +1891,12 @@ def render_backtest_page(
             group_resolver_fn,
         )
     with view_signals:
-        _render_view(signal_dir)
+        _render_view(
+            signal_dir,
+            positions_dir,
+            remove_fn=remove_signals_fn,
+            rerun_fn=rerun_fn,
+        )
     with validate:
         _render_validate(
             engine,

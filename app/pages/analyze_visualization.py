@@ -419,12 +419,9 @@ def analyze_portfolio_ticker(ticker, validation_days, result_days, engine):
     up_prob = stats_res["possibility_up"]
     down_prob = stats_res["possibility_down"]
     
-    # Logic for Final Advice key (matching provide_advice thresholds)
-    if up_prob > 70: stat_key = "Strong Up"
-    elif 53 <= up_prob <= 70: stat_key = "Up"
-    elif 48 <= up_prob < 53: stat_key = "Sideways"
-    elif 30 <= up_prob < 48: stat_key = "Down"
-    else: stat_key = "Strong Down"
+    # Keep Portfolio Analyze aligned with Ticker Analyze: bearish evidence is
+    # based on direct down probability, not merely a low up probability.
+    stat_key = _classify_statistical_trend(up_prob, down_prob)
 
     if up_prob >= down_prob:
         stat_trend = "up" # Lowercase as per example

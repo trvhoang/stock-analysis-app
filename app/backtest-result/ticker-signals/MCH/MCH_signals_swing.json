@@ -1,196 +1,54 @@
 {
   "audit_eligibility": {
     "effective_date_range": [
-      "2025-12-25",
-      "2026-08-21"
+      null,
+      null
     ],
-    "eligible": true,
-    "reasons": [],
-    "source": "fresh_v3_raw_history",
-    "status": "clean",
-    "warnings": [
-      "date gap of 10 calendar days before 2026-02-23",
-      "close move exceeds 7% on 2026-03-16: 7.00%",
-      "OHLC ordering mismatch 0.01% is within 1.00% derived-envelope tolerance"
-    ]
+    "eligible": false,
+    "reasons": [
+      "Regenerate under Backtest schema 5."
+    ],
+    "source": "unavailable",
+    "status": "unavailable",
+    "warnings": []
   },
-  "candidates": [
-    {
-      "preferred_variant": "background-theme",
-      "rulebook_id": "swing_rulebook_v4__adx",
-      "selected_gates": [
-        "rulebook_adx_gate"
-      ],
-      "treatments": {
-        "background-theme": {
-          "dsr_status": "available",
-          "test": {
-            "n": 3,
-            "p_value": null,
-            "p_value_status": "not_estimated_n_le_block_size",
-            "profit_pct": 5.0293219559284275,
-            "sharpe": 0.36413242190142625,
-            "win_rate": 66.66666666666666
-          },
-          "theme_mode": "AND",
-          "theme_variant": "background-theme",
-          "training": {
-            "n": 4,
-            "p_value": null,
-            "p_value_status": "not_estimated_n_le_block_size",
-            "profit_pct": -6.450969596214542,
-            "sharpe": -0.21520896775970824,
-            "win_rate": 25.0
-          },
-          "training_dsr": 0.32982160680473355
-        },
-        "no-background-theme": {
-          "dsr_status": "available",
-          "test": {
-            "n": 4,
-            "p_value": null,
-            "p_value_status": "not_estimated_n_le_block_size",
-            "profit_pct": 4.659594446087661,
-            "sharpe": 0.22669862970454877,
-            "win_rate": 50.0
-          },
-          "theme_mode": null,
-          "theme_variant": "no-background-theme",
-          "training": {
-            "n": 7,
-            "p_value": null,
-            "p_value_status": "not_estimated_n_le_block_size",
-            "profit_pct": -20.787782644999766,
-            "sharpe": -0.4071291558570911,
-            "win_rate": 14.285714285714285
-          },
-          "training_dsr": 0.2031014059303456
-        }
-      }
-    },
-    {
-      "preferred_variant": "no-background-theme",
-      "rulebook_id": "swing_rulebook_v4__volume",
-      "selected_gates": [
-        "rulebook_volume_gate"
-      ],
-      "treatments": {
-        "background-theme": {
-          "dsr_status": "available",
-          "test": {
-            "n": 3,
-            "p_value": null,
-            "p_value_status": "not_estimated_n_le_block_size",
-            "profit_pct": -2.280347167094427,
-            "sharpe": -0.17377449279148863,
-            "win_rate": 33.33333333333333
-          },
-          "theme_mode": "AND",
-          "theme_variant": "background-theme",
-          "training": {
-            "n": 2,
-            "p_value": null,
-            "p_value_status": "not_estimated_n_le_block_size",
-            "profit_pct": -10.679311084806526,
-            "sharpe": -159.1450689217699,
-            "win_rate": 0.0
-          },
-          "training_dsr": 0.0
-        },
-        "no-background-theme": {
-          "dsr_status": "available",
-          "test": {
-            "n": 5,
-            "p_value": null,
-            "p_value_status": "not_estimated_n_le_block_size",
-            "profit_pct": -1.1440920544500743,
-            "sharpe": -0.052067215991597554,
-            "win_rate": 40.0
-          },
-          "theme_mode": null,
-          "theme_variant": "no-background-theme",
-          "training": {
-            "n": 5,
-            "p_value": null,
-            "p_value_status": "not_estimated_n_le_block_size",
-            "profit_pct": -28.971926372214146,
-            "sharpe": -6.943814720490248,
-            "win_rate": 0.0
-          },
-          "training_dsr": 0.0
-        }
-      }
-    },
-    {
-      "preferred_variant": "no-background-theme",
-      "rulebook_id": "swing_rulebook_v4__adx__volume",
-      "selected_gates": [
-        "rulebook_adx_gate",
-        "rulebook_volume_gate"
-      ],
-      "treatments": {
-        "background-theme": {
-          "dsr_status": "available",
-          "test": {
-            "n": 3,
-            "p_value": null,
-            "p_value_status": "not_estimated_n_le_block_size",
-            "profit_pct": -2.280347167094427,
-            "sharpe": -0.17377449279148863,
-            "win_rate": 33.33333333333333
-          },
-          "theme_mode": "AND",
-          "theme_variant": "background-theme",
-          "training": {
-            "n": 2,
-            "p_value": null,
-            "p_value_status": "not_estimated_n_le_block_size",
-            "profit_pct": -10.679311084806526,
-            "sharpe": -159.1450689217699,
-            "win_rate": 0.0
-          },
-          "training_dsr": 0.0
-        },
-        "no-background-theme": {
-          "dsr_status": "available",
-          "test": {
-            "n": 5,
-            "p_value": null,
-            "p_value_status": "not_estimated_n_le_block_size",
-            "profit_pct": -1.1440920544500743,
-            "sharpe": -0.052067215991597554,
-            "win_rate": 40.0
-          },
-          "theme_mode": null,
-          "theme_variant": "no-background-theme",
-          "training": {
-            "n": 5,
-            "p_value": null,
-            "p_value_status": "not_estimated_n_le_block_size",
-            "profit_pct": -28.971926372214146,
-            "sharpe": -6.943814720490248,
-            "win_rate": 0.0
-          },
-          "training_dsr": 0.0
-        }
-      }
-    }
-  ],
+  "candidates": [],
+  "contract_version": "backtest_schema5_v1",
   "effective_data_range": {
-    "end": "2026-08-21",
-    "reason": null,
-    "start": "2025-12-25"
+    "end": null,
+    "reason": "Regenerate under Backtest schema 5.",
+    "start": null
   },
-  "empty": false,
-  "evaluated_at": "2026-08-23T09:58:35.116024+07:00",
+  "empty": true,
+  "evaluated_at": "2026-09-01T19:45:31.153900+07:00",
   "evaluation_label": "Exploratory \u2014 gross",
+  "evidence_eligibility": {
+    "common_as_of": null,
+    "coverage_ratio": 0.0,
+    "eligible": false,
+    "expected_sessions": 0,
+    "first_available_bar": null,
+    "last_available_bar": null,
+    "max_gap_sessions": 0,
+    "observed_sessions": 0,
+    "reasons": [
+      "Regenerate under Backtest schema 5."
+    ],
+    "status": "unavailable",
+    "ticker_fingerprint": null,
+    "vnindex_fingerprint": null
+  },
   "failure_reason": null,
   "horizon": "swing",
-  "rejection_reason": null,
+  "partition_labels": {
+    "test": "historical test \u2014 previously observed",
+    "training": "in-sample"
+  },
+  "rejection_reason": "Regenerate under Backtest schema 5.",
   "requested_date_range": {
-    "end": "2026-08-23",
-    "reason": null,
-    "start": "2011-08-23"
+    "end": null,
+    "reason": "Regenerate under Backtest schema 5.",
+    "start": null
   },
   "rulebook": {
     "adx_minimum": 17,
@@ -221,29 +79,15 @@
     "native_timeframe": "daily",
     "rsi_period": 9,
     "rsi_upcross_level": 52,
-    "rule_id": "swing_rulebook_v4",
+    "rule_id": "swing_rulebook_v5",
     "theme_sma_window": 50,
     "volume_multiplier": 1.15,
     "volume_window": 10,
     "weekly_frequency": null
   },
-  "schema_version": 4,
-  "split": {
-    "method": "chronological_65_35",
-    "test": {
-      "end": "2026-08-21",
-      "start": "2026-06-01"
-    },
-    "train": {
-      "end": "2026-05-29",
-      "start": "2025-12-25"
-    }
-  },
-  "terminal_state": "success",
+  "schema_version": 5,
+  "split": null,
+  "terminal_state": "requires_regeneration",
   "ticker": "MCH",
-  "top_rulebook_ids": [
-    "swing_rulebook_v4__adx",
-    "swing_rulebook_v4__adx__volume",
-    "swing_rulebook_v4__volume"
-  ]
+  "top_rulebook_ids": []
 }

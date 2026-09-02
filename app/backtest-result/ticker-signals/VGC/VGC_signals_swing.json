@@ -1,0 +1,93 @@
+{
+  "audit_eligibility": {
+    "effective_date_range": [
+      null,
+      null
+    ],
+    "eligible": false,
+    "reasons": [
+      "Regenerate under Backtest schema 5."
+    ],
+    "source": "unavailable",
+    "status": "unavailable",
+    "warnings": []
+  },
+  "candidates": [],
+  "contract_version": "backtest_schema5_v1",
+  "effective_data_range": {
+    "end": null,
+    "reason": "Regenerate under Backtest schema 5.",
+    "start": null
+  },
+  "empty": true,
+  "evaluated_at": "2026-09-01T19:45:31.577231+07:00",
+  "evaluation_label": "Exploratory \u2014 gross",
+  "evidence_eligibility": {
+    "common_as_of": null,
+    "coverage_ratio": 0.0,
+    "eligible": false,
+    "expected_sessions": 0,
+    "first_available_bar": null,
+    "last_available_bar": null,
+    "max_gap_sessions": 0,
+    "observed_sessions": 0,
+    "reasons": [
+      "Regenerate under Backtest schema 5."
+    ],
+    "status": "unavailable",
+    "ticker_fingerprint": null,
+    "vnindex_fingerprint": null
+  },
+  "failure_reason": null,
+  "horizon": "swing",
+  "partition_labels": {
+    "test": "historical test \u2014 previously observed",
+    "training": "in-sample"
+  },
+  "rejection_reason": "Regenerate under Backtest schema 5.",
+  "requested_date_range": {
+    "end": null,
+    "reason": "Regenerate under Backtest schema 5.",
+    "start": null
+  },
+  "rulebook": {
+    "adx_minimum": 17,
+    "adx_period": 14,
+    "alligator_lags": [
+      5,
+      3,
+      2
+    ],
+    "alligator_periods": [
+      8,
+      5,
+      3
+    ],
+    "atr_period": 14,
+    "atr_sl_multiplier": 1.5,
+    "atr_tp_multiplier": 2.5,
+    "horizon": "swing",
+    "joint_trend_required": true,
+    "ma_kind": "EMA",
+    "ma_pair": [
+      5,
+      13
+    ],
+    "max_hold_bars": 22,
+    "min_exit_offset_bars": 3,
+    "min_n": 5,
+    "native_timeframe": "daily",
+    "rsi_period": 9,
+    "rsi_upcross_level": 52,
+    "rule_id": "swing_rulebook_v5",
+    "theme_sma_window": 50,
+    "volume_multiplier": 1.15,
+    "volume_window": 10,
+    "weekly_frequency": null
+  },
+  "schema_version": 5,
+  "split": null,
+  "terminal_state": "requires_regeneration",
+  "ticker": "VGC",
+  "top_rulebook_ids": []
+}

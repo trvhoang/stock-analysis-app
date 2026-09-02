@@ -6,27 +6,48 @@
     ],
     "eligible": false,
     "reasons": [
-      "Regenerate under amended rulebook."
+      "Regenerate under Backtest schema 5."
     ],
     "source": "unavailable",
     "status": "unavailable",
     "warnings": []
   },
   "candidates": [],
+  "contract_version": "backtest_schema5_v1",
   "effective_data_range": {
     "end": null,
-    "reason": "Regenerate under amended rulebook.",
+    "reason": "Regenerate under Backtest schema 5.",
     "start": null
   },
   "empty": true,
-  "evaluated_at": "2026-08-22T01:49:53.776751+07:00",
+  "evaluated_at": "2026-09-01T19:45:32.129849+07:00",
   "evaluation_label": "Exploratory \u2014 gross",
+  "evidence_eligibility": {
+    "common_as_of": null,
+    "coverage_ratio": 0.0,
+    "eligible": false,
+    "expected_sessions": 0,
+    "first_available_bar": null,
+    "last_available_bar": null,
+    "max_gap_sessions": 0,
+    "observed_sessions": 0,
+    "reasons": [
+      "Regenerate under Backtest schema 5."
+    ],
+    "status": "unavailable",
+    "ticker_fingerprint": null,
+    "vnindex_fingerprint": null
+  },
   "failure_reason": null,
   "horizon": "swing",
-  "rejection_reason": "Regenerate under amended rulebook.",
+  "partition_labels": {
+    "test": "historical test \u2014 previously observed",
+    "training": "in-sample"
+  },
+  "rejection_reason": "Regenerate under Backtest schema 5.",
   "requested_date_range": {
     "end": null,
-    "reason": "Regenerate under amended rulebook.",
+    "reason": "Regenerate under Backtest schema 5.",
     "start": null
   },
   "rulebook": {
@@ -58,13 +79,13 @@
     "native_timeframe": "daily",
     "rsi_period": 9,
     "rsi_upcross_level": 52,
-    "rule_id": "swing_rulebook_v4",
+    "rule_id": "swing_rulebook_v5",
     "theme_sma_window": 50,
     "volume_multiplier": 1.15,
     "volume_window": 10,
     "weekly_frequency": null
   },
-  "schema_version": 4,
+  "schema_version": 5,
   "split": null,
   "terminal_state": "requires_regeneration",
   "ticker": "VCB",

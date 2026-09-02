@@ -17,6 +17,7 @@ from backtest_engine.position_risk import (
     list_validate_position_candidates,
 )
 from backtest_engine.manual_position_store import create_manual_position
+from tests.test_backtest_position_store import _reference
 
 
 class PositionRiskTests(unittest.TestCase):
@@ -87,7 +88,10 @@ class PositionRiskTests(unittest.TestCase):
             ),
         ]
 
-        result = assess_no_signal_position(pd.DataFrame(), pd.Timestamp("2026-08-21").date())
+        result = assess_no_signal_position(
+            pd.DataFrame({"date": pd.to_datetime(["2026-08-21"])}),
+            pd.Timestamp("2026-08-21").date(),
+        )
 
         self.assertEqual(result, {"availability": "available", "scores": {"swing": 25.0, "midterm": 75.0}})
 
@@ -99,6 +103,22 @@ class PositionRiskTests(unittest.TestCase):
 
         self.assertEqual([candidate["id"] for candidate in candidates], [opened["id"]])
         self.assertEqual(candidates[0]["evaluation"], "Swing + Mid-term")
+
+    def test_candidates_include_current_v5_signal_position(self):
+        with tempfile.TemporaryDirectory() as directory:
+            opened = create_manual_position(
+                "FPT",
+                50_000,
+                "2026-08-01",
+                signal_reference=_reference("swing"),
+                entry_context={"match_level": 100.0, "current_price": 50_000, "as_of_date": "2026-08-01"},
+                risk_snapshot={"atr": 1_000, "stop_loss": 48_500, "take_profit": 52_500, "max_hold_bars": 22},
+                positions_dir=directory,
+            )
+            candidates = list_validate_position_candidates(directory)
+
+        self.assertEqual([candidate["id"] for candidate in candidates], [opened["id"]])
+        self.assertEqual(candidates[0]["evaluation"], "Swing")
 
 
 if __name__ == "__main__":

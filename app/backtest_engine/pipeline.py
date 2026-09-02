@@ -1,4 +1,4 @@
-"""Offline schema-4 exploratory rulebook evaluation for ticker runs and batches."""
+"""Offline schema-5 exploratory rulebook evaluation for ticker runs and batches."""
 
 import os
 import time
@@ -11,17 +11,26 @@ from sqlalchemy.engine import make_url
 from .config import BacktestBatchConfig, BacktestConfig, rulebook_for
 from .data_quality import (
     audit_history,
-    fresh_v3_audit_eligibility,
+    fresh_schema5_audit_eligibility,
     load_ticker_history,
-    unavailable_v3_audit_eligibility,
+    unavailable_schema5_audit_eligibility,
     validate_ohlcv,
 )
+from .evidence import EvidenceEligibility, assess_evidence, unavailable_evidence
 from .exploratory import ExploratoryEvaluation, evaluate_exploratory_candidates
 from .indicators import build_rulebook_frame
 from .models import BatchTickerStatus
 from .persistence import save_rulebook_result
 from .result_store import assign_tickers_group
+from .timeframes import latest_common_completed_bar
 from .vnindex_theme import align_vnindex_asof, build_vnindex_confirmation
+
+
+_CONTRACT_VERSION = "backtest_schema5_v1"
+_PARTITION_LABELS = {
+    "training": "in-sample",
+    "test": "historical test — previously observed",
+}
 
 
 def _report(report_progress, value: float, ticker_results=None) -> None:
@@ -42,8 +51,17 @@ def _requested_dates(config: BacktestConfig | BacktestBatchConfig) -> tuple[obje
     return start_date, end_date
 
 
-def _build_confirmation_frame(vnindex_frame: pd.DataFrame, horizon: str) -> pd.DataFrame:
-    confirmation = build_vnindex_confirmation(vnindex_frame, horizon)
+def _build_confirmation_frame(
+    vnindex_frame: pd.DataFrame,
+    horizon: str,
+    *,
+    common_as_of,
+) -> pd.DataFrame:
+    confirmation = build_vnindex_confirmation(
+        vnindex_frame,
+        horizon,
+        common_as_of=common_as_of,
+    )
     return pd.DataFrame(
         {
             "date": pd.DatetimeIndex(confirmation.index),
@@ -64,20 +82,56 @@ def _prepare_ticker(
     ticker: str,
     config: BacktestConfig,
     engine,
+    *,
+    common_as_of,
+    raw_history: pd.DataFrame | None = None,
 ) -> tuple[pd.DataFrame, object, pd.DataFrame]:
     """Load, validate, audit, and build one canonical native rulebook frame."""
+
+    if raw_history is None:
+        start_date, end_date = _requested_dates(config)
+        raw = load_ticker_history(ticker, start_date, end_date, engine)
+    else:
+        raw = raw_history.copy(deep=True)
+    quality = validate_ohlcv(raw)
+    if not quality.is_valid or quality.valid_frame is None:
+        raise ValueError("invalid backtest data: " + "; ".join(quality.errors))
+    raw = quality.valid_frame
+    evidence_history = raw.loc[
+        pd.to_datetime(raw["date"]).le(pd.Timestamp(common_as_of))
+    ].reset_index(drop=True)
+    if evidence_history.empty:
+        raise ValueError("backtest data has no row at or before common_as_of")
+    audit = audit_history(ticker, evidence_history)
+    return (
+        build_rulebook_frame(
+            evidence_history,
+            rulebook_for(config.horizon),
+            common_as_of=common_as_of,
+        ),
+        audit,
+        evidence_history,
+    )
+
+
+def _load_validated_history(
+    ticker: str,
+    config: BacktestConfig | BacktestBatchConfig,
+    engine,
+) -> pd.DataFrame:
+    """Load one requested raw source and return its validated, date-parsed copy."""
 
     start_date, end_date = _requested_dates(config)
     raw = load_ticker_history(ticker, start_date, end_date, engine)
     quality = validate_ohlcv(raw)
-    if not quality.is_valid:
-        raise ValueError("invalid backtest data: " + "; ".join(quality.errors))
-    audit = audit_history(ticker, raw)
-    return build_rulebook_frame(raw, rulebook_for(config.horizon)), audit, raw
+    if not quality.is_valid or quality.valid_frame is None:
+        source = "VN-Index" if ticker == "VNINDEX" else "backtest"
+        raise ValueError(f"invalid {source} data: " + "; ".join(quality.errors))
+    return quality.valid_frame
 
 
 def _date_range(start, end, reason: str | None = None) -> dict[str, str | None]:
-    """Serialize paired bounds for a schema-4 terminal document."""
+    """Serialize paired bounds for a schema-5 terminal document."""
 
     if start is None or end is None:
         return {"start": None, "end": None, "reason": reason}
@@ -103,6 +157,7 @@ def _evaluation_document(
     config: BacktestConfig,
     evaluation: ExploratoryEvaluation,
     audit_eligibility: dict[str, object],
+    evidence_eligibility: dict[str, object],
     effective_data_range: dict[str, str | None],
 ) -> dict[str, object]:
     """Build the one ticker/horizon aggregate from every qualifying subset."""
@@ -110,6 +165,8 @@ def _evaluation_document(
     candidates = [candidate.to_dict() for candidate in evaluation.candidates]
     state = "success" if candidates else "empty"
     return {
+        "contract_version": _CONTRACT_VERSION,
+        "partition_labels": dict(_PARTITION_LABELS),
         "horizon": config.horizon,
         "terminal_state": state,
         "empty": state != "success",
@@ -122,6 +179,7 @@ def _evaluation_document(
         "evaluation_label": "Exploratory — gross",
         "rulebook": rulebook_for(config.horizon).to_dict(),
         "audit_eligibility": audit_eligibility,
+        "evidence_eligibility": evidence_eligibility,
         "requested_date_range": _requested_date_range(config),
         "effective_data_range": effective_data_range,
         "split": evaluation.split.to_dict(),
@@ -134,11 +192,14 @@ def _failed_document(
     config: BacktestConfig,
     reason: str,
     audit_eligibility: dict[str, object],
+    evidence_eligibility: dict[str, object],
     effective_data_range: dict[str, str | None],
 ) -> dict[str, object]:
     """Build a truthful failed aggregate when inputs or evaluation are unavailable."""
 
     return {
+        "contract_version": _CONTRACT_VERSION,
+        "partition_labels": dict(_PARTITION_LABELS),
         "horizon": config.horizon,
         "terminal_state": "failed",
         "empty": True,
@@ -147,6 +208,7 @@ def _failed_document(
         "evaluation_label": "Exploratory — gross",
         "rulebook": rulebook_for(config.horizon).to_dict(),
         "audit_eligibility": audit_eligibility,
+        "evidence_eligibility": evidence_eligibility,
         "requested_date_range": _requested_date_range(config),
         "effective_data_range": effective_data_range,
         "split": None,
@@ -161,13 +223,20 @@ def _persist_evaluation(
     evaluation: ExploratoryEvaluation,
     raw_history: pd.DataFrame,
     audit,
+    evidence: EvidenceEligibility,
 ) -> list[str]:
     effective = _effective_data_range(raw_history)
-    eligibility = fresh_v3_audit_eligibility(raw_history, audit, effective)
+    eligibility = fresh_schema5_audit_eligibility(raw_history, audit, effective)
     return [
         save_rulebook_result(
             ticker,
-            _evaluation_document(config, evaluation, eligibility, effective),
+            _evaluation_document(
+                config,
+                evaluation,
+                eligibility,
+                evidence.to_dict(),
+                effective,
+            ),
             config.output_dir,
         )
     ]
@@ -180,17 +249,27 @@ def _persist_failure(
     *,
     raw_history: pd.DataFrame | None = None,
     audit=None,
+    evidence: EvidenceEligibility | None = None,
 ) -> list[str]:
     if raw_history is None or audit is None:
         effective = _date_range(None, None, reason)
-        eligibility = unavailable_v3_audit_eligibility(reason)
+        eligibility = unavailable_schema5_audit_eligibility(reason)
     else:
         effective = _effective_data_range(raw_history)
-        eligibility = fresh_v3_audit_eligibility(raw_history, audit, effective)
+        eligibility = fresh_schema5_audit_eligibility(raw_history, audit, effective)
+    evidence_eligibility = (
+        unavailable_evidence(reason) if evidence is None else evidence.to_dict()
+    )
     return [
         save_rulebook_result(
             ticker,
-            _failed_document(config, reason, eligibility, effective),
+            _failed_document(
+                config,
+                reason,
+                eligibility,
+                evidence_eligibility,
+                effective,
+            ),
             config.output_dir,
         )
     ]
@@ -216,13 +295,27 @@ def _evaluate_ticker(
     )
 
 
-def _load_confirmation_for_single(config: BacktestConfig, engine) -> pd.DataFrame:
-    start_date, end_date = _requested_dates(config)
-    vnindex = load_ticker_history("VNINDEX", start_date, end_date, engine)
-    quality = validate_ohlcv(vnindex)
-    if not quality.is_valid:
-        raise ValueError("invalid VN-Index data: " + "; ".join(quality.errors))
-    return _build_confirmation_frame(vnindex, config.horizon)
+def _load_confirmation_for_single(
+    config: BacktestConfig,
+    engine,
+    *,
+    ticker_history: pd.DataFrame,
+) -> tuple[pd.DataFrame, object, pd.DataFrame]:
+    vnindex = _load_validated_history("VNINDEX", config, engine)
+    _, requested_end = _requested_dates(config)
+    common_as_of = latest_common_completed_bar(
+        {config.ticker: ticker_history, "VNINDEX": vnindex},
+        requested_end,
+    )
+    return (
+        _build_confirmation_frame(
+            vnindex,
+            config.horizon,
+            common_as_of=common_as_of,
+        ),
+        common_as_of,
+        vnindex,
+    )
 
 
 def _error_text(error: Exception) -> str:
@@ -230,38 +323,84 @@ def _error_text(error: Exception) -> str:
 
 
 def run_backtest_pipeline(config: BacktestConfig, report_progress, engine) -> list[str]:
-    """Evaluate and atomically persist one schema-4 ticker/horizon aggregate."""
+    """Evaluate and atomically persist one schema-5 ticker/horizon aggregate."""
 
     try:
-        frame, audit, raw_history = _prepare_ticker(config.ticker, config, engine)
+        raw_history = _load_validated_history(config.ticker, config, engine)
+        audit = audit_history(config.ticker, raw_history)
     except Exception as error:
         paths = _persist_failure(config.ticker, config, _error_text(error))
         _report(report_progress, 1.0)
         return paths
     _report(report_progress, 0.1)
+    evidence = None
     try:
-        confirmation = _load_confirmation_for_single(config, engine)
+        confirmation, common_as_of, vnindex_history = _load_confirmation_for_single(
+            config,
+            engine,
+            ticker_history=raw_history,
+        )
+        frame, audit, raw_history = _prepare_ticker(
+            config.ticker,
+            config,
+            engine,
+            common_as_of=common_as_of,
+            raw_history=raw_history,
+        )
+        evidence = assess_evidence(
+            raw_history,
+            vnindex_history,
+            common_as_of,
+            ticker=config.ticker,
+            audit_eligible=audit.status == "clean",
+        )
         evaluation = _evaluate_ticker(frame, config, confirmation)
-        paths = _persist_evaluation(config.ticker, config, evaluation, raw_history, audit)
+        paths = _persist_evaluation(
+            config.ticker,
+            config,
+            evaluation,
+            raw_history,
+            audit,
+            evidence,
+        )
     except Exception as error:
         paths = _persist_failure(
-            config.ticker, config, _error_text(error), raw_history=raw_history, audit=audit
+            config.ticker,
+            config,
+            _error_text(error),
+            raw_history=raw_history,
+            audit=audit,
+            evidence=evidence,
         )
     _report(report_progress, 1.0)
     return paths
 
 
-def _shared_confirmation(config: BacktestBatchConfig, engine) -> pd.DataFrame:
+def _shared_confirmation(
+    config: BacktestBatchConfig,
+    engine,
+    *,
+    ticker_sources: dict[str, pd.DataFrame],
+) -> tuple[pd.DataFrame, object, pd.DataFrame]:
     """Build one shared VN-Index confirmation, retrying its preflight once."""
 
-    start_date, end_date = _requested_dates(config)
+    _, requested_end = _requested_dates(config)
     for attempt in range(2):
         try:
-            vnindex = load_ticker_history("VNINDEX", start_date, end_date, engine)
-            quality = validate_ohlcv(vnindex)
-            if not quality.is_valid:
-                raise ValueError("invalid VN-Index data: " + "; ".join(quality.errors))
-            return _build_confirmation_frame(vnindex, config.horizon)
+            vnindex = _load_validated_history("VNINDEX", config, engine)
+            common_as_of = latest_common_completed_bar(
+                {**ticker_sources, "VNINDEX": vnindex},
+                requested_end,
+            )
+            return (
+                _build_confirmation_frame(
+                    vnindex,
+                    config.horizon,
+                    common_as_of=common_as_of,
+                ),
+                common_as_of,
+                vnindex,
+            )
         except Exception as error:
             if attempt == 0:
                 time.sleep(5)
@@ -287,11 +426,46 @@ def run_backtest_batch_pipeline(
         _report(report_progress, value, tuple(statuses))
 
     report(0.0)
+    ticker_sources: dict[str, pd.DataFrame] = {}
+    for index, ticker in enumerate(config.tickers):
+        errors: list[str] = []
+        for attempt in range(1, 3):
+            try:
+                ticker_sources[ticker] = _load_validated_history(ticker, config, engine)
+            except Exception as error:
+                errors.append(_error_text(error))
+            else:
+                break
+        if ticker not in ticker_sources:
+            ticker_config = config.for_ticker(ticker)
+            reason = errors[-1]
+            paths = _persist_failure(ticker, ticker_config, reason)
+            statuses[index] = BatchTickerStatus(
+                ticker,
+                attempts=2,
+                state="failed",
+                output_paths=tuple(paths),
+                error_texts=tuple(errors),
+            )
+
+    if not ticker_sources:
+        report(1.0)
+        return {
+            "output_paths": [path for status in statuses for path in status.output_paths],
+            "ticker_results": [status.to_dict() for status in statuses],
+        }
+
     try:
-        confirmation = _shared_confirmation(config, engine)
+        confirmation, common_as_of, vnindex_history = _shared_confirmation(
+            config,
+            engine,
+            ticker_sources=ticker_sources,
+        )
     except Exception as error:
         reason = _error_text(error)
         for index, ticker in enumerate(config.tickers):
+            if ticker not in ticker_sources:
+                continue
             paths = _persist_failure(ticker, config.for_ticker(ticker), reason)
             statuses[index] = BatchTickerStatus(
                 ticker, attempts=1, state="failed", output_paths=tuple(paths), error_texts=(reason,)
@@ -314,14 +488,40 @@ def run_backtest_batch_pipeline(
         )
         raw_history = None
         audit = None
+        evidence = None
         try:
-            frame, audit, raw_history = _prepare_ticker(ticker, ticker_config, engine)
+            frame, audit, raw_history = _prepare_ticker(
+                ticker,
+                ticker_config,
+                engine,
+                common_as_of=common_as_of,
+                raw_history=ticker_sources[ticker],
+            )
+            evidence = assess_evidence(
+                raw_history,
+                vnindex_history,
+                common_as_of,
+                ticker=ticker,
+                audit_eligible=audit.status == "clean",
+            )
             evaluation = _evaluate_ticker(frame, ticker_config, confirmation)
-            paths = _persist_evaluation(ticker, ticker_config, evaluation, raw_history, audit)
+            paths = _persist_evaluation(
+                ticker,
+                ticker_config,
+                evaluation,
+                raw_history,
+                audit,
+                evidence,
+            )
         except Exception as error:
             reason = _error_text(error)
             paths = _persist_failure(
-                ticker, ticker_config, reason, raw_history=raw_history, audit=audit
+                ticker,
+                ticker_config,
+                reason,
+                raw_history=raw_history,
+                audit=audit,
+                evidence=evidence,
             )
             statuses[index] = BatchTickerStatus(
                 ticker,
@@ -335,11 +535,18 @@ def run_backtest_batch_pipeline(
                 ticker, attempts=attempts, state="done", output_paths=tuple(paths)
             )
 
-    for index in range(len(config.tickers)):
+    run_indexes = [
+        index for index, ticker in enumerate(config.tickers)
+        if ticker in ticker_sources
+    ]
+    for position, index in enumerate(run_indexes, start=1):
         run_ticker(index, 1)
-        report(0.05 + 0.65 * (index + 1) / len(config.tickers))
+        report(0.05 + 0.65 * position / len(run_indexes))
 
-    retry_indexes = [index for index, status in enumerate(statuses) if status.state == "failed"]
+    retry_indexes = [
+        index for index, status in enumerate(statuses)
+        if status.state == "failed" and config.tickers[index] in ticker_sources
+    ]
     for retry_number, index in enumerate(retry_indexes, start=1):
         run_ticker(index, 2)
         report(0.70 + 0.30 * retry_number / len(retry_indexes))

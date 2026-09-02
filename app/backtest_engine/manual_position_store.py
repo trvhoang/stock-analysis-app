@@ -38,21 +38,26 @@ _MARKET_TIMEZONE = pytz.timezone("Asia/Ho_Chi_Minh")
 def _reference_signal_and_horizon(
     reference: Mapping[str, object],
 ) -> tuple[dict[str, object], str]:
-    """Select one frozen preferred V4 treatment or a historical representative."""
+    """Select one frozen preferred exploratory treatment or legacy representative."""
 
-    if reference.get("schema_version") == 4:
+    if reference.get("schema_version") in (4, 5):
+        schema_version = reference.get("schema_version")
         candidate = reference.get("exploratory_candidate")
         horizon = reference.get("horizon")
         if not isinstance(candidate, Mapping) or not isinstance(horizon, str):
-            raise ValueError("V4 signal_reference is incomplete")
+            raise ValueError("exploratory signal_reference is incomplete")
         treatment = candidate["treatments"][reference["preferred_variant"]]
-        return {
+        representative = {
             "rulebook_id": reference["rulebook_id"],
             "selected_gates": copy.deepcopy(candidate["selected_gates"]),
             "preferred_variant": reference["preferred_variant"],
             "treatment": copy.deepcopy(treatment),
             "evaluation_label": "Exploratory — gross",
-        }, horizon
+        }
+        # V4 records keep their byte-for-byte historical representative shape.
+        if schema_version == 5:
+            representative["horizon"] = horizon
+        return representative, horizon
 
     if reference.get("schema_version") == 3:
         signal = reference.get("signal_set")
@@ -65,10 +70,10 @@ def _reference_signal_and_horizon(
     return copy.deepcopy(signals[metrics[0]]), str(signals[metrics[0]]["combo"]["horizon"])
 
 
-def build_v4_risk_snapshot(
+def build_v5_risk_snapshot(
     horizon: str, atr: object, actual_buy_price: object
 ) -> dict[str, object]:
-    """Build frozen V4 exit levels from one rulebook and raw entry facts."""
+    """Build frozen V5 exit levels from one rulebook and raw entry facts."""
 
     rulebook = rulebook_for(horizon)
     raw_atr = _positive_raw_int(atr, "risk_snapshot atr")
@@ -230,11 +235,11 @@ def _new_position(
         if entry_context is not None or risk_snapshot is not None:
             raise ValueError("P&L-only position cannot include saved signal context")
     else:
-        if not isinstance(signal_reference, Mapping) or signal_reference.get("schema_version") != 4:
-            raise ValueError("new signal-backed positions require a schema_version 4 reference")
+        if not isinstance(signal_reference, Mapping) or signal_reference.get("schema_version") != 5:
+            raise ValueError("new signal-backed positions require a schema_version 5 reference")
         normalized_reference = normalize_signal_reference(signal_reference)
-        if not normalized_reference["audit_eligible"]:
-            raise ValueError("audit-ineligible exploratory rulebook cannot create a BUY position")
+        if not normalized_reference["evidence_eligibility"]["eligible"]:
+            raise ValueError("evidence-ineligible exploratory rulebook cannot create a BUY position")
         certified_signal, horizon = _reference_signal_and_horizon(normalized_reference)
         normalized_context = _validated_entry_context(entry_context)
         normalized_risk = _validated_risk_snapshot(
@@ -476,7 +481,7 @@ def close_manual_position(
 
 __all__ = [
     "close_manual_position",
-    "build_v4_risk_snapshot",
+    "build_v5_risk_snapshot",
     "create_manual_position",
     "delete_manual_position",
     "load_manual_position_history",

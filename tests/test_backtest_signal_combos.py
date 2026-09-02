@@ -1,10 +1,11 @@
-"""Boolean V3 rulebook-entry contracts."""
+"""Boolean schema-5 baseline-control rulebook-entry contracts."""
 
+from itertools import combinations
 import unittest
 
 import pandas as pd
 
-from backtest_engine.config import rulebook_for
+from backtest_engine.config import ENTRY_GATE_NAMES, rulebook_for
 from backtest_engine.indicators import joint_trend_pass
 from backtest_engine.models import RulebookExecution
 from backtest_engine.signal_combos import (
@@ -31,6 +32,12 @@ class RulebookEntryTests(unittest.TestCase):
         executions = generate_rulebook_executions("midterm")
 
         self.assertEqual(len(gate_subsets()), 15)
+        expected_subsets = tuple(
+            combo
+            for size in range(1, len(ENTRY_GATE_NAMES) + 1)
+            for combo in combinations(ENTRY_GATE_NAMES, size)
+        )
+        self.assertEqual(gate_subsets(), expected_subsets)
         self.assertEqual(
             [(item.theme_variant, item.theme_mode) for item in executions[:2]],
             [

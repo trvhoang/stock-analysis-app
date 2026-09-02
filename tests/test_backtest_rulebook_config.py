@@ -18,7 +18,7 @@ class BacktestRulebookConfigTests(unittest.TestCase):
         rule = rulebook_for("swing")
 
         self.assertIsInstance(rule, RulebookSpec)
-        self.assertEqual(rule.rule_id, "swing_rulebook_v4")
+        self.assertEqual(rule.rule_id, "swing_rulebook_v5")
         self.assertEqual(rule.native_timeframe, "daily")
         self.assertEqual((rule.ma_kind, rule.ma_pair), ("EMA", (5, 13)))
         self.assertEqual((rule.rsi_period, rule.rsi_upcross), (9, 52))
@@ -37,7 +37,7 @@ class BacktestRulebookConfigTests(unittest.TestCase):
     def test_midterm_rulebook_is_weekly_and_never_or_themed(self):
         rule = rulebook_for("midterm")
 
-        self.assertEqual(rule.rule_id, "midterm_rulebook_v4")
+        self.assertEqual(rule.rule_id, "midterm_rulebook_v5")
         self.assertEqual(rule.native_timeframe, "weekly")
         self.assertEqual(rule.weekly_frequency, "W-FRI")
         self.assertEqual((rule.ma_kind, rule.ma_pair), ("SMA", (8, 21)))
@@ -73,14 +73,14 @@ class BacktestRulebookConfigTests(unittest.TestCase):
         self.assertEqual(
             no_theme.to_dict(),
             {
-                "rule_id": "swing_rulebook_v4__adx__rsi_upcross",
+                "rule_id": "swing_rulebook_v5__adx__rsi_upcross",
                 "horizon": "swing",
                 "selected_gates": ["rulebook_adx_gate", "rulebook_rsi_upcross"],
                 "theme_variant": "no-background-theme",
                 "theme_mode": None,
             },
         )
-        self.assertEqual(themed.rule_id, "swing_rulebook_v4__adx__rsi_upcross")
+        self.assertEqual(themed.rule_id, "swing_rulebook_v5__adx__rsi_upcross")
         self.assertEqual(themed.horizon, "swing")
         with self.assertRaises(FrozenInstanceError):
             swing.min_n = 1
@@ -114,11 +114,11 @@ class BacktestRulebookConfigTests(unittest.TestCase):
 
         self.assertEqual(
             BacktestConfig.for_ticker("FPT").to_dict()["request_type"],
-            "backtest_single_v4",
+            "backtest_single_v5",
         )
         self.assertEqual(
             BacktestBatchConfig(tickers=("FPT",)).to_dict()["request_type"],
-            "backtest_batch_v4",
+            "backtest_batch_v5",
         )
 
 

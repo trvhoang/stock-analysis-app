@@ -227,7 +227,7 @@ def _signal_set(position: Mapping[str, object]) -> str:
     reference = position.get("signal_reference")
     if isinstance(reference, Mapping):
         horizon = reference.get("horizon")
-        if reference.get("schema_version") == 4 and horizon in _HORIZON_LABELS:
+        if reference.get("schema_version") == 5 and horizon in _HORIZON_LABELS:
             return (
                 f"{_HORIZON_LABELS[horizon]} — {reference.get('rulebook_id')} "
                 f"— {reference.get('preferred_variant')}"

@@ -28,9 +28,9 @@ def _config_from_payload(payload: dict[str, object]) -> BacktestBatchConfig:
             if not isinstance(value, str):
                 raise ValueError(f"{field} must be an ISO date string")
             values[field] = date.fromisoformat(value)
-    if request_type == "backtest_single_v4":
+    if request_type == "backtest_single_v5":
         return BacktestConfig(**values).as_batch()
-    if request_type == "backtest_batch_v4":
+    if request_type == "backtest_batch_v5":
         return BacktestBatchConfig(**values)
     raise ValueError("request_type is not supported")
 
@@ -61,7 +61,7 @@ def run_worker_request(request_path: str) -> JobStatus:
             "schema_version", "job_id", "state", "progress", "output_paths",
             "error_text", "ticker_results",
         }
-        if payload.get("schema_version") == 4 and payload.get("state") == "requires_regeneration":
+        if payload.get("schema_version") == 5 and payload.get("state") == "requires_regeneration":
             if set(payload) != marker_fields:
                 raise ValueError("requires_regeneration marker has an invalid schema")
             marker = JobStatus(
@@ -76,6 +76,8 @@ def run_worker_request(request_path: str) -> JobStatus:
                 raise ValueError("requires_regeneration marker requires a reason")
             _write_status(marker, status_dir)
             return marker
+        if payload.get("schema_version") != 5:
+            raise ValueError("unsupported worker request schema")
         job_id = str(payload["job_id"])
         status_dir = str(payload["status_dir"])
         config_payload = payload["config"]

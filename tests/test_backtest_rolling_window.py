@@ -39,6 +39,36 @@ class RollingWindowTests(unittest.TestCase):
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].signal_date, frame.loc[3, "date"])
 
+    def test_completed_stop_survives_when_timeout_is_outside_partition(self):
+        frame = make_frame(rows=10)
+        frame.loc[5, "low"] = 80
+        entries = pd.Series(False, index=frame.index)
+        entries.loc[1] = True
+
+        events = run_rulebook_trade_sequence(
+            frame,
+            RulebookExecution(rulebook_for("swing"), ENTRY_GATE_NAMES),
+            entries,
+        )
+
+        self.assertEqual(1, len(events))
+        self.assertEqual("stop_loss", events[0].exit_reason)
+        self.assertEqual((frame.loc[0, "date"], frame.loc[9, "date"]), events[0].source_window)
+
+    def test_open_trade_without_completed_exit_remains_absent(self):
+        frame = make_frame(rows=10)
+        entries = pd.Series(False, index=frame.index)
+        entries.loc[1] = True
+
+        self.assertEqual(
+            [],
+            run_rulebook_trade_sequence(
+                frame,
+                RulebookExecution(rulebook_for("swing"), ENTRY_GATE_NAMES),
+                entries,
+            ),
+        )
+
     def test_partition_excludes_event_when_exit_crosses_report_boundary(self):
         event = type(
             "Event",

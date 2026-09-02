@@ -1,0 +1,28 @@
+{
+  "config": {
+    "end_date": "2026-09-02",
+    "group_name": "N/A",
+    "horizon": "midterm",
+    "output_dir": "backtest-result/ticker-signals",
+    "permutation_block_size": 20,
+    "permutation_count": 1000,
+    "permutation_seed": 42,
+    "request_type": "backtest_batch_v5",
+    "start_date": "2011-09-02",
+    "tickers": [
+      "VCB",
+      "DHC",
+      "DSN",
+      "ELC",
+      "BVH",
+      "HAP",
+      "DRC",
+      "CSM"
+    ],
+    "worker_count": 6
+  },
+  "factory_ref": "backtest_engine.pipeline:run_backtest_batch_from_env",
+  "job_id": "4377533cc10b41f8aaff12f824022b22",
+  "schema_version": 5,
+  "status_dir": "backtest-status"
+}

@@ -1,28 +1,9 @@
 {
-  "config": {
-    "end_date": "2026-08-22",
-    "group_name": "CH\u1ee8NG",
-    "horizon": "swing",
-    "output_dir": "backtest-result/ticker-signals",
-    "permutation_block_size": 20,
-    "permutation_count": 1000,
-    "permutation_seed": 42,
-    "request_type": "backtest_batch_v4",
-    "start_date": "2011-08-22",
-    "tickers": [
-      "FTS",
-      "HCM",
-      "MBS",
-      "SHS",
-      "SSI",
-      "TCX",
-      "VCI",
-      "VND"
-    ],
-    "worker_count": 6
-  },
-  "factory_ref": "backtest_engine.pipeline:run_backtest_batch_from_env",
+  "error_text": "Regenerate under Backtest schema 5.",
   "job_id": "d459b3adec3a40ebb5231d22b6305b44",
-  "schema_version": 4,
-  "status_dir": "backtest-status"
+  "output_paths": [],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "requires_regeneration",
+  "ticker_results": []
 }

@@ -1,0 +1,21 @@
+{
+  "error_text": null,
+  "job_id": "8fb833ad3f314a5bb71794911a2647df",
+  "output_paths": [
+    "backtest-result/ticker-signals/HPG/HPG_signals_swing.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/HPG/HPG_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "HPG"
+    }
+  ]
+}

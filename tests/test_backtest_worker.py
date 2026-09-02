@@ -8,7 +8,7 @@ from backtest_engine.worker import _config_from_payload
 
 
 class BacktestWorkerTests(unittest.TestCase):
-    def test_decodes_v4_batch_request_with_date_round_trip(self):
+    def test_decodes_v5_batch_request_with_date_round_trip(self):
         config = BacktestBatchConfig(
             tickers=("FPT", "VCB"),
             start_date=date(2020, 1, 1),
@@ -29,7 +29,7 @@ class BacktestWorkerTests(unittest.TestCase):
         self.assertEqual(restored.group_name, "BANK")
         self.assertNotIn("group_name", config.for_ticker("FPT").to_dict())
 
-    def test_single_v4_request_decodes_to_the_batch_of_one_execution_service(self):
+    def test_single_v5_request_decodes_to_the_batch_of_one_execution_service(self):
         config = BacktestConfig(
             ticker="FPT",
             horizon="midterm",
@@ -45,11 +45,13 @@ class BacktestWorkerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "request_type"):
             _config_from_payload({"request_type": "unknown"})
 
-    def test_rejects_missing_and_v2_worker_request_types(self):
+    def test_rejects_missing_and_superseded_worker_request_types(self):
         with self.assertRaisesRegex(ValueError, "request_type"):
             _config_from_payload({"ticker": "FPT"})
         with self.assertRaisesRegex(ValueError, "not supported"):
             _config_from_payload({"request_type": "backtest_batch_v2"})
+        with self.assertRaisesRegex(ValueError, "not supported"):
+            _config_from_payload({"request_type": "backtest_batch_v4"})
 
 
 if __name__ == "__main__":

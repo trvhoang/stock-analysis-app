@@ -1,6 +1,8 @@
 # Horizon Rulebook Signal Redesign
 
-**Status:** Approved design; implementation not started.
+**Status:** Superseded historical design. The implemented schema-4 replacement
+is `2026-08-22-horizon-v3-exploratory-multi-rulebook-design.md`, verified on
+2026-08-22. This document is not an active implementation contract.
 
 ## Goal
 

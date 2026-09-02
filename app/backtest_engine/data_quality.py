@@ -316,12 +316,12 @@ def audit_history(
     )
 
 
-def fresh_v3_audit_eligibility(
+def fresh_schema5_audit_eligibility(
     raw_history: pd.DataFrame,
     audit: TickerAudit,
     effective_bounds: dict[str, object],
 ) -> dict[str, object]:
-    """Serialize only the current run's raw-history audit for a V3 document."""
+    """Serialize only the current run's raw-history audit for schema 5."""
 
     if not isinstance(raw_history, pd.DataFrame):
         raise ValueError("raw_history must be a pandas DataFrame")
@@ -346,7 +346,7 @@ def fresh_v3_audit_eligibility(
     # decision forward from any earlier result document.
     fresh_audit = audit_history(audit.ticker, raw_history)
     return {
-        "source": "fresh_v3_raw_history",
+        "source": "fresh_schema5_raw_history",
         "eligible": fresh_audit.status == "clean",
         "status": fresh_audit.status,
         "reasons": [*fresh_audit.errors],
@@ -355,7 +355,7 @@ def fresh_v3_audit_eligibility(
     }
 
 
-def unavailable_v3_audit_eligibility(reason: str) -> dict[str, object]:
+def unavailable_schema5_audit_eligibility(reason: str) -> dict[str, object]:
     """Describe a terminal failure before any raw ticker history was available."""
 
     if not isinstance(reason, str) or not reason.strip():

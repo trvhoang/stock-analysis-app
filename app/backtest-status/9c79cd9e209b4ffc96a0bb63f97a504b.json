@@ -1,74 +1,9 @@
 {
-  "error_text": null,
+  "error_text": "Regenerate under Backtest schema 5.",
   "job_id": "9c79cd9e209b4ffc96a0bb63f97a504b",
-  "output_paths": [
-    "backtest-result/ticker-signals/BSR/BSR_signals_swing.json",
-    "backtest-result/ticker-signals/GAS/GAS_signals_swing.json",
-    "backtest-result/ticker-signals/PLX/PLX_signals_swing.json",
-    "backtest-result/ticker-signals/PVD/PVD_signals_swing.json",
-    "backtest-result/ticker-signals/PVS/PVS_signals_swing.json",
-    "backtest-result/ticker-signals/PVT/PVT_signals_swing.json"
-  ],
+  "output_paths": [],
   "progress": 1.0,
-  "schema_version": 4,
-  "state": "done",
-  "ticker_results": [
-    {
-      "attempts": 1,
-      "error_texts": [],
-      "output_paths": [
-        "backtest-result/ticker-signals/BSR/BSR_signals_swing.json"
-      ],
-      "state": "done",
-      "ticker": "BSR"
-    },
-    {
-      "attempts": 1,
-      "error_texts": [],
-      "output_paths": [
-        "backtest-result/ticker-signals/GAS/GAS_signals_swing.json"
-      ],
-      "state": "done",
-      "ticker": "GAS"
-    },
-    {
-      "attempts": 1,
-      "error_texts": [],
-      "output_paths": [
-        "backtest-result/ticker-signals/PLX/PLX_signals_swing.json"
-      ],
-      "state": "done",
-      "ticker": "PLX"
-    },
-    {
-      "attempts": 1,
-      "error_texts": [],
-      "output_paths": [
-        "backtest-result/ticker-signals/PVD/PVD_signals_swing.json"
-      ],
-      "state": "done",
-      "ticker": "PVD"
-    },
-    {
-      "attempts": 2,
-      "error_texts": [
-        "ValueError: invalid backtest data: high contains non-positive prices",
-        "ValueError: invalid backtest data: high contains non-positive prices"
-      ],
-      "output_paths": [
-        "backtest-result/ticker-signals/PVS/PVS_signals_swing.json"
-      ],
-      "state": "failed",
-      "ticker": "PVS"
-    },
-    {
-      "attempts": 1,
-      "error_texts": [],
-      "output_paths": [
-        "backtest-result/ticker-signals/PVT/PVT_signals_swing.json"
-      ],
-      "state": "done",
-      "ticker": "PVT"
-    }
-  ]
+  "schema_version": 5,
+  "state": "requires_regeneration",
+  "ticker_results": []
 }

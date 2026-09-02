@@ -40,6 +40,8 @@ services:
       # ⚠️ Development mode: live code reload
       - ../app:/app
       - ../tests:/app/tests
+      # Read-only operational scripts needed by Docker-backed test probes.
+      - ../scripts:/app/scripts:ro
       - ../data:/data
       # ✅ Cache directories for better performance
       - app-cache:/home/appuser/.cache

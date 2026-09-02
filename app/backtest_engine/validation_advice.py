@@ -1,4 +1,4 @@
-"""Schema-4 Top-3 replay, selected-gate monitoring, and audit-safe BUY hints."""
+"""Schema-5 Top-3 replay, evidence-safe BUY hints, and explicit SELL advice."""
 
 from __future__ import annotations
 
@@ -53,15 +53,15 @@ def _historical_positions(ticker: str, positions_dir: str) -> list[dict[str, obj
     return [
         dict(position) for position in history["history"]
         if not isinstance(position.get("signal_reference"), Mapping)
-        or position["signal_reference"].get("schema_version") != 4
+        or position["signal_reference"].get("schema_version") != 5
     ]
 
 
-def _open_v4_position(reference: Mapping[str, object], manual_history: Mapping[str, object]) -> dict[str, object] | None:
+def _open_v5_position(reference: Mapping[str, object], manual_history: Mapping[str, object]) -> dict[str, object] | None:
     identity = (reference["horizon"], reference["rulebook_id"], reference["preferred_variant"])
     for position in manual_history["history"]:
         candidate = position.get("signal_reference") if isinstance(position, Mapping) else None
-        if not isinstance(candidate, Mapping) or candidate.get("schema_version") != 4:
+        if not isinstance(candidate, Mapping) or candidate.get("schema_version") != 5:
             continue
         if position.get("status") == "open" and (
             candidate.get("horizon"), candidate.get("rulebook_id"), candidate.get("preferred_variant")
@@ -79,7 +79,7 @@ def _position_action(
 
     if open_position is None:
         return "can BUY" if buy_eligible else "expired BUY"
-    if not bool(current.get("literal_entry")):
+    if bool(current.get("technical_exit")) or bool(current.get("deteriorated")):
         return "can SELL"
     try:
         close = float(current["latest_close"])
@@ -101,23 +101,27 @@ def _replay_rulebook(ticker: str, horizon: str, rulebook_id: str, engine, signal
     candidate = replay.get("candidate")
     current = replay.get("current")
     if not isinstance(candidate, Mapping) or not isinstance(current, Mapping):
-        return _unavailable(replay.get("reason", "No current schema-4 exploratory rulebook exists."))
+        return _unavailable(replay.get("reason", "No current schema-5 exploratory rulebook exists."))
     preferred = candidate["preferred_variant"]
     monitoring = monitoring_match_level(horizon, tuple(candidate["selected_gates"]), preferred, current, rulebook_for(horizon))
+    evidence = replay.get("evidence_eligibility")
+    if not isinstance(evidence, Mapping):
+        return _unavailable("schema-5 replay evidence is unavailable")
     reference = {
-        "schema_version": 4,
+        "schema_version": 5,
+        "contract_version": "backtest_schema5_v1",
         "ticker": ticker,
         "horizon": horizon,
         "rulebook_id": candidate["rulebook_id"],
         "preferred_variant": preferred,
-        "audit_eligible": bool(replay["audit_eligibility"].get("eligible")),
+        "evidence_eligibility": dict(evidence),
         "exploratory_candidate": dict(candidate),
     }
-    open_position = _open_v4_position(reference, manual_history)
-    audit_eligible = reference["audit_eligible"]
+    open_position = _open_v5_position(reference, manual_history)
+    evidence_eligible = bool(evidence.get("eligible"))
     literal_entry = bool(current.get("literal_entry"))
     buy_block_reason = (
-        "audit_ineligible" if not audit_eligible else "open_position" if open_position is not None else None
+        "evidence_ineligible" if not evidence_eligible else "open_position" if open_position is not None else None
     )
     return {
         "availability": "available",
@@ -127,7 +131,9 @@ def _replay_rulebook(ticker: str, horizon: str, rulebook_id: str, engine, signal
         "candidate": dict(candidate),
         "current": dict(current),
         "audit_eligibility": dict(replay["audit_eligibility"]),
+        "evidence_eligibility": dict(evidence),
         "evaluation_label": replay.get("evaluation_label", "Exploratory — gross"),
+        "partition_labels": dict(replay.get("partition_labels", {})),
         "monitoring": None if monitoring is None else {"match_level": monitoring[0], "match_classification": monitoring[1]},
         "signal_reference": reference,
         "open_position": open_position,

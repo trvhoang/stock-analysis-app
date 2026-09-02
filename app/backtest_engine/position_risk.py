@@ -12,6 +12,7 @@ from sqlalchemy import text
 from .config import ENTRY_GATE_NAMES, HORIZONS, THEME_VARIANTS, rulebook_for
 from .data_quality import load_ticker_history
 from .indicators import build_rulebook_frame
+from .timeframes import latest_common_completed_bar
 from .manual_position_store import (
     load_manual_position_history,
     update_manual_position_risk_suggestion,
@@ -119,8 +120,16 @@ def assess_no_signal_position(
     """Score both fresh no-theme horizons from their four current V3 gates."""
 
     scores: dict[str, float] = {}
+    common_as_of = latest_common_completed_bar(
+        {"ticker": raw_history},
+        pd.Timestamp(as_of_date).date(),
+    )
     for horizon in HORIZONS:
-        frame = build_rulebook_frame(raw_history, rulebook_for(horizon), today=as_of_date)
+        frame = build_rulebook_frame(
+            raw_history,
+            rulebook_for(horizon),
+            common_as_of=common_as_of,
+        )
         if frame.empty:
             return {"availability": "unavailable"}
         last = frame.iloc[-1]
@@ -140,7 +149,15 @@ def _current_facts(
     vnindex_history: pd.DataFrame | None,
 ) -> dict[str, object] | None:
     rulebook = rulebook_for(horizon)
-    frame = build_rulebook_frame(raw_history, rulebook, today=as_of_date)
+    sources = {"ticker": raw_history}
+    if preferred_variant == "background-theme" and vnindex_history is not None:
+        sources["VNINDEX"] = vnindex_history
+    common_as_of = latest_common_completed_bar(sources, as_of_date)
+    frame = build_rulebook_frame(
+        raw_history,
+        rulebook,
+        common_as_of=common_as_of,
+    )
     if frame.empty or any(gate not in frame for gate in selected_gates):
         return None
     last = frame.iloc[-1]
@@ -154,7 +171,11 @@ def _current_facts(
     if preferred_variant == "background-theme":
         if vnindex_history is None:
             return None
-        vn_frame = build_rulebook_frame(vnindex_history, rulebook, today=as_of_date)
+        vn_frame = build_rulebook_frame(
+            vnindex_history,
+            rulebook,
+            common_as_of=common_as_of,
+        )
         if vn_frame.empty:
             return None
         aligned = pd.merge_asof(
@@ -177,12 +198,12 @@ def assess_signal_backed_position(
     as_of_date: date,
     vnindex_history: pd.DataFrame | None,
 ) -> dict[str, object]:
-    """Assess a frozen schema-4 position after its approved T+3 delay."""
+    """Assess a frozen schema-5 position after its approved T+3 delay."""
 
     reference = position.get("signal_reference")
     context = position.get("entry_context")
     risk = position.get("risk_snapshot")
-    if not isinstance(reference, Mapping) or reference.get("schema_version") != 4:
+    if not isinstance(reference, Mapping) or reference.get("schema_version") != 5:
         return {"availability": "unavailable"}
     if not isinstance(context, Mapping) or not isinstance(risk, Mapping):
         return {"availability": "unavailable"}
@@ -241,7 +262,7 @@ def list_validate_position_candidates(
                 continue
             reference = position.get("signal_reference")
             if reference is not None and (
-                not isinstance(reference, Mapping) or reference.get("schema_version") != 4
+                not isinstance(reference, Mapping) or reference.get("schema_version") != 5
             ):
                 continue
             if isinstance(reference, Mapping):

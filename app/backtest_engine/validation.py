@@ -106,8 +106,8 @@ def _resample_moving_blocks(returns: Sequence[float], rng: np.random.Generator, 
     return sample[:len(values)]
 
 
-def moving_block_permutation_test(returns: Sequence[float], count: int = 1000, seed: int = 42, block_size: int = 20) -> PermutationResult:
-    """Estimate an informational one-sided p-value with centered moving blocks."""
+def moving_block_permutation_test_reference(returns: Sequence[float], count: int = 1000, seed: int = 42, block_size: int = 20) -> PermutationResult:
+    """Reference one-sided moving-block implementation retained for parity."""
 
     if count < 1 or block_size < 1:
         raise ValueError("count and block_size must be positive")
@@ -123,7 +123,33 @@ def moving_block_permutation_test(returns: Sequence[float], count: int = 1000, s
     return PermutationResult(observed, float(p_value), null_sharpes, count, seed, block_size)
 
 
+def moving_block_permutation_test(returns: Sequence[float], count: int = 1000, seed: int = 42, block_size: int = 20) -> PermutationResult:
+    """Build seeded moving-block samples in one array, preserving reference math."""
+
+    if count < 1 or block_size < 1:
+        raise ValueError("count and block_size must be positive")
+    values = _finite_returns(returns)
+    observed = _sharpe_from_array(values)
+    centered = values - float(np.mean(values))
+    effective_size = min(block_size, len(centered))
+    block_count = int(np.ceil(len(centered) / effective_size))
+    rng = np.random.default_rng(seed)
+    starts = rng.integers(
+        0,
+        len(centered),
+        size=(count, block_count),
+    )
+    offsets = np.arange(effective_size, dtype=int)
+    indexes = (starts[:, :, None] + offsets[None, None, :]) % len(centered)
+    samples = centered[indexes].reshape(count, -1)[:, : len(centered)]
+    # Keep the reference per-row reduction order so every float remains exact.
+    null_sharpes = tuple(_sharpe_from_array(sample) for sample in samples)
+    p_value = (sum(value >= observed for value in null_sharpes) + 1) / (count + 1)
+    return PermutationResult(observed, float(p_value), null_sharpes, count, seed, block_size)
+
+
 __all__ = [
     "PermutationResult", "calculate_deflated_sharpe", "calculate_probabilistic_sharpe",
     "calculate_unannualized_sharpe", "moving_block_permutation_test",
+    "moving_block_permutation_test_reference",
 ]

@@ -2,10 +2,11 @@
 
 ## Status
 
-Approved design, 2026-08-22. This document supersedes only the deferred Phase B
-section of `2026-08-16-validate-positions-risk-and-trade-rows-design.md`.
-Phase A remains complete. Implementation requires a separate approved Phase B
-plan.
+Implemented and verified, 2026-08-25. This document supersedes only the
+deferred Phase B section of
+`2026-08-16-validate-positions-risk-and-trade-rows-design.md`. Phase A and
+Phase B are complete. Verification:
+`../reports/2026-08-25-validate-positions-phase-b-verification.md`.
 
 ## Purpose and boundary
 

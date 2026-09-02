@@ -1,4 +1,4 @@
-"""Filename-only invalidation of V3 artifacts and persisted job sidecars."""
+"""Filename-only invalidation of superseded artifacts and job sidecars."""
 
 from __future__ import annotations
 
@@ -14,6 +14,10 @@ from .persistence import save_regeneration_marker, write_regeneration_marker
 _LEGACY_ARTIFACT = re.compile(
     r"^(?P<ticker>[A-Z0-9._-]+)_signals_(?P<horizon>swing|midterm)_"
     r"(?P<variant>no-background-theme|background-theme)\.json$"
+)
+_CANONICAL_ARTIFACT = re.compile(
+    r"^(?P<ticker>[A-Z0-9._-]+)_signals_"
+    r"(?P<horizon>swing|midterm)\.json$"
 )
 
 
@@ -41,6 +45,21 @@ def _legacy_artifacts(signal_root: Path):
     return tuple(sorted(records, key=lambda item: str(item[0])))
 
 
+def _canonical_artifacts(signal_root: Path):
+    if not signal_root.exists():
+        return ()
+    records = []
+    for path in signal_root.rglob("*.json"):
+        match = _CANONICAL_ARTIFACT.fullmatch(path.name)
+        if match is None:
+            continue
+        ticker = _normalize_ticker(match["ticker"])
+        if path.parent.name != ticker or match["horizon"] not in HORIZONS:
+            continue
+        records.append((path, ticker, match["horizon"]))
+    return tuple(sorted(records, key=lambda item: str(item[0])))
+
+
 def _legacy_job_ids(status_root: Path) -> tuple[str, ...]:
     if not status_root.exists():
         return ()
@@ -59,14 +78,21 @@ def _legacy_job_ids(status_root: Path) -> tuple[str, ...]:
 
 
 def invalidate_superseded_outputs(signal_dir: str, status_dir: str) -> RegenerationReport:
-    """Overwrite exact V3-shaped files without opening their previous contents."""
+    """Overwrite exact superseded filenames without opening prior contents."""
 
     signal_root = Path(signal_dir)
     status_root = Path(status_dir)
     canonical_paths: set[Path] = set()
     legacy_paths = []
+    for canonical_path, ticker, horizon in _canonical_artifacts(signal_root):
+        write_regeneration_marker(canonical_path, ticker, horizon)
+        canonical_paths.add(canonical_path)
     for legacy_path, ticker, horizon in _legacy_artifacts(signal_root):
-        canonical_paths.add(Path(save_regeneration_marker(ticker, horizon, str(signal_root))))
+        canonical_path = signal_root / ticker / f"{ticker}_signals_{horizon}.json"
+        if canonical_path not in canonical_paths:
+            canonical_paths.add(
+                Path(save_regeneration_marker(ticker, horizon, str(signal_root)))
+            )
         write_regeneration_marker(legacy_path, ticker, horizon)
         legacy_paths.append(legacy_path)
     job_ids = _legacy_job_ids(status_root)

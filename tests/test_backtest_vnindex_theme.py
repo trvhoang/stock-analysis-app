@@ -1,3 +1,4 @@
+from datetime import date
 import unittest
 
 import pandas as pd
@@ -43,7 +44,11 @@ class VNIndexThemeTests(unittest.TestCase):
             }
         )
 
-        confirmation = build_vnindex_confirmation(frame, horizon="swing")
+        confirmation = build_vnindex_confirmation(
+            frame,
+            horizon="swing",
+            common_as_of=dates[-1].date(),
+        )
 
         self.assertFalse(bool(confirmation.iloc[48]))
         self.assertTrue(bool(confirmation.iloc[-1]))
@@ -64,15 +69,17 @@ class VNIndexThemeTests(unittest.TestCase):
             }
         )
 
-        confirmation = build_vnindex_confirmation(frame, horizon="midterm")
+        confirmation = build_vnindex_confirmation(
+            frame,
+            horizon="midterm",
+            common_as_of=date(2024, 5, 17),
+        )
 
         self.assertEqual(len(confirmation), 20)
         self.assertFalse(bool(confirmation.iloc[18]))
         self.assertTrue(bool(confirmation.iloc[-1]))
 
     def test_midterm_confirmation_reuses_ticker_weekly_dates(self):
-        from backtest_engine.timeframes import to_weekly_ohlcv
-
         dates = pd.date_range("2024-01-01", periods=10, freq="B")
         frame = pd.DataFrame(
             {
@@ -85,9 +92,38 @@ class VNIndexThemeTests(unittest.TestCase):
             }
         )
 
-        confirmation = build_vnindex_confirmation(frame, horizon="midterm")
+        confirmation = build_vnindex_confirmation(
+            frame,
+            horizon="midterm",
+            common_as_of=date(2024, 1, 12),
+        )
 
-        self.assertEqual(confirmation.index.tolist(), to_weekly_ohlcv(frame)["date"].tolist())
+        self.assertEqual(
+            confirmation.index.tolist(),
+            pd.to_datetime(["2024-01-05", "2024-01-12"]).tolist(),
+        )
+
+    def test_midterm_confirmation_excludes_a_future_partial_week(self):
+        dates = pd.bdate_range("2024-05-06", "2024-05-15")
+        close = list(range(100, 100 + len(dates)))
+        frame = pd.DataFrame(
+            {
+                "date": dates,
+                "open": close,
+                "high": [value + 1 for value in close],
+                "low": [value - 1 for value in close],
+                "close": close,
+                "volume": [1000] * len(close),
+            }
+        )
+
+        confirmation = build_vnindex_confirmation(
+            frame,
+            horizon="midterm",
+            common_as_of=date(2024, 5, 15),
+        )
+
+        self.assertLessEqual(confirmation.index.max().date(), date(2024, 5, 15))
 
     def test_no_theme_is_identity_and_and_only(self):
         ticker_signal = pd.Series([True, False, True])

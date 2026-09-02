@@ -1,9 +1,9 @@
 {
-  "error_text": "Regenerate under amended rulebook.",
+  "error_text": "Regenerate under Backtest schema 5.",
   "job_id": "6914d0b3625b47b98e0b7e05f3ed461a",
   "output_paths": [],
   "progress": 1.0,
-  "schema_version": 4,
+  "schema_version": 5,
   "state": "requires_regeneration",
   "ticker_results": []
 }

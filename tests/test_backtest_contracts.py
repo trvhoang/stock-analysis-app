@@ -20,7 +20,7 @@ class BacktestContractTests(unittest.TestCase):
 
         self.assertEqual(config.ticker, "FPT")
         self.assertEqual(config.horizon, "swing")
-        self.assertEqual(rule.rule_id, "swing_rulebook_v4")
+        self.assertEqual(rule.rule_id, "swing_rulebook_v5")
         self.assertEqual(rule.max_hold_bars, 22)
         self.assertEqual(rule.min_n, 5)
         self.assertEqual(rule.atr_period, 14)
@@ -58,15 +58,64 @@ class BacktestContractTests(unittest.TestCase):
         )
         original = daily.copy(deep=True)
 
-        weekly = to_weekly_ohlcv(daily)
+        weekly = to_weekly_ohlcv(daily, common_as_of=date(2024, 1, 12))
 
-        self.assertEqual(weekly["date"].tolist(), list(pd.to_datetime(["2024-01-07", "2024-01-14"])))
+        self.assertEqual(weekly["date"].tolist(), list(pd.to_datetime(["2024-01-05", "2024-01-12"])))
         self.assertEqual(weekly["open"].tolist(), [100, 105])
         self.assertEqual(weekly["high"].tolist(), [106, 111])
         self.assertEqual(weekly["low"].tolist(), [99, 104])
         self.assertEqual(weekly["close"].tolist(), [104, 109])
         self.assertEqual(weekly["volume"].tolist(), [5000, 5000])
         pd.testing.assert_frame_equal(daily, original)
+
+    def test_weekly_ohlcv_never_emits_a_friday_after_the_common_cutoff(self):
+        import pandas as pd
+
+        from backtest_engine.timeframes import to_weekly_ohlcv
+
+        daily = pd.DataFrame(
+            {
+                "date": pd.bdate_range("2024-05-06", "2024-05-20"),
+                "open": [100] * 11,
+                "high": [101] * 11,
+                "low": [99] * 11,
+                "close": [100] * 11,
+                "volume": [1000] * 11,
+            }
+        )
+
+        historical = to_weekly_ohlcv(
+            daily.loc[daily["date"].le(pd.Timestamp("2024-05-15"))],
+            common_as_of=date(2024, 5, 15),
+        )
+        with_future_rows = to_weekly_ohlcv(
+            daily,
+            common_as_of=date(2024, 5, 15),
+        )
+
+        self.assertEqual(date(2024, 5, 10), historical["date"].max().date())
+        pd.testing.assert_frame_equal(historical, with_future_rows)
+
+    def test_latest_common_completed_bar_uses_every_named_source(self):
+        import pandas as pd
+
+        from backtest_engine.timeframes import latest_common_completed_bar
+
+        sources = {
+            "FPT": pd.DataFrame({"date": pd.to_datetime(["2024-01-10", "2024-01-12"])}),
+            "VCB": pd.DataFrame({"date": pd.to_datetime(["2024-01-09", "2024-01-11"])}),
+            "VNINDEX": pd.DataFrame({"date": pd.to_datetime(["2024-01-10", "2024-01-15"])}),
+        }
+
+        self.assertEqual(
+            date(2024, 1, 11),
+            latest_common_completed_bar(sources, date(2024, 1, 15)),
+        )
+        with self.assertRaisesRegex(ValueError, "MISSING"):
+            latest_common_completed_bar(
+                {"MISSING": pd.DataFrame({"date": pd.to_datetime(["2024-01-16"])})},
+                date(2024, 1, 15),
+            )
 
     def test_config_rejects_invalid_values_and_normalizes_ticker(self):
         self.assertEqual(BacktestConfig.for_ticker(" fpt ").ticker, "FPT")
@@ -101,7 +150,7 @@ class BacktestContractTests(unittest.TestCase):
             rulebook_for("swing"), ("rulebook_adx_gate",)
         )
 
-        self.assertEqual(execution.rule_id, "swing_rulebook_v4__adx")
+        self.assertEqual(execution.rule_id, "swing_rulebook_v5__adx")
         self.assertEqual(execution.theme_variant, "no-background-theme")
         self.assertNotIn("strategy_id", {field.name for field in fields(execution)})
 

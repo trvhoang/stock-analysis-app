@@ -1,4 +1,4 @@
-"""Backtest Lab schema-4 UI copy, identity, and position-group contracts."""
+"""Backtest Lab schema-5 UI copy, identity, and position-group contracts."""
 
 from __future__ import annotations
 
@@ -153,12 +153,12 @@ class BacktestPageTests(unittest.TestCase):
     def _position_select_widgets(app):
         return [item for item in app.checkbox if item.label == "Select"]
 
-    def test_collect_has_no_theme_checkbox_and_uses_v4_request(self):
+    def test_collect_has_no_theme_checkbox_and_uses_v5_request(self):
         source = inspect.getsource(backtest_lab)
         config = backtest_lab.build_backtest_batch_config(("FPT",), "swing", "15y")
         self.assertNotIn('checkbox("VN-Index AND treatment"', source)
         self.assertNotIn('checkbox("Include VN-Index AND"', source)
-        self.assertEqual(config.to_dict()["request_type"], "backtest_batch_v4")
+        self.assertEqual(config.to_dict()["request_type"], "backtest_batch_v5")
 
     def test_view_signal_rows_show_only_summary_train_test_columns(self):
         rows = backtest_lab._view_signal_rows(
@@ -166,6 +166,7 @@ class BacktestPageTests(unittest.TestCase):
                 {
                     "Ticker": "VCB",
                     "Horizon": "Swing",
+                    "Evidence": "eligible",
                     "Preferred treatment": "background-theme",
                     "Training n": 5,
                     "Test n": 0,
@@ -188,12 +189,16 @@ class BacktestPageTests(unittest.TestCase):
             [
                 "Ticker",
                 "Horizon",
+                "Evidence",
                 "Theme",
                 "Train-test",
                 "n",
                 "Win rate %",
                 "Profit %",
                 "Sharpe",
+                "_ticker",
+                "_horizon",
+                "_rulebook_id",
             ],
         )
         self.assertEqual(
@@ -201,19 +206,23 @@ class BacktestPageTests(unittest.TestCase):
             {
                 "Ticker": "VCB",
                 "Horizon": "Swing",
+                "Evidence": "eligible",
                 "Theme": "Included",
                 "Train-test": "YES",
                 "n": "5 - 0",
                 "Win rate %": "60.0 - N/A",
                 "Profit %": "3.2 - -1.0",
                 "Sharpe": "0.4 - N/A",
+                "_ticker": "VCB",
+                "_horizon": "swing",
+                "_rulebook_id": "hidden",
             },
         )
 
     def test_view_signal_metric_pairs_round_only_decimal_metrics(self):
         rows = backtest_lab._view_signal_rows(
             [{
-                "Ticker": "VCB", "Horizon": "Swing",
+                "Ticker": "VCB", "Horizon": "Swing", "Rulebook": "hidden",
                 "Preferred treatment": "no-background-theme",
                 "Training n": 5, "Test n": 0,
                 "Training win rate %": 60.04, "Test win rate %": None,
@@ -227,21 +236,26 @@ class BacktestPageTests(unittest.TestCase):
         self.assertEqual(rows[0]["Profit %"], "3.3 - -1.0")
         self.assertEqual(rows[0]["Sharpe"], "0.4 - 0.1")
 
-    def test_view_signal_rows_filter_by_partial_ticker_and_horizon(self):
+    def test_view_ticker_parser_uses_exact_comma_or_space_membership(self):
         filter_rows = getattr(backtest_lab, "_filter_view_signal_rows", None)
 
         self.assertTrue(callable(filter_rows))
         self.assertEqual(
+            backtest_lab._parse_view_signal_tickers(" vcb, FPT  vcb "),
+            ("VCB", "FPT"),
+        )
+        rows = [
+            {"Ticker": "VCB", "Horizon": "Swing"},
+            {"Ticker": "VC", "Horizon": "Swing"},
+            {"Ticker": "FPT", "Horizon": "Mid-term"},
+        ]
+        self.assertEqual(
             filter_rows(
-                [
-                    {"Ticker": "VCB", "Horizon": "Swing"},
-                    {"Ticker": "VCB", "Horizon": "Mid-term"},
-                    {"Ticker": "FPT", "Horizon": "Swing"},
-                ],
-                "vc",
-                "Swing",
+                rows,
+                "vcb fpt",
+                "Both",
             ),
-            [{"Ticker": "VCB", "Horizon": "Swing"}],
+            [rows[0], rows[2]],
         )
         self.assertEqual(
             filter_rows(
@@ -251,6 +265,55 @@ class BacktestPageTests(unittest.TestCase):
             ),
             [{"Ticker": "VCB", "Horizon": "Swing"}],
         )
+
+    def test_view_signal_table_rows_use_visible_ordinals_and_default_hidden_columns(self):
+        rows = backtest_lab._view_signal_rows([
+            {
+                "Ticker": "VCB", "Horizon": "Swing", "Rulebook": "swing_rulebook_v5__adx",
+                "Preferred treatment": "no-background-theme",
+                "Training n": 5, "Test n": 1,
+                "Training win rate %": 60.0, "Test win rate %": 50.0,
+                "Training profit %": 3.0, "Test profit %": 1.0,
+                "Training Sharpe": 0.4, "Test Sharpe": None,
+            },
+            {
+                "Ticker": "FPT", "Horizon": "Mid-term", "Rulebook": "midterm_rulebook_v5__adx",
+                "Preferred treatment": "no-background-theme",
+                "Training n": 5, "Test n": 1,
+                "Training win rate %": 61.0, "Test win rate %": 51.0,
+                "Training profit %": 3.1, "Test profit %": 1.1,
+                "Training Sharpe": 0.5, "Test Sharpe": None,
+            },
+        ])
+
+        table_rows = backtest_lab._view_signal_table_rows(rows)
+
+        self.assertEqual([(row["No"], row["Select"]) for row in table_rows], [(1, False), (2, False)])
+        self.assertEqual(backtest_lab._VIEW_SIGNAL_FIXED_COLUMNS, ("No", "Select", "Ticker"))
+        self.assertNotIn("Evidence", backtest_lab._VIEW_SIGNAL_DEFAULT_COLUMNS)
+        self.assertNotIn("Theme", backtest_lab._VIEW_SIGNAL_DEFAULT_COLUMNS)
+
+    def test_view_signal_table_widget_key_is_deterministic_and_context_specific(self):
+        first = backtest_lab._view_signal_table_widget_key(
+            (("VCB", "swing", "swing_rulebook_v5__adx"),),
+            (("VCB", "swing", "swing_rulebook_v5__adx"),),
+            ("No", "Select", "Ticker"),
+        )
+        second = backtest_lab._view_signal_table_widget_key(
+            (("VCB", "swing", "swing_rulebook_v5__adx"),),
+            (),
+            ("No", "Select", "Ticker"),
+        )
+
+        self.assertEqual(
+            first,
+            backtest_lab._view_signal_table_widget_key(
+                (("VCB", "swing", "swing_rulebook_v5__adx"),),
+                (("VCB", "swing", "swing_rulebook_v5__adx"),),
+                ("No", "Select", "Ticker"),
+            ),
+        )
+        self.assertNotEqual(first, second)
 
     def test_view_signals_renders_ticker_and_both_default_horizon_filters(self):
         app = AppTest.from_string(
@@ -269,10 +332,132 @@ class BacktestPageTests(unittest.TestCase):
             ["Both", "Swing", "Mid-term"],
         )
 
+    def test_view_signals_uses_native_columns_selection_and_disabled_empty_removal(self):
+        row = {
+            "Ticker": "VCB", "Horizon": "Swing", "Rulebook": "swing_rulebook_v5__adx",
+            "Preferred treatment": "no-background-theme",
+            "Training n": 5, "Test n": 2,
+            "Training win rate %": 60.0, "Test win rate %": 50.0,
+            "Training profit %": 3.2, "Test profit %": 1.0,
+            "Training Sharpe": 0.4, "Test Sharpe": 0.2,
+        }
+        app = AppTest.from_string(
+            "import pages.backtest_lab as lab\n"
+            f"row = {row!r}\n"
+            "lab.list_current_signal_set_rows = lambda _dir: {\n"
+            "    'valid': [row], 'terminal': [], 'invalid': [], 'warnings': [],\n"
+            "}\n"
+            "lab._render_view('unused-signals', 'unused-positions', remove_fn=lambda *_a, **_k: None)\n"
+        ).run()
+
+        self.assertEqual([item.label for item in app.multiselect], ["Columns"])
+        self.assertEqual(
+            app.multiselect[0].value,
+            ["Horizon", "Train-test", "n", "Win rate %", "Profit %", "Sharpe"],
+        )
+        self.assertEqual([item.label for item in app.checkbox], ["Select all visible"])
+        source = inspect.getsource(backtest_lab._render_view)
+        self.assertIn("st.data_editor(", source)
+        self.assertIn("_VIEW_SIGNAL_FIXED_COLUMNS", source)
+        self.assertIn("_VIEW_SIGNAL_DEFAULT_COLUMNS", source)
+        self.assertIn("toolbar = st.empty()", source)
+        self.assertIn("with toolbar.container():", source)
+        remove = [item for item in app.button if item.label == "🗑️"][-1]
+        self.assertTrue(remove.disabled)
+        self.assertEqual(remove.help, "Remove selected signals (0)")
+
+    def test_view_signals_select_all_applies_only_to_current_filtered_rows(self):
+        rows = [
+            {
+                "Ticker": ticker, "Horizon": "Swing", "Rulebook": f"swing_rulebook_v5__{ticker.lower()}",
+                "Preferred treatment": "no-background-theme",
+                "Training n": 5, "Test n": 2,
+                "Training win rate %": 60.0, "Test win rate %": 50.0,
+                "Training profit %": 3.2, "Test profit %": 1.0,
+                "Training Sharpe": 0.4, "Test Sharpe": 0.2,
+            }
+            for ticker in ("VCB", "FPT")
+        ]
+        app = AppTest.from_string(
+            "import pages.backtest_lab as lab\n"
+            f"rows = {rows!r}\n"
+            "lab.list_current_signal_set_rows = lambda _dir: {\n"
+            "    'valid': rows, 'terminal': [], 'invalid': [], 'warnings': [],\n"
+            "}\n"
+            "lab._render_view('unused-signals', 'unused-positions', remove_fn=lambda *_a, **_k: None)\n"
+        ).run()
+
+        next(item for item in app.checkbox if item.label == "Select all visible").set_value(True).run()
+        self.assertFalse([item for item in app.button if item.label == "🗑️"][-1].disabled)
+
+        next(item for item in app.text_input if item.label == "Ticker").set_value("FPT").run()
+        self.assertFalse([item for item in app.button if item.label == "🗑️"][-1].disabled)
+
+    def test_view_signals_removal_action_delegates_selected_immutable_identity(self):
+        row = {
+            "Ticker": "VCB", "Horizon": "Swing", "Rulebook": "swing_rulebook_v5__adx",
+            "Preferred treatment": "no-background-theme",
+            "Training n": 5, "Test n": 2,
+            "Training win rate %": 60.0, "Test win rate %": 50.0,
+            "Training profit %": 3.2, "Test profit %": 1.0,
+            "Training Sharpe": 0.4, "Test Sharpe": 0.2,
+        }
+        app = AppTest.from_string(
+            "from types import SimpleNamespace\n"
+            "import pages.backtest_lab as lab\n"
+            f"row = {row!r}\n"
+            "lab.list_current_signal_set_rows = lambda _dir: {\n"
+            "    'valid': [row], 'terminal': [], 'invalid': [], 'warnings': [],\n"
+            "}\n"
+            "def remove(keys, **kwargs):\n"
+            "    assert [(item.ticker, item.horizon, item.rulebook_id) for item in keys] == [(\n"
+            "        'VCB', 'swing', 'swing_rulebook_v5__adx')]\n"
+            "    assert kwargs == {'signal_dir': 'unused-signals', 'positions_dir': 'unused-positions'}\n"
+            "    return SimpleNamespace(removed=keys)\n"
+            "lab._render_view('unused-signals', 'unused-positions', remove_fn=remove)\n"
+        ).run()
+
+        next(item for item in app.checkbox if item.label == "Select all visible").set_value(True).run()
+        [item for item in app.button if item.label == "🗑️"][-1].click().run()
+
+        self.assertTrue(any(item.value == "Removed 1 saved signal(s)." for item in app.success))
+        self.assertTrue([item for item in app.button if item.label == "🗑️"][-1].disabled)
+        self.assertEqual(app.exception, [])
+
+    def test_view_signals_protected_removal_clears_selection_and_reports_identity(self):
+        row = {
+            "Ticker": "VCB", "Horizon": "Swing", "Rulebook": "swing_rulebook_v5__adx",
+            "Preferred treatment": "no-background-theme",
+            "Training n": 5, "Test n": 2,
+            "Training win rate %": 60.0, "Test win rate %": 50.0,
+            "Training profit %": 3.2, "Test profit %": 1.0,
+            "Training Sharpe": 0.4, "Test Sharpe": 0.2,
+        }
+        app = AppTest.from_string(
+            "import pages.backtest_lab as lab\n"
+            "from backtest_engine.signal_removal import SignalCandidateKey, SignalRemovalBlockedError\n"
+            f"row = {row!r}\n"
+            "lab.list_current_signal_set_rows = lambda _dir: {\n"
+            "    'valid': [row], 'terminal': [], 'invalid': [], 'warnings': [],\n"
+            "}\n"
+            "def remove(_keys, **_kwargs):\n"
+            "    raise SignalRemovalBlockedError((SignalCandidateKey(\n"
+            "        'VCB', 'swing', 'swing_rulebook_v5__adx'),))\n"
+            "lab._render_view('unused-signals', 'unused-positions', remove_fn=remove)\n"
+        ).run()
+
+        next(item for item in app.checkbox if item.label == "Select all visible").set_value(True).run()
+        [item for item in app.button if item.label == "🗑️"][-1].click().run()
+
+        self.assertTrue(any("VCB / swing / swing_rulebook_v5__adx" in item.value for item in app.error))
+        self.assertTrue([item for item in app.button if item.label == "🗑️"][-1].disabled)
+        self.assertEqual(app.exception, [])
+
     def test_view_signals_render_omits_terminal_rows(self):
         row = {
             "Ticker": "VCB",
             "Horizon": "Swing",
+            "Rulebook": "swing_rulebook_v5__adx",
             "Preferred treatment": "no-background-theme",
             "Training n": 5,
             "Test n": 2,
@@ -296,7 +481,7 @@ class BacktestPageTests(unittest.TestCase):
         self.assertEqual(len(app.dataframe), 1)
         self.assertEqual(
             list(app.dataframe[0].value.columns),
-            ["Ticker", "Horizon", "Theme", "Train-test", "n", "Win rate %", "Profit %", "Sharpe"],
+            ["No", "Select", "Ticker", "Horizon", "Train-test", "n", "Win rate %", "Profit %", "Sharpe"],
         )
         self.assertFalse(any(item.value == "Terminal results" for item in app.caption))
         self.assertTrue(any(item.value == "catalog warning" for item in app.warning))
@@ -391,11 +576,11 @@ class BacktestPageTests(unittest.TestCase):
         item = {
             "buy_eligible": True,
             "horizon": "swing",
-            "rulebook_id": "swing_rulebook_v4__rsi",
+            "rulebook_id": "swing_rulebook_v5__rsi",
             "preferred_variant": "no-background-theme",
-            "signal_reference": {"schema_version": 4, "horizon": "swing"},
+            "signal_reference": {"schema_version": 5, "horizon": "swing"},
         }
-        candidates = backtest_lab._validated_v4_candidates(
+        candidates = backtest_lab._validated_v5_candidates(
             {
                 "by_ticker": {
                     "VCB": {
@@ -411,7 +596,7 @@ class BacktestPageTests(unittest.TestCase):
 
         self.assertEqual(
             list(candidates),
-            ["Swing — swing_rulebook_v4__rsi — no-background-theme"],
+            ["Swing — swing_rulebook_v5__rsi — no-background-theme"],
         )
 
     def test_ui_copy_uses_exploratory_gross_without_certification_or_trade_claims(self):
@@ -421,7 +606,7 @@ class BacktestPageTests(unittest.TestCase):
         self.assertNotIn("profitable", source)
         self.assertNotIn("tradable", source)
 
-    def test_position_table_labels_v4_rulebook_and_scales_raw_prices(self):
+    def test_position_table_labels_v5_rulebook_and_scales_raw_prices(self):
         rows = backtest_lab._display_position_rows(
             [
                 {
@@ -433,9 +618,9 @@ class BacktestPageTests(unittest.TestCase):
                     "holding_sessions": 2,
                     "position": {
                         "signal_reference": {
-                            "schema_version": 4,
+                            "schema_version": 5,
                             "horizon": "swing",
-                            "rulebook_id": "swing_rulebook_v4__adx",
+                            "rulebook_id": "swing_rulebook_v5__adx",
                             "preferred_variant": "no-background-theme",
                         }
                     },
@@ -444,7 +629,7 @@ class BacktestPageTests(unittest.TestCase):
         )
         self.assertEqual(
             rows[0]["Saved signal set"],
-            "Swing — swing_rulebook_v4__adx — no-background-theme",
+            "Swing — swing_rulebook_v5__adx — no-background-theme",
         )
         self.assertEqual(rows[0]["BUY (k VND)"], 50.3)
         self.assertIsNone(rows[0]["SELL (k VND)"])
@@ -672,6 +857,8 @@ class BacktestPageTests(unittest.TestCase):
             },
             "position_action": "can BUY",
             "audit_eligibility": {},
+            "evidence_eligibility": {"status": "eligible"},
+            "partition_labels": {"training": "in-sample", "test": "historical test — previously observed"},
             "current": {},
             "candidate": {"treatments": {}},
         }
@@ -688,14 +875,29 @@ class BacktestPageTests(unittest.TestCase):
             entry.value == "Monitoring: 100.0% — closely match | can BUY"
             for entry in app.markdown
         ))
+        self.assertTrue(any(entry.value == "Evidence: eligible" for entry in app.caption))
+
+    def test_validation_result_displays_regeneration_reason(self):
+        app = AppTest.from_string(
+            "import pages.backtest_lab as lab\n"
+            "lab._render_validation_result(\n"
+            "    'VCB', {'results': [{'availability': 'unavailable', 'reason': 'source_history_changed'}], 'historical_positions': []},\n"
+            "    {'closely_match'},\n"
+            ")\n"
+        ).run()
+
+        self.assertTrue(any(
+            item.value == "Validation unavailable: source_history_changed"
+            for item in app.warning
+        ))
 
     def test_new_position_refreshes_saved_sets_for_committed_ticker(self):
         eligible = {
             "buy_eligible": True,
             "horizon": "swing",
-            "rulebook_id": "swing_rulebook_v4__rsi_upcross",
+            "rulebook_id": "swing_rulebook_v5__rsi_upcross",
             "preferred_variant": "no-background-theme",
-            "signal_reference": {"schema_version": 4, "horizon": "swing"},
+            "signal_reference": {"schema_version": 5, "horizon": "swing"},
         }
         app = AppTest.from_string(
             "import streamlit as st\n"
@@ -729,7 +931,7 @@ class BacktestPageTests(unittest.TestCase):
             saved_set.options,
             [
                 "Manual P&L only",
-                "Swing — swing_rulebook_v4__rsi_upcross — no-background-theme",
+                "Swing — swing_rulebook_v5__rsi_upcross — no-background-theme",
             ],
         )
 

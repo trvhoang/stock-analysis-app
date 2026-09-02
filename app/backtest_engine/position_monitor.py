@@ -91,11 +91,17 @@ def _native_position_rows(
         holding_rows = source[source_dates >= entry_date]
         return len(holding_rows), _positive_raw_int(holding_rows.iloc[-1]["close"], "latest_close")
 
-    source = source.assign(_period=source_dates.dt.to_period("W-SUN"))
-    buy_period = entry_date.to_period("W-SUN")
-    holding_periods = source.loc[source["_period"] >= buy_period, "_period"].drop_duplicates()
-    weekly = to_weekly_ohlcv(source.drop(columns="_period"))
-    return len(holding_periods), _positive_raw_int(weekly.iloc[-1]["close"], "latest_close")
+    weekly = to_weekly_ohlcv(
+        source,
+        common_as_of=pd.Timestamp(source_dates.iloc[-1]).date(),
+    )
+    holding_rows = weekly.loc[pd.to_datetime(weekly["date"]).ge(entry_date)]
+    if holding_rows.empty:
+        raise ValueError("position has no completed weekly bar on or after buy_date")
+    return len(holding_rows), _positive_raw_int(
+        holding_rows.iloc[-1]["close"],
+        "latest_close",
+    )
 
 
 def monitor_position(
