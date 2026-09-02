@@ -1,4 +1,4 @@
-"""Immutable V3 rulebooks and request configuration for Backtest."""
+"""Immutable schema-5 rulebooks and request configuration for Backtest V4."""
 
 from dataclasses import asdict, dataclass
 from datetime import date
@@ -134,7 +134,7 @@ class RulebookSpec:
 
 _RULEBOOKS = {
     "swing": RulebookSpec(
-        rule_id="swing_rulebook_v4",
+        rule_id="swing_rulebook_v5",
         horizon="swing",
         native_timeframe="daily",
         weekly_frequency=None,
@@ -158,7 +158,7 @@ _RULEBOOKS = {
         min_n=5,
     ),
     "midterm": RulebookSpec(
-        rule_id="midterm_rulebook_v4",
+        rule_id="midterm_rulebook_v5",
         horizon="midterm",
         native_timeframe="weekly",
         weekly_frequency="W-FRI",
@@ -227,7 +227,7 @@ class BacktestConfig:
         values = asdict(self)
         values["start_date"] = _iso_date(self.start_date)
         values["end_date"] = _iso_date(self.end_date)
-        values["request_type"] = "backtest_single_v4"
+        values["request_type"] = "backtest_single_v5"
         return values
 
     def as_batch(self) -> "BacktestBatchConfig":
@@ -289,7 +289,7 @@ class BacktestBatchConfig:
         values = asdict(self)
         values["start_date"] = _iso_date(self.start_date)
         values["end_date"] = _iso_date(self.end_date)
-        values["request_type"] = "backtest_batch_v4"
+        values["request_type"] = "backtest_batch_v5"
         return values
 
     def for_ticker(self, ticker: str) -> BacktestConfig:

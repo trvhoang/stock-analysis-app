@@ -1,4 +1,4 @@
-"""Atomic schema-4 persistence for exploratory V3 rulebook aggregates."""
+"""Atomic schema-5 persistence for exploratory Backtest V4 aggregates."""
 
 import json
 import math
@@ -12,11 +12,17 @@ from pathlib import Path
 import pytz
 
 from .config import HORIZONS, THEME_VARIANTS, _normalize_ticker, rulebook_for
-from .data_quality import unavailable_v3_audit_eligibility
+from .data_quality import unavailable_schema5_audit_eligibility
+from .evidence import unavailable_evidence
 from .models import RulebookExecution
 
 
-_SCHEMA_VERSION = 4
+_SCHEMA_VERSION = 5
+_CONTRACT_VERSION = "backtest_schema5_v1"
+_PARTITION_LABELS = {
+    "training": "in-sample",
+    "test": "historical test — previously observed",
+}
 _TERMINAL_STATES = {"success", "empty", "failed", "requires_regeneration"}
 _MARKET_TIMEZONE = pytz.timezone("Asia/Ho_Chi_Minh")
 _EVALUATION_LABEL = "Exploratory — gross"
@@ -25,7 +31,7 @@ _P_VALUE_INFORMATIONAL_STATUS = "informational"
 
 
 def signal_artifact_path(ticker: str, horizon: str, output_dir: str) -> Path:
-    """Return the one canonical schema-4 path for a ticker/horizon aggregate."""
+    """Return the one canonical schema-5 path for a ticker/horizon aggregate."""
 
     normalized_ticker = _normalize_ticker(ticker)
     if horizon not in HORIZONS:
@@ -100,11 +106,11 @@ def _validate_audit(value: object) -> None:
     if set(value) != required:
         raise ValueError("audit_eligibility has an invalid shape")
     source, status, eligible = value["source"], value["status"], value["eligible"]
-    if source not in {"fresh_v3_raw_history", "unavailable"}:
+    if source not in {"fresh_schema5_raw_history", "unavailable"}:
         raise ValueError("audit_eligibility source is invalid")
     if not isinstance(eligible, bool):
         raise ValueError("audit_eligibility eligible must be boolean")
-    if source == "fresh_v3_raw_history":
+    if source == "fresh_schema5_raw_history":
         if status not in {"clean", "indeterminate", "invalid"}:
             raise ValueError("audit_eligibility status is invalid")
         if eligible != (status == "clean"):
@@ -123,6 +129,98 @@ def _validate_audit(value: object) -> None:
         raise ValueError("audit_eligibility effective_date_range must be paired")
     if source == "unavailable" and (bounds != [None, None] or not value["reasons"]):
         raise ValueError("unavailable audit metadata requires null bounds and a reason")
+
+
+def _validate_evidence(value: object) -> None:
+    """Validate one strict concrete or unavailable schema-5 evidence object."""
+
+    required = {
+        "status",
+        "eligible",
+        "reasons",
+        "common_as_of",
+        "first_available_bar",
+        "last_available_bar",
+        "ticker_fingerprint",
+        "vnindex_fingerprint",
+        "observed_sessions",
+        "expected_sessions",
+        "coverage_ratio",
+        "max_gap_sessions",
+    }
+    if not isinstance(value, Mapping) or set(value) != required:
+        raise ValueError("evidence_eligibility has an invalid shape")
+    status = value["status"]
+    eligible = value["eligible"]
+    reasons = value["reasons"]
+    if status not in {"eligible", "ineligible", "unavailable"}:
+        raise ValueError("evidence_eligibility status is invalid")
+    if not isinstance(eligible, bool) or not isinstance(reasons, list):
+        raise ValueError("evidence_eligibility eligibility and reasons are invalid")
+    if not all(isinstance(reason, str) and reason for reason in reasons):
+        raise ValueError("evidence_eligibility reasons must contain text")
+    numeric_fields = ("observed_sessions", "expected_sessions", "max_gap_sessions")
+    if any(
+        isinstance(value[field], bool)
+        or not isinstance(value[field], int)
+        or value[field] < 0
+        for field in numeric_fields
+    ):
+        raise ValueError("evidence_eligibility session counts must be non-negative integers")
+    _finite_number(value["coverage_ratio"], "evidence_eligibility coverage_ratio")
+    if not 0.0 <= value["coverage_ratio"] <= 1.0:
+        raise ValueError("evidence_eligibility coverage_ratio must be between zero and one")
+    if status == "unavailable":
+        unavailable_fields = (
+            "common_as_of",
+            "first_available_bar",
+            "last_available_bar",
+            "ticker_fingerprint",
+            "vnindex_fingerprint",
+        )
+        if eligible or not reasons or any(value[field] is not None for field in unavailable_fields):
+            raise ValueError("unavailable evidence must be ineligible with null identity")
+        if any(value[field] != 0 for field in numeric_fields) or value["coverage_ratio"] != 0.0:
+            raise ValueError("unavailable evidence must have zero session counts")
+        return
+    parsed_dates = []
+    for field in ("common_as_of", "first_available_bar", "last_available_bar"):
+        try:
+            parsed_dates.append(date.fromisoformat(value[field]))
+        except (TypeError, ValueError) as error:
+            raise ValueError(f"evidence_eligibility {field} must be an ISO date") from error
+    common_as_of, first_available, last_available = parsed_dates
+    if first_available > last_available or last_available > common_as_of:
+        raise ValueError("evidence_eligibility dates are not ordered")
+    for field in ("ticker_fingerprint", "vnindex_fingerprint"):
+        fingerprint = value[field]
+        if (
+            not isinstance(fingerprint, str)
+            or len(fingerprint) != 64
+            or any(character not in "0123456789abcdef" for character in fingerprint)
+        ):
+            raise ValueError(f"evidence_eligibility {field} must be a SHA-256 fingerprint")
+    observed = value["observed_sessions"]
+    expected = value["expected_sessions"]
+    maximum_gap = value["max_gap_sessions"]
+    if expected < 1 or observed > expected or maximum_gap > expected:
+        raise ValueError("evidence_eligibility session counts are inconsistent")
+    expected_ratio = observed / expected
+    if not math.isclose(value["coverage_ratio"], expected_ratio, rel_tol=0.0, abs_tol=1e-15):
+        raise ValueError("evidence_eligibility coverage_ratio does not match counts")
+    required_reasons = {
+        "latest_bar_mismatch": last_available != common_as_of,
+        "coverage_ratio_below_0.95": expected_ratio < 0.95,
+        "max_gap_sessions_exceeds_20": maximum_gap > 20,
+    }
+    for reason, required_reason in required_reasons.items():
+        if (reason in reasons) != required_reason:
+            raise ValueError(f"evidence_eligibility reason {reason} is inconsistent")
+    if status == "eligible":
+        if not eligible or reasons:
+            raise ValueError("eligible evidence cannot contain reasons")
+    elif eligible or not reasons:
+        raise ValueError("ineligible evidence requires at least one reason")
 
 
 def _validate_metrics(value: object, field: str) -> None:
@@ -171,9 +269,17 @@ def _validate_treatment(value: object, key: str) -> None:
 def _validate_candidate(value: object, horizon: str) -> None:
     if not isinstance(value, Mapping):
         raise ValueError("candidate must be an object")
-    required = {"rulebook_id", "selected_gates", "preferred_variant", "treatments"}
+    required = {
+        "rulebook_id",
+        "candidate_role",
+        "selected_gates",
+        "preferred_variant",
+        "treatments",
+    }
     if set(value) != required:
         raise ValueError("candidate has an invalid shape")
+    if value["candidate_role"] != "baseline_control":
+        raise ValueError("baseline candidate_role must be baseline_control")
     gates = value["selected_gates"]
     if not isinstance(gates, list):
         raise ValueError("candidate selected_gates must be a list")
@@ -233,19 +339,25 @@ def _validate_success_candidates(candidates: object, top_rulebook_ids: object, h
 
 
 def validate_rulebook_document(payload: object) -> bool:
-    """Validate one complete schema-4 exploratory terminal document."""
+    """Validate one complete schema-5 exploratory terminal document."""
 
     if not isinstance(payload, Mapping):
         raise ValueError("rulebook result must be an object")
+    if payload.get("schema_version") != _SCHEMA_VERSION:
+        raise ValueError("unsupported rulebook result schema")
     required = {
-        "schema_version", "ticker", "horizon", "evaluated_at", "terminal_state", "empty",
+        "schema_version", "contract_version", "partition_labels", "ticker", "horizon",
+        "evaluated_at", "terminal_state", "empty",
         "failure_reason", "rejection_reason", "evaluation_label", "rulebook", "audit_eligibility",
-        "requested_date_range", "effective_data_range", "split", "candidates", "top_rulebook_ids",
+        "evidence_eligibility", "requested_date_range", "effective_data_range", "split",
+        "candidates", "top_rulebook_ids",
     }
     if set(payload) != required:
         raise ValueError("rulebook result has an invalid schema")
-    if payload["schema_version"] != _SCHEMA_VERSION:
-        raise ValueError("unsupported rulebook result schema")
+    if payload["contract_version"] != _CONTRACT_VERSION:
+        raise ValueError("contract_version must be backtest_schema5_v1")
+    if payload["partition_labels"] != _PARTITION_LABELS:
+        raise ValueError("partition_labels must use fixed schema-5 evidence labels")
     if _normalize_ticker(payload["ticker"]) != payload["ticker"]:
         raise ValueError("rulebook result ticker must be normalized")
     horizon = payload["horizon"]
@@ -265,8 +377,15 @@ def validate_rulebook_document(payload: object) -> bool:
     if payload["evaluation_label"] != _EVALUATION_LABEL:
         raise ValueError("evaluation_label must be Exploratory — gross")
     if json.loads(json.dumps(payload["rulebook"])) != _json_rulebook(horizon):
-        raise ValueError("rulebook must equal the canonical V3 horizon rulebook")
+        raise ValueError("rulebook must equal the canonical schema-5 horizon rulebook")
     _validate_audit(payload["audit_eligibility"])
+    _validate_evidence(payload["evidence_eligibility"])
+    evidence = payload["evidence_eligibility"]
+    audit = payload["audit_eligibility"]
+    if evidence["status"] != "unavailable":
+        has_audit_reason = "raw_audit_not_clean" in evidence["reasons"]
+        if has_audit_reason != (not audit["eligible"]):
+            raise ValueError("evidence_eligibility raw audit reason is inconsistent")
     _validate_date_range(payload["requested_date_range"], "requested_date_range")
     _validate_date_range(payload["effective_data_range"], "effective_data_range")
     candidates = payload["candidates"]
@@ -274,6 +393,8 @@ def validate_rulebook_document(payload: object) -> bool:
     failure_reason = payload["failure_reason"]
     rejection_reason = payload["rejection_reason"]
     if state == "success":
+        if evidence["status"] == "unavailable":
+            raise ValueError("success terminal_state requires concrete evidence")
         if failure_reason is not None or rejection_reason is not None:
             raise ValueError("success terminal_state cannot contain a failure or rejection reason")
         _validate_split(payload["split"])
@@ -284,12 +405,16 @@ def validate_rulebook_document(payload: object) -> bool:
         if not isinstance(failure_reason, str) or not failure_reason.strip():
             raise ValueError("failed terminal_state requires failure_reason")
     elif state == "empty":
+        if evidence["status"] == "unavailable":
+            raise ValueError("empty terminal_state requires concrete evidence")
         if candidates or top_rulebook_ids or failure_reason is not None:
             raise ValueError("empty terminal_state cannot contain candidates or a failure")
         if not isinstance(rejection_reason, str) or not rejection_reason.strip():
             raise ValueError("empty terminal_state requires rejection_reason")
         _validate_split(payload["split"])
     else:
+        if evidence["status"] != "unavailable":
+            raise ValueError("requires_regeneration must have unavailable evidence")
         if payload["split"] is not None or candidates or top_rulebook_ids or failure_reason is not None:
             raise ValueError("requires_regeneration terminal_state cannot contain candidates or a failure")
         if not isinstance(rejection_reason, str) or not rejection_reason.strip():
@@ -321,7 +446,7 @@ def _write_json_atomically(path: Path, payload: Mapping[str, object]) -> None:
 
 
 def save_rulebook_result(ticker: str, result: Mapping[str, object], output_dir: str) -> str:
-    """Atomically replace one ticker/horizon schema-4 aggregate."""
+    """Atomically replace one ticker/horizon schema-5 aggregate."""
 
     if not isinstance(result, Mapping):
         raise ValueError("result must be an object")
@@ -340,6 +465,28 @@ def save_rulebook_result(ticker: str, result: Mapping[str, object], output_dir: 
     return str(target)
 
 
+def replace_validated_rulebook_result(
+    ticker: str,
+    horizon: str,
+    result: Mapping[str, object],
+    output_dir: str,
+) -> str:
+    """Atomically replace one already-complete schema-5 aggregate unchanged."""
+
+    normalized_ticker = _normalize_ticker(ticker)
+    if horizon not in HORIZONS:
+        raise ValueError(f"horizon must be one of {HORIZONS}")
+    if not isinstance(result, Mapping):
+        raise ValueError("result must be an object")
+    payload = json.loads(json.dumps(result))
+    if payload.get("ticker") != normalized_ticker or payload.get("horizon") != horizon:
+        raise ValueError("rulebook result identity differs from replacement target")
+    validate_rulebook_document(payload)
+    target = signal_artifact_path(normalized_ticker, horizon, output_dir)
+    _write_json_atomically(target, payload)
+    return str(target)
+
+
 def save_regeneration_marker(ticker: str, horizon: str, output_dir: str) -> str:
     """Replace the canonical aggregate with a clear regeneration terminal marker."""
 
@@ -348,15 +495,25 @@ def save_regeneration_marker(ticker: str, horizon: str, output_dir: str) -> str:
     )
 
 
-def write_regeneration_marker(path: str | Path, ticker: str, horizon: str) -> str:
-    """Write a schema-4 marker without inspecting the prior file at ``path``."""
+def write_regeneration_marker(
+    path: str | Path,
+    ticker: str,
+    horizon: str,
+    *,
+    reason: str = "Regenerate under Backtest schema 5.",
+) -> str:
+    """Write a schema-5 marker without inspecting the prior file at ``path``."""
 
     normalized_ticker = _normalize_ticker(ticker)
     if horizon not in HORIZONS:
         raise ValueError(f"horizon must be one of {HORIZONS}")
-    reason = "Regenerate under amended rulebook."
+    if not isinstance(reason, str) or not reason.strip():
+        raise ValueError("regeneration reason must be non-empty")
+    reason = reason.strip()
     payload = {
         "schema_version": _SCHEMA_VERSION,
+        "contract_version": _CONTRACT_VERSION,
+        "partition_labels": dict(_PARTITION_LABELS),
         "ticker": normalized_ticker,
         "horizon": horizon,
         "evaluated_at": datetime.now(_MARKET_TIMEZONE).isoformat(),
@@ -366,7 +523,8 @@ def write_regeneration_marker(path: str | Path, ticker: str, horizon: str) -> st
         "rejection_reason": reason,
         "evaluation_label": _EVALUATION_LABEL,
         "rulebook": _json_rulebook(horizon),
-        "audit_eligibility": unavailable_v3_audit_eligibility(reason),
+        "audit_eligibility": unavailable_schema5_audit_eligibility(reason),
+        "evidence_eligibility": unavailable_evidence(reason),
         "requested_date_range": {"start": None, "end": None, "reason": reason},
         "effective_data_range": {"start": None, "end": None, "reason": reason},
         "split": None,
@@ -380,7 +538,7 @@ def write_regeneration_marker(path: str | Path, ticker: str, horizon: str) -> st
 
 
 def load_rulebook_result(path: str | Path) -> dict[str, object]:
-    """Read exactly one schema-4 terminal document; legacy schemas are rejected."""
+    """Read exactly one schema-5 terminal document; legacy schemas are rejected."""
 
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
     validate_rulebook_document(payload)
@@ -389,6 +547,7 @@ def load_rulebook_result(path: str | Path) -> dict[str, object]:
 
 __all__ = [
     "load_rulebook_result",
+    "replace_validated_rulebook_result",
     "save_regeneration_marker",
     "save_rulebook_result",
     "signal_artifact_path",

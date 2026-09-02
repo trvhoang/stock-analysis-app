@@ -9,8 +9,9 @@ import unittest
 
 from flexible_rulebook.contracts import EvaluationPartition, EvaluationSplit, ExecutionContract, FeatureBuildContract, FeaturePlan, FeatureProfile, FeatureResolutionReceipt, FeatureSnapshot, PartitionMetrics, PredicateSpec, PrimitiveSpec, RulebookDefinition, RulebookEvaluation
 from flexible_rulebook.execution import CompletedTrade
-from flexible_rulebook.storage import append_ledger_chunk, iter_signal_set_paths, read_signal_set, resolve_flexible_root, write_feature_resolution_receipt, write_rulebook_definition, write_selection_snapshot, write_signal_set
+from flexible_rulebook.storage import append_ledger_chunk, iter_signal_set_paths, read_signal_set, resolve_flexible_root, selection_memberships_by_evaluation, selection_memberships_for_evaluation, write_campaign_selection_membership, write_feature_resolution_receipt, write_rulebook_definition, write_selection_snapshot, write_signal_set
 from flexible_rulebook.service import persist_discovery_ledger
+from flexible_rulebook.current_scan import _qualified_from_signal_set
 
 
 class FlexibleRulebookStorageTests(unittest.TestCase):
@@ -77,6 +78,25 @@ class FlexibleRulebookStorageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "bad.json"; path.write_text("{}", encoding="utf-8")
             with self.assertRaises(ValueError): read_signal_set(path)
+
+    def test_campaign_selection_membership_links_immutable_evaluation_evidence(self) -> None:
+        campaign_id = "fcmp_" + "a" * 64
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            evaluation = self._evaluation()
+            path = write_campaign_selection_membership(
+                root,
+                campaign_id,
+                evaluation,
+                "b" * 64,
+            )
+            memberships = selection_memberships_for_evaluation(root, evaluation.evaluation_id)
+            membership_index = selection_memberships_by_evaluation(root)
+
+        self.assertEqual(path.relative_to(root).parts[:4], ("campaigns", campaign_id, "selections", "members"))
+        self.assertEqual(memberships[0]["selection_snapshot_id"], "b" * 64)
+        self.assertEqual(memberships[0]["evaluation_id"], evaluation.evaluation_id)
+        self.assertEqual(membership_index[evaluation.evaluation_id], memberships)
 
     def test_feature_receipt_is_immutable(self) -> None:
         receipt = self._receipt()
@@ -182,6 +202,34 @@ class FlexibleRulebookStorageTests(unittest.TestCase):
             self.assertEqual(iter_signal_set_paths(root), (path,))
             self.assertEqual(path.relative_to(root).parts[:3], ("signal-sets", evaluation.rulebook_id, "VCB"))
         self.assertEqual((payload["ticker"], payload["catalog_hash"], payload["qualification_revision"], payload["completed_trades"]["training"][0]["trade_id"]), ("VCB", "c" * 64, "both-partitions-12-65-15-v1", "training-1"))
+        self.assertEqual(
+            set(payload["evidence_source_anchor"]),
+            {"ticker", "requested_start", "requested_as_of", "first_date", "as_of_date", "prefix_fingerprint"},
+        )
+
+    def test_current_scan_rejects_signal_set_with_mismatched_receipt_id(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = write_signal_set(root, self._evaluation(), explicitly_saved=True)
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            payload["persistence_reason"] = "qualified"
+            payload["feature_receipt"]["receipt_id"] = "frpr_" + "d" * 64
+            path.write_text(json.dumps(payload), encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "registry entry is invalid"):
+                _qualified_from_signal_set(path)
+
+    def test_current_scan_rejects_signal_set_with_anchor_different_from_source(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = write_signal_set(root, self._evaluation(), explicitly_saved=True)
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            payload["persistence_reason"] = "qualified"
+            payload["evidence_source_anchor"]["prefix_fingerprint"] = "d" * 64
+            path.write_text(json.dumps(payload), encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "registry entry is invalid"):
+                _qualified_from_signal_set(path)
 
     def test_discovered_signal_set_retains_assignment_provenance(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

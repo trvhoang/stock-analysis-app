@@ -8,11 +8,52 @@
 
 **Tech Stack:** Python 3.12 standard library subprocess/concurrency, pandas/NumPy already installed, Streamlit 1.32, unittest/AppTest, Docker.
 
-**Status:** Task 1 in progress (2026-08-27). Depends on
+**Status:** Tasks 1–6 complete and Docker-verified (2026-08-28). The
+Cross-ticker Qualification controls were amended on 2026-08-28 to use
+available immutable-rulebook and named-Group dropdowns (including existing
+Unicode Group names); Discover remains
+explicitly blocked with an actionable safe-state explanation. Task 5 recorded its
+deterministic fixture evidence while intentionally retaining the safe default;
+a separate production-scale benchmark is still required for any cap, worker,
+or acceleration expansion (2026-08-27).
+Task 1 durable contracts,
+manifest persistence, reconciliation, and receipt-bound Continue are complete.
+Task 2 has a concrete receipt-first DiscoveryService, a serialized
+one-worker/watchdog boundary, safe fault classification/receipt-bound Resume
+proof, cooperative cancellation, one-retry transient item handling, and safe
+incompatible-checkpoint failure with lease release. Local worker, service,
+discovery, and campaign evidence is 159/159 plus compilation. Docker rerun is
+passes. Task 3 now adds the read-only group adapter, fresh all-member
+preflight, unioned primitive profiles, explicit cache choice, independent
+target qualification, and source-change isolation. The full Flexible Docker
+suite passes 189/189 plus compilation. Task 4 common-as-of Current BUY Scan is
+complete. Task 5 gate implementation and deterministic cold/warm fixture
+evidence are complete; measured production-scale coverage remains required
+before any cap or worker expansion.
+
+**Production benchmark amendment (2026-08-28):** the separate runnable
+production benchmark implementation now exists in
+`2026-08-28-flexible-rulebook-production-benchmark.md`. It keeps Discover at
+zero attempts, records full-path cold evidence only, applies a 4h55
+ticker-wide budget, and cannot itself authorize a discovery cap. Host
+verification passes; Docker server `24.0.6` also passes the focused 29/29
+benchmark gate, container compilation, and CLI help. Any real PostgreSQL
+evidence remains pending and cannot enable a cap by itself.
+The follow-on full-unlock sequence is now frozen in
+`docs/superpowers/specs/2026-08-28-flexible-rulebook-discovery-activation-design.md`
+and
+`docs/superpowers/plans/2026-08-28-flexible-rulebook-discovery-activation.md`.
+Its implementation and Docker verification are complete as of 2026-08-30
+(298 Flexible tests). The real cap-length evidence and explicit activation are
+controlled operator actions still required before Discover can leave the
+zero-attempt state. See
+`docs/superpowers/reports/2026-08-28-flexible-rulebook-discovery-activation-verification.md`.
+Depends on
 docs/superpowers/plans/2026-08-25-flexible-rulebook-core.md, whose final gate
 passes. Frozen request/manifest lifecycle contracts and source-verified Continue
-cursors pass focused Docker evidence (8/8) plus compilation; durable manifest
-persistence and reconciliation remain.
+cursors pass focused Docker evidence (15/15) plus compilation; local/Docker
+worker, service, discovery, campaign, group, and current-scan evidence is 189/189 plus
+compilation.
 
 ## Global Constraints
 
@@ -146,7 +187,7 @@ docker exec stock_app python -m unittest tests.test_flexible_rulebook_campaigns 
 
 Expected: campaign module absent.
 
-- [ ] **Step 3: Implement canonical manifest.**
+- [x] **Step 3: Implement canonical manifest.**
 
 Include operation, frozen members, group snapshot, exact raw source
 fingerprint/bounds/as-of, split/catalog/engine/execution/threshold revisions,
@@ -189,7 +230,7 @@ Its scope state is `partial_window`, `complete_assigned_window`, or
 A Continue recomputes and writes a successor snapshot; it never mutates parent
 artifacts.
 
-- [ ] **Step 4: Add crash-reconciliation tests.**
+- [x] **Step 4: Add crash-reconciliation tests.**
 
 ~~~python
 def test_orphan_verified_item_is_adopted_after_manifest_checkpoint_gap(tmp_path): ...
@@ -201,7 +242,7 @@ def test_feature_receipt_mismatch_prevents_resume_or_continue_cursor_advance(tmp
 def test_continue_new_higher_rank_rewrites_only_successor_selection_snapshot(tmp_path): ...
 ~~~
 
-- [ ] **Step 5: Run GREEN and update status.**
+- [x] **Step 5: Run GREEN and update status.**
 
 Run campaign suite. Record manifest version and legal states.
 
@@ -226,7 +267,7 @@ def continue_campaign(parent_campaign_id: str, root: Path) -> str: ...
 def run_campaign(campaign_id: str, root: Path, service: CampaignService) -> CampaignManifest: ...
 ~~~
 
-- [ ] **Step 1: Write RED lifecycle tests.**
+- [x] **Step 1: Write RED lifecycle tests.**
 
 ~~~python
 def test_duplicate_running_request_attaches_instead_of_spawning_second_worker(tmp_path): ...
@@ -247,7 +288,7 @@ def test_time_budget_exhaustion_keeps_uncommitted_slot_for_exact_continue(tmp_pa
 def test_resume_rejects_candidate_space_mapping_version_mismatch(tmp_path): ...
 ~~~
 
-- [ ] **Step 2: Run RED.**
+- [x] **Step 2: Run RED.**
 
 Run:
 
@@ -257,7 +298,7 @@ docker exec stock_app python -m unittest tests.test_flexible_rulebook_runner -v
 
 Expected: missing runner/worker APIs.
 
-- [ ] **Step 3: Implement isolated coordinator.**
+- [x] **Step 3: Implement isolated coordinator.**
 
 Spawn python -m flexible_rulebook.worker with serialized request path. Coordinator
 is sole manifest writer. Use an atomic active-lease file and heartbeat.
@@ -293,7 +334,7 @@ work. Continue creates a linked new under-five-hour window only after parent wor
 is terminal. Both consume persisted fields only; neither reads current form
 fields or silently moves cursor across data.
 
-- [ ] **Step 4: Add fault classification tests.**
+- [x] **Step 4: Add fault classification tests.**
 
 ~~~python
 def test_shared_db_failure_blocks_campaign_without_200_data_invalid_items(tmp_path): ...
@@ -305,7 +346,7 @@ def test_source_or_contract_failure_never_relabels_item_no_result_or_retries_wit
 def test_receipt_difference_never_mixes_old_slots_with_new_feature_bytes(tmp_path): ...
 ~~~
 
-- [ ] **Step 5: Run GREEN and update status.**
+- [x] **Step 5: Run GREEN and update status.**
 
 Run runner suite. Record cancellation and retry semantics.
 
@@ -338,7 +379,7 @@ def preflight_group_feature_components(engine, group: FrozenGroup,
 def qualify_rulebooks_for_group(engine, rulebook_ids, group: FrozenGroup, request: CampaignRequest) -> CampaignManifest: ...
 ~~~
 
-- [ ] **Step 1: Write RED snapshot tests.**
+- [x] **Step 1: Write RED snapshot tests.**
 
 ~~~python
 def test_named_group_snapshot_is_read_only_and_ignores_v3_na_resolution():
@@ -358,7 +399,7 @@ def test_one_batch_cache_choice_never_prompts_members_serially(): ...
 def test_two_rulebooks_with_different_profiles_produce_per_contract_offer_map(): ...
 ~~~
 
-- [ ] **Step 2: Run RED.**
+- [x] **Step 2: Run RED.**
 
 Run:
 
@@ -368,7 +409,7 @@ docker exec stock_app python -m unittest tests.test_flexible_rulebook_group_adap
 
 Expected: no Group adapter/batch qualification API.
 
-- [ ] **Step 3: Implement read-only adapter and bounded qualification.**
+- [x] **Step 3: Implement read-only adapter and bounded qualification.**
 
 Parse the documented named Group JSON directly with a minimal Flexible-owned
 schema reader; do not import `result_store`, call `list_groups`, or inherit
@@ -387,7 +428,7 @@ missing/corrupt/source-mismatched entries rebuild automatically. The choice map
 is operational provenance only, never a request-hash field or target eligibility
 decision.
 
-- [ ] **Step 4: Add target-state tests.**
+- [x] **Step 4: Add target-state tests.**
 
 ~~~python
 def test_source_fingerprint_change_marks_only_that_target_source_changed(tmp_path): ...
@@ -398,7 +439,7 @@ def test_changed_target_between_ui_preflight_and_worker_start_is_source_changed(
 def test_shared_rsi14_component_is_reused_across_two_qualified_rulebook_profiles(tmp_path): ...
 ~~~
 
-- [ ] **Step 5: Run GREEN and update status.**
+- [x] **Step 5: Run GREEN and update status.**
 
 Run Group/service suites. Record default group limit and target state map.
 
@@ -423,7 +464,7 @@ def preflight_current_scan_features(engine, preflight: CommonAsOfPreflight,
 def scan_current_setup(engine, request: CampaignRequest, root: Path) -> CampaignManifest: ...
 ~~~
 
-- [ ] **Step 1: Write RED truthfulness tests.**
+- [x] **Step 1: Write RED truthfulness tests.**
 
 ~~~python
 def test_mismatched_latest_dates_block_whole_group_and_list_laggard():
@@ -438,7 +479,7 @@ def test_current_scan_profiles_are_grouped_by_contract_and_share_matching_compon
 def test_current_scan_persists_all_feature_receipts_before_any_member_evaluates(): ...
 ~~~
 
-- [ ] **Step 2: Run RED.**
+- [x] **Step 2: Run RED.**
 
 Run:
 
@@ -448,7 +489,7 @@ docker exec stock_app python -m unittest tests.test_flexible_rulebook_current_sc
 
 Expected: current scan module absent.
 
-- [ ] **Step 3: Implement exact current evaluation.**
+- [x] **Step 3: Implement exact current evaluation.**
 
 Preflight latest completed bar for every frozen member before evaluating any.
 At common as-of, fresh-load/fingerprint then resolve one full history/FeatureStore
@@ -469,7 +510,7 @@ Before worker evaluation, re-preflight every frozen member against the request
 fingerprints; any mismatch blocks the entire scan as source_changed and evaluates
 none, preserving all-or-nothing common as-of.
 
-- [ ] **Step 4: Add compatibility/no-setup tests.**
+- [x] **Step 4: Add compatibility/no-setup tests.**
 
 ~~~python
 def test_corrected_history_requires_requalification_not_old_buy_setup(tmp_path): ...
@@ -483,9 +524,12 @@ def test_append_is_allowed_only_when_old_evidence_prefix_matches(tmp_path): ...
 def test_same_date_correction_or_moving_old_boundary_requires_requalification(tmp_path): ...
 ~~~
 
-- [ ] **Step 5: Run GREEN and update status.**
+- [x] **Step 5: Run GREEN and update status.**
 
-Run current-scan suite. Record all-or-nothing common-as-of policy.
+Run current-scan suite. Record all-or-nothing common-as-of policy. Local and
+Docker Flexible gates pass 189/189 plus compilation. Current scan writes
+common-as-of, source/evidence-anchor, feature-receipt, and current result
+artifacts; display-only and cache/receipt failures cannot become no setup.
 
 ### Task 5: Scale benchmark artifact and explicit scale policy
 
@@ -512,7 +556,7 @@ class ScalePolicy:
 def validate_scale_policy(policy: ScalePolicy, record: BenchmarkRecord) -> None: ...
 ~~~
 
-- [ ] **Step 1: Write RED gate tests.**
+- [x] **Step 1: Write RED gate tests.**
 
 ~~~python
 def test_default_policy_rejects_group_larger_than_fifteen(): ...
@@ -526,7 +570,7 @@ def test_fast_executor_cannot_enable_without_reference_parity_record(): ...
 def test_append_extension_cannot_enable_without_prefix_and_full_rebuild_parity_record(): ...
 ~~~
 
-- [ ] **Step 2: Run RED.**
+- [x] **Step 2: Run RED.**
 
 Run:
 
@@ -536,7 +580,7 @@ docker exec stock_app python -m unittest tests.test_flexible_rulebook_benchmark 
 
 Expected: benchmark module absent.
 
-- [ ] **Step 3: Implement safe default gate.**
+- [x] **Step 3: Implement safe default gate.**
 
 Default max current scan is 15 and worker_count is 1. A policy larger than 15
 requires completed benchmark record containing actual 20/100/200 target
@@ -559,7 +603,7 @@ always recorded. Do not auto-enable from a guessed threshold: policy is written
 only after explicit review of recorded measurements. Discovery remains limited
 until its separate benchmark record exists.
 
-- [ ] **Step 4: Run representative benchmark after tests pass.**
+- [x] **Step 4: Run representative benchmark after tests pass.**
 
 Run a deterministic cold/warm single-ticker discovery fixture first, including
 the dense-entry/maximal-slot path and reference/fast parity corpus, then a
@@ -567,7 +611,16 @@ the dense-entry/maximal-slot path and reference/fast parity corpus, then a
 not invent timing, choose an attempt cap, enable append extension, or enable
 100/200 if the container fails memory/time/resume criteria.
 
-- [ ] **Step 5: Run GREEN and update status.**
+Checkpoint 2026-08-27: a synthetic 20-ticker current-scan fixture measured
+0.473677s cold and 0.166481s warm in Docker, with 20 receipts and 20 immutable
+result artifacts. A deterministic FPT-shaped discovery fixture then completed
+100 cold plus 100 warm legal maximal train/test/selection/write samples:
+cold p99 total 0.133270s and warm p99 total 0.110010s. Both fixtures exclude
+production DB/source-load and resource telemetry, so they are evidence only;
+they do not create a `BenchmarkRecord` or authorize a cap/worker/fast-path
+expansion. See `docs/superpowers/reports/2026-08-25-flexible-rulebook-benchmark.md`.
+
+- [x] **Step 5: Run GREEN and update status.**
 
 Run benchmark suite. Publish report with measured totals and current scale gate.
 
@@ -597,7 +650,7 @@ def render_flexible_rulebook_page(
 ) -> None: ...
 ~~~
 
-- [ ] **Step 1: Write RED AppTests.**
+- [x] **Step 1: Write RED AppTests.**
 
 ~~~python
 def test_main_routes_to_standalone_flexible_rulebook_page(): ...
@@ -615,7 +668,7 @@ def test_page_uses_resolved_absolute_root_not_current_working_directory(): ...
 def test_continue_has_no_editable_source_seed_catalog_or_cache_choice(): ...
 ~~~
 
-- [ ] **Step 2: Run RED.**
+- [x] **Step 2: Run RED.**
 
 Run:
 
@@ -625,7 +678,7 @@ docker exec stock_app python -m unittest tests.test_flexible_rulebook_page -v
 
 Expected: page/route absent.
 
-- [ ] **Step 3: Implement page controls and rendering.**
+- [x] **Step 3: Implement page controls and rendering.**
 
 Add sidebar option Flexible Rulebook only. Use one `st.radio` or selectbox
 workspace selector, never `st.tabs`, because all Streamlit tab bodies execute.
@@ -643,17 +696,19 @@ Render the four design workspaces:
    exposing cache paths or digests. If worker source,
    contract, or cache age recheck differs, render the safe state and require a
    new preflight rather than applying stale choice. Lock draft input while a
-   campaign runs.
+   campaign runs. If the library has no Flexible definitions or signal-set
+   evidence, name the configured root, explain the benchmark-gated Discover
+   state, and state that legacy V3 artifacts are excluded.
 2. Rulebook Library: page/filter immutable definitions/evaluations. Show alias
    plus short/full ID, feature profile, source/split, both train/test gross
    metrics, training rank, selection scope state, selection status, duplicate
    blocker/75% overlap, and
    artifact/detail/download links. Keep rejected near-duplicates retrievable in
    a collapsed evidence section.
-3. Cross-ticker Qualification: accept immutable IDs and one ticker or named
-   Group, preview frozen members, then render a preflight table grouped by
-   ticker/build contract and one batch component-choice per group. No V3
-   N/A/group helper is called.
+3. Cross-ticker Qualification: select available immutable IDs and one ticker or
+   named Group from read-only selector options, preview frozen members, then
+   render a preflight table grouped by ticker/build contract and one batch
+   component-choice per group. No V3 N/A/group helper is called.
 4. Current Group BUY Scan: named Group only; show common-as-of preflight first,
    one cache table/choice next, then compatible qualified-pair results. Positive
    output is exactly BUY setup — next-session open model, manual research, not
@@ -668,7 +723,7 @@ Discover attaches to exact request rather than replaying its prefix. Polling
 never reopens a cache choice. Use no forms that mutate Positions, Backtest, V3
 groups, or actual trading.
 
-- [ ] **Step 4: Add cached-status/filter tests.**
+- [x] **Step 4: Add cached-status/filter tests.**
 
 ~~~python
 def test_status_filters_never_replay_campaign_work(): ...
@@ -682,7 +737,7 @@ def test_library_pagination_alias_collision_and_duplicate_evidence_are_read_only
 def test_library_reads_latest_chain_selection_snapshot_without_mutating_signal_set(): ...
 ~~~
 
-- [ ] **Step 5: Run final focused gate and completion review.**
+- [x] **Step 5: Run final focused gate and completion review.**
 
 Run:
 

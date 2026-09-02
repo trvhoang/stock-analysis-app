@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from datetime import datetime
 import json
 import os
 from pathlib import Path
+import signal
+import subprocess
+import sys
 import tempfile
-from typing import Callable, Protocol
+from typing import Callable, Literal, Protocol
 
 import pytz
 
@@ -33,6 +36,46 @@ class FrozenSourceVerificationError(ValueError):
     def __init__(self, safe_error_code: str) -> None:
         self.safe_error_code = safe_error_code
         super().__init__(safe_error_code)
+
+
+@dataclass(frozen=True)
+class WorkerFault:
+    """Safe classification used by coordinator retry/terminal decisions."""
+
+    kind: Literal["source", "shared", "item_transient", "invariant", "watchdog"]
+    safe_error_code: str
+    retryable: bool
+    campaign_blocking: bool
+
+
+class WorkerWatchdogError(RuntimeError):
+    """Raised by an outer watchdog when the worker outlives its hard limit."""
+
+
+class SharedInfrastructureError(ConnectionError):
+    """Explicit shared DB/storage failure; never fan out as item invalidity."""
+
+
+class TransientItemError(TimeoutError):
+    """Explicit one-ticker transient failure eligible for one retry."""
+
+
+def classify_worker_fault(error: BaseException, *, shared_scope: bool = False) -> WorkerFault:
+    """Map internal exceptions to credential-safe, deterministic fault classes."""
+
+    if isinstance(error, FrozenSourceVerificationError):
+        return WorkerFault("source", error.safe_error_code, False, True)
+    if isinstance(error, WorkerWatchdogError):
+        return WorkerFault("watchdog", "INFRA.WATCHDOG_TIMEOUT", False, False)
+    if isinstance(error, SharedInfrastructureError):
+        return WorkerFault("shared", "INFRA.SHARED_UNAVAILABLE", False, True)
+    if isinstance(error, TransientItemError):
+        return WorkerFault("item_transient", "INFRA.ITEM_TRANSIENT", True, False)
+    if isinstance(error, (ConnectionError, TimeoutError, OSError)):
+        if shared_scope:
+            return WorkerFault("shared", "INFRA.SHARED_UNAVAILABLE", False, True)
+        return WorkerFault("item_transient", "INFRA.ITEM_TRANSIENT", True, False)
+    return WorkerFault("invariant", "INFRA.WORKER_CONTRACT", False, False)
 
 
 class CampaignService(Protocol):
@@ -287,13 +330,34 @@ def recover_stale_lease(
 
 
 def resume_campaign(
-    campaign_id: str, root: Path, *, now: datetime | None = None
+    campaign_id: str,
+    root: Path,
+    *,
+    now: datetime | None = None,
+    source_loader: Callable[[FeatureSnapshot], HistorySnapshot] | None = None,
+    receipt_resolver: Callable[[HistorySnapshot], object] | None = None,
 ) -> str:
-    """Reclaim a recoverable persisted window without changing its frozen request."""
+    """Reclaim a recoverable window after proving its frozen source/receipt."""
 
     manifest = read_campaign(campaign_id, root)
     if manifest.state not in {"interrupted", "cancelled", "blocked"}:
         raise ValueError("campaign is not in a resumable state")
+    if manifest.feature_receipt_ids:
+        if not callable(source_loader) or not callable(receipt_resolver):
+            raise ValueError("receipt-bound Resume requires source_loader and receipt_resolver")
+        verified_sources = verify_frozen_source(
+            manifest,
+            source_loader=source_loader,
+        )
+        # The checkpoint service validates the plan/source/build identity and
+        # refuses to replace an already-persisted receipt.  No lease or cursor
+        # is changed until this proof succeeds.
+        from .service import ReceiptCheckpointService
+
+        ReceiptCheckpointService(
+            root,
+            receipt_resolver=receipt_resolver,
+        ).run(manifest, verified_sources=verified_sources)
     _claim_manifest(manifest, root, now=now)
     return campaign_id
 
@@ -334,8 +398,13 @@ def run_campaign(
     """Prove frozen sources, persist a service checkpoint, and release terminal work."""
 
     manifest = read_campaign(campaign_id, root)
-    if manifest.state != "running":
+    if manifest.state not in {"running", "cancelling"}:
         raise ValueError("only a running campaign can execute")
+    if manifest.state == "cancelling":
+        cancelled = transition(manifest, "cancelled")
+        write_campaign_manifest(root, cancelled)
+        release_campaign_lease(campaign_id, root)
+        return cancelled
     try:
         verified_sources = verify_frozen_source(
             manifest,
@@ -351,18 +420,169 @@ def run_campaign(
         write_campaign_manifest(root, blocked)
         release_campaign_lease(campaign_id, root)
         return blocked
-    result = service.run(manifest, verified_sources=verified_sources)
+    result: CampaignManifest | None = None
+    for attempt in range(2):
+        try:
+            result = service.run(manifest, verified_sources=verified_sources)
+            break
+        except Exception as error:
+            fault = classify_worker_fault(error)
+            if fault.retryable and attempt == 0:
+                continue
+            target = "blocked" if fault.campaign_blocking else (
+                "failed" if fault.kind == "invariant" else "interrupted"
+            )
+            failed = replace(
+                transition(manifest, target),
+                safe_error_code=fault.safe_error_code,
+                safe_error_message="Worker stopped before a safe campaign checkpoint.",
+            )
+            write_campaign_manifest(root, failed)
+            release_campaign_lease(campaign_id, root)
+            return failed
+    assert result is not None
     if (
         not isinstance(result, CampaignManifest)
         or result.campaign_id != manifest.campaign_id
         or result.request != manifest.request
         or result.lease_epoch != manifest.lease_epoch
     ):
-        raise ValueError("service returned an incompatible campaign checkpoint")
+        # A worker cannot choose its own manifest identity.  Treat a malformed
+        # checkpoint as an invariant fault and release the lease so the queue
+        # cannot be wedged behind an untrusted return value.
+        fault = classify_worker_fault(ValueError("service returned an incompatible campaign checkpoint"))
+        failed = replace(
+            transition(manifest, "failed"),
+            safe_error_code=fault.safe_error_code,
+            safe_error_message="Worker stopped before a safe campaign checkpoint.",
+        )
+        write_campaign_manifest(root, failed)
+        release_campaign_lease(campaign_id, root)
+        return failed
     write_campaign_manifest(root, result)
     if result.state in {"cancelled", "completed", "completed_with_errors", "failed"}:
         release_campaign_lease(campaign_id, root)
     return result
+
+
+def start_campaign_worker(
+    campaign_id: str,
+    root: Path,
+    *,
+    service_ref: str,
+    source_loader_ref: str,
+    python_executable: str | None = None,
+    process_group: bool = False,
+) -> subprocess.Popen[bytes]:
+    """Persist a tiny request and start exactly one module worker process."""
+
+    manifest = read_campaign(campaign_id, root)
+    if manifest.state != "running":
+        raise ValueError("only a running campaign can start a worker")
+    from .worker import WorkerRequest
+
+    request = WorkerRequest(
+        campaign_id=campaign_id,
+        root=_runner_root(root),
+        service_ref=service_ref,
+        source_loader_ref=source_loader_ref,
+    )
+    request_path = _runner_root(root) / "campaigns" / campaign_id / "worker-request.json"
+    request_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = json.dumps(request.to_dict(), sort_keys=True, separators=(",", ":")).encode("utf-8")
+    with tempfile.NamedTemporaryFile(dir=request_path.parent, delete=False) as stream:
+        temporary = Path(stream.name)
+        stream.write(payload)
+        stream.flush()
+        os.fsync(stream.fileno())
+    try:
+        os.replace(temporary, request_path)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+    executable = sys.executable if python_executable is None else python_executable
+    if not isinstance(executable, str) or not executable:
+        raise ValueError("python_executable must be non-empty text")
+    if not isinstance(process_group, bool):
+        raise ValueError("process_group must be boolean")
+    return subprocess.Popen(
+        [executable, "-m", "flexible_rulebook.worker", str(request_path)],
+        stdin=subprocess.DEVNULL,
+        # Inherit process streams so a noisy worker cannot deadlock on an
+        # undrained PIPE; the worker traceback stays in the process log.
+        stdout=None,
+        stderr=None,
+        start_new_session=process_group and os.name == "posix",
+    )
+
+
+def _interrupt_dead_worker(campaign_id: str, root: Path) -> CampaignManifest:
+    """Mark only a still-running campaign interrupted after worker loss."""
+
+    manifest = read_campaign(campaign_id, root)
+    if manifest.state != "running":
+        return manifest
+    interrupted = transition(manifest, "interrupted")
+    write_campaign_manifest(root, interrupted)
+    lease_path = _lease_path(root)
+    try:
+        lease = _read_lease(lease_path)
+    except (OSError, ValueError):
+        return interrupted
+    if lease.get("campaign_id") == campaign_id and lease.get("lease_epoch") == manifest.lease_epoch:
+        try:
+            lease_path.unlink()
+        except FileNotFoundError:
+            pass
+    return interrupted
+
+
+def watch_campaign_worker(
+    process: subprocess.Popen[bytes],
+    campaign_id: str,
+    root: Path,
+    *,
+    watchdog_seconds: int = 18_000,
+    terminate_process_group: bool = False,
+) -> CampaignManifest:
+    """Wait for a worker; timeout/death yields resumable interruption only."""
+
+    if not all(callable(getattr(process, name, None)) for name in ("wait", "terminate", "kill")):
+        raise ValueError("process must provide wait, terminate, and kill")
+    if (
+        isinstance(watchdog_seconds, bool)
+        or not isinstance(watchdog_seconds, int)
+        or watchdog_seconds <= 0
+    ):
+        raise ValueError("watchdog_seconds must be a positive integer")
+    if not isinstance(terminate_process_group, bool):
+        raise ValueError("terminate_process_group must be boolean")
+    try:
+        process.wait(timeout=watchdog_seconds)
+    except subprocess.TimeoutExpired:
+        if terminate_process_group and os.name == "posix":
+            try:
+                os.killpg(process.pid, signal.SIGTERM)
+            except (AttributeError, ProcessLookupError):
+                process.terminate()
+        else:
+            process.terminate()
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            if terminate_process_group and os.name == "posix":
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except (AttributeError, ProcessLookupError):
+                    process.kill()
+            else:
+                process.kill()
+            process.wait()
+        return _interrupt_dead_worker(campaign_id, root)
+    manifest = read_campaign(campaign_id, root)
+    if manifest.state == "running":
+        return _interrupt_dead_worker(campaign_id, root)
+    return manifest
 
 
 def request_cancel(campaign_id: str, root: Path) -> None:
@@ -377,4 +597,4 @@ def request_cancel(campaign_id: str, root: Path) -> None:
         raise ValueError("campaign cannot be cancelled from its terminal state")
 
 
-__all__ = ["CampaignService", "FrozenSourceVerificationError", "claim_campaign", "continue_campaign", "heartbeat_campaign", "read_campaign", "recover_stale_lease", "release_campaign_lease", "request_cancel", "resume_campaign", "run_campaign", "submit_campaign", "verify_frozen_source"]
+__all__ = ["CampaignService", "FrozenSourceVerificationError", "SharedInfrastructureError", "TransientItemError", "WorkerFault", "WorkerWatchdogError", "claim_campaign", "classify_worker_fault", "continue_campaign", "heartbeat_campaign", "read_campaign", "recover_stale_lease", "release_campaign_lease", "request_cancel", "resume_campaign", "run_campaign", "start_campaign_worker", "submit_campaign", "verify_frozen_source", "watch_campaign_worker"]

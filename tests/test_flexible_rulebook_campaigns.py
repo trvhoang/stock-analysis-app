@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, replace
 from datetime import date
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -38,6 +39,7 @@ from flexible_rulebook.contracts import (
     PrimitiveSpec,
     RuntimeBudget,
     SelectionPolicy,
+    canonical_json,
 )
 from flexible_rulebook.history import HistorySnapshot
 from flexible_rulebook.execution import CompletedTrade
@@ -94,6 +96,63 @@ class FlexibleRulebookCampaignTests(unittest.TestCase):
 
         self.assertEqual(request_hash(request), request_hash(replace(request, submitted_at="later", cache_choice="rebuild", cache_path="/other", cache_age_seconds=999)))
         self.assertNotEqual(request_hash(request), request_hash(replace(request, per_ticker_budget=9)))
+
+    def test_policy_bound_digest_is_frozen_identity_while_legacy_stays_readable(self) -> None:
+        legacy = self._request()
+        policy_bound = replace(legacy, activation_policy_digest="f" * 64)
+
+        self.assertIsNone(legacy.activation_policy_digest)
+        self.assertNotEqual(request_hash(legacy), request_hash(policy_bound))
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = create_manifest(policy_bound)
+            write_campaign_manifest(root, manifest)
+            restored = read_campaign_manifest(root, manifest.campaign_id)
+
+        self.assertEqual(restored.request.activation_policy_digest, "f" * 64)
+
+    def test_pre_activation_manifest_without_policy_field_remains_readable(self) -> None:
+        manifest = create_manifest(self._request())
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = write_campaign_manifest(root, manifest)
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            identity = payload["manifest"]["request"]["identity"]
+            identity.pop("activation_policy_digest", None)
+            legacy_campaign_id = "fcmp_" + hashlib.sha256(
+                canonical_json(identity).encode("utf-8")
+            ).hexdigest()
+            payload["manifest"]["campaign_id"] = legacy_campaign_id
+            legacy_path = root / "campaigns" / legacy_campaign_id / "manifest.json"
+            legacy_path.parent.mkdir(parents=True, exist_ok=True)
+            legacy_path.write_text(json.dumps(payload), encoding="utf-8")
+            restored = read_campaign_manifest(root, legacy_campaign_id)
+
+        self.assertIsNone(restored.request.activation_policy_digest)
+        self.assertEqual(restored.campaign_id, legacy_campaign_id)
+
+    def test_policy_bound_continuation_preserves_its_explicit_cache_choice(self) -> None:
+        request = replace(self._request(), activation_policy_digest="f" * 64)
+        receipt_ids = ("frpr_" + "d" * 64,)
+        parent = replace(
+            create_manifest(request),
+            state="completed",
+            next_slot=10,
+            chain_attempted_count=10,
+            unsearched_count=90,
+            feature_receipt_ids=receipt_ids,
+        )
+
+        child = continue_discovery(
+            parent,
+            verified_source=self._verified_source(),
+            verified_feature_receipt_ids=receipt_ids,
+        )
+
+        self.assertEqual(child.activation_policy_digest, request.activation_policy_digest)
+        self.assertEqual((child.cache_choice, child.cache_path), ("reuse", "/tmp/cache"))
 
     def test_discovery_hash_changes_for_frozen_frontier_fields(self) -> None:
         request = self._request()

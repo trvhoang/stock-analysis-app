@@ -61,6 +61,14 @@ def _contained_root(root: Path) -> Path:
     return root.resolve()
 
 
+def _read_root(root: Path) -> Path:
+    """Resolve an existing-or-future storage root without writing to it."""
+
+    if not isinstance(root, Path) or not root.is_absolute():
+        raise ValueError("Flexible storage root must be absolute")
+    return root.resolve()
+
+
 def _write_immutable(path: Path, payload: dict[str, object]) -> Path:
     material = canonical_json(payload)
     if path.exists():
@@ -125,12 +133,22 @@ def write_signal_set(root: Path, evaluation: RulebookEvaluation, *, explicitly_s
         "ticker": evaluation.ticker, "catalog_hash": evaluation.catalog_hash,
         "qualification_revision": evaluation.qualification_revision, "definition": evaluation.definition.to_semantic_dict(),
         "source_snapshot": snapshot.to_identity_dict(), "feature_build_contract": evaluation.feature_build_contract.to_identity_dict(),
-        "feature_profile": evaluation.feature_profile.to_identity_dict(), "feature_receipt": evaluation.feature_receipt.to_identity_dict(),
+        "feature_profile": evaluation.feature_profile.to_identity_dict(), "feature_receipt": {
+            **evaluation.feature_receipt.to_identity_dict(),
+            "receipt_id": evaluation.feature_receipt.receipt_id,
+        },
         "split": evaluation.split.to_identity_dict(), "execution_contract": evaluation.execution_contract.to_identity_dict(),
         "training_metrics": evaluation.training_metrics.to_dict(), "test_metrics": evaluation.test_metrics.to_dict(),
         "persistence_reason": "qualified" if qualified else "explicitly_saved",
         "completed_trades": {"training": [_trade_payload(item) for item in evaluation.training_trades], "test": [_trade_payload(item) for item in evaluation.test_trades]},
-        "evidence_source_anchor": {"ticker": snapshot.ticker, "first_date": snapshot.first_date.isoformat(), "as_of_date": snapshot.as_of_date.isoformat(), "prefix_fingerprint": snapshot.raw_history_fingerprint},
+        "evidence_source_anchor": {
+            "ticker": snapshot.ticker,
+            "requested_start": snapshot.requested_start,
+            "requested_as_of": snapshot.requested_as_of,
+            "first_date": snapshot.first_date,
+            "as_of_date": snapshot.as_of_date,
+            "prefix_fingerprint": snapshot.raw_history_fingerprint,
+        },
     }
     if discovery_provenance is not None:
         payload["discovery_provenance"] = discovery_provenance
@@ -232,4 +250,117 @@ def write_selection_snapshot(root: Path, campaign_id: str, snapshot: dict[str, o
     return _write_immutable(path, {"schema_version": 1, "artifact_kind": "flexible_selection_snapshot", "selection_snapshot_id": digest, "snapshot": snapshot})
 
 
-__all__ = ["append_ledger_chunk", "iter_signal_set_paths", "read_signal_set", "resolve_flexible_root", "write_feature_resolution_receipt", "write_rulebook_definition", "write_selection_snapshot", "write_signal_set"]
+def read_selection_snapshot(root: Path, campaign_id: str, selection_snapshot_id: str) -> dict[str, object]:
+    """Read one verified immutable selection snapshot without mutating storage."""
+
+    base = _read_root(root)
+    campaign = _path_component(campaign_id, "campaign_id")
+    if not _is_digest(selection_snapshot_id):
+        raise ValueError("selection snapshot ID is invalid")
+    path = (base / "campaigns" / campaign / "selections" / f"{selection_snapshot_id}.json").resolve()
+    if base not in path.parents:
+        raise ValueError("selection path escapes Flexible root")
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError("selection snapshot is unreadable") from error
+    if (
+        not isinstance(document, dict)
+        or document.get("schema_version") != 1
+        or document.get("artifact_kind") != "flexible_selection_snapshot"
+        or document.get("selection_snapshot_id") != selection_snapshot_id
+        or not isinstance(document.get("snapshot"), dict)
+    ):
+        raise ValueError("selection snapshot is invalid")
+    snapshot = document["snapshot"]
+    _validate_selection_snapshot(snapshot)
+    digest = hashlib.sha256(canonical_json(snapshot).encode("utf-8")).hexdigest()
+    if digest != selection_snapshot_id:
+        raise ValueError("selection snapshot identity is invalid")
+    return snapshot
+
+
+def _evaluation_id(value: object) -> str:
+    if not isinstance(value, str) or not value.startswith("frev_") or not _is_digest(value[5:]):
+        raise ValueError("evaluation ID is invalid")
+    return value
+
+
+def write_campaign_selection_membership(
+    root: Path,
+    campaign_id: str,
+    evaluation: RulebookEvaluation,
+    selection_snapshot_id: str,
+) -> Path:
+    """Link a campaign selection to stable signal evidence without mutating it."""
+
+    if not isinstance(evaluation, RulebookEvaluation):
+        raise ValueError("selection membership requires RulebookEvaluation")
+    campaign = _path_component(campaign_id, "campaign_id")
+    if not _is_digest(selection_snapshot_id):
+        raise ValueError("selection snapshot ID is invalid")
+    base = _contained_root(root)
+    evaluation_id = _evaluation_id(evaluation.evaluation_id)
+    path = (base / "campaigns" / campaign / "selections" / "members" / f"{evaluation_id}.json").resolve()
+    if base not in path.parents:
+        raise ValueError("selection membership path escapes Flexible root")
+    return _write_immutable(
+        path,
+        {
+            "schema_version": 1,
+            "artifact_kind": "flexible_campaign_selection_member",
+            "campaign_id": campaign,
+            "selection_snapshot_id": selection_snapshot_id,
+            "evaluation_id": evaluation_id,
+            "rulebook_id": evaluation.rulebook_id,
+            "ticker": evaluation.ticker,
+            "source_fingerprint": evaluation.source_snapshot.raw_history_fingerprint,
+            "split": evaluation.split.to_identity_dict(),
+        },
+    )
+
+
+def selection_memberships_by_evaluation(root: Path) -> dict[str, tuple[dict[str, object], ...]]:
+    """Build one read-only membership index for a library render."""
+
+    base = _read_root(root)
+    campaigns_root = base / "campaigns"
+    if not campaigns_root.is_dir():
+        return {}
+    grouped: dict[str, list[dict[str, object]]] = {}
+    for path in sorted(campaigns_root.glob("*/selections/members/frev_*.json")):
+        try:
+            document = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if (
+            not isinstance(document, dict)
+            or document.get("schema_version") != 1
+            or document.get("artifact_kind") != "flexible_campaign_selection_member"
+            or not isinstance(document.get("campaign_id"), str)
+            or not _is_digest(document.get("selection_snapshot_id"))
+            or not isinstance(document.get("rulebook_id"), str)
+            or not isinstance(document.get("ticker"), str)
+            or not isinstance(document.get("source_fingerprint"), str)
+            or not isinstance(document.get("split"), dict)
+        ):
+            continue
+        try:
+            evaluation_id = _evaluation_id(document["evaluation_id"])
+            campaign_id = _path_component(document["campaign_id"], "campaign_id")
+        except ValueError:
+            continue
+        if path.stem != evaluation_id or path.parents[2].name != campaign_id:
+            continue
+        grouped.setdefault(evaluation_id, []).append(document)
+    return {identifier: tuple(records) for identifier, records in grouped.items()}
+
+
+def selection_memberships_for_evaluation(root: Path, evaluation_id: str) -> tuple[dict[str, object], ...]:
+    """Read campaign-specific selection links for one immutable evaluation only."""
+
+    identifier = _evaluation_id(evaluation_id)
+    return selection_memberships_by_evaluation(root).get(identifier, ())
+
+
+__all__ = ["append_ledger_chunk", "iter_signal_set_paths", "read_selection_snapshot", "read_signal_set", "resolve_flexible_root", "selection_memberships_by_evaluation", "selection_memberships_for_evaluation", "write_campaign_selection_membership", "write_feature_resolution_receipt", "write_rulebook_definition", "write_selection_snapshot", "write_signal_set"]

@@ -73,6 +73,37 @@ class TradeExecutionTests(unittest.TestCase):
         self.assertEqual(event.take_profit, 125)
         self.assertEqual(event.exit_date, frame.loc[5, "date"])
         self.assertEqual(event.exit_reason, "stop_loss")
+        self.assertEqual(event.exit_price, 85)
+
+    def test_gap_below_stop_fills_at_the_raw_open(self):
+        frame = make_frame(rows=10)
+        frame.loc[5, ["open", "high", "low", "close"]] = [70, 75, 60, 65]
+        entries = pd.Series(False, index=frame.index)
+        entries.loc[1] = True
+
+        event = run_rulebook_trade_sequence(
+            frame,
+            RulebookExecution(rulebook_for("swing"), ("rulebook_adx_gate",)),
+            entries,
+        )[0]
+
+        self.assertEqual("stop_loss", event.exit_reason)
+        self.assertEqual(70, event.exit_price)
+
+    def test_gap_above_target_still_fills_at_the_frozen_target(self):
+        frame = make_frame(rows=10)
+        frame.loc[5, ["open", "high", "low", "close"]] = [130, 135, 130, 132]
+        entries = pd.Series(False, index=frame.index)
+        entries.loc[1] = True
+
+        event = run_rulebook_trade_sequence(
+            frame,
+            RulebookExecution(rulebook_for("swing"), ("rulebook_adx_gate",)),
+            entries,
+        )[0]
+
+        self.assertEqual("take_profit", event.exit_reason)
+        self.assertEqual(125, event.exit_price)
 
     def test_swing_timeout_is_inclusive_at_bar_twenty_two(self):
         frame = make_frame(rows=30)
@@ -116,6 +147,30 @@ class TradeExecutionTests(unittest.TestCase):
             ),
             [],
         )
+
+    def test_timeout_requires_its_inclusive_bar_inside_the_partition(self):
+        entries_inside = pd.Series(False, index=range(24))
+        entries_inside.loc[1] = True
+        entries_outside = pd.Series(False, index=range(23))
+        entries_outside.loc[1] = True
+        execution = RulebookExecution(
+            rulebook_for("swing"),
+            ("rulebook_adx_gate",),
+        )
+
+        inside = run_rulebook_trade_sequence(
+            make_frame(rows=24),
+            execution,
+            entries_inside,
+        )
+        outside = run_rulebook_trade_sequence(
+            make_frame(rows=23),
+            execution,
+            entries_outside,
+        )
+
+        self.assertEqual("timeout", inside[0].exit_reason)
+        self.assertEqual([], outside)
 
 
 if __name__ == "__main__":

@@ -6,9 +6,11 @@ from decimal import Decimal
 import hashlib
 import itertools
 import math
-from typing import Iterator
+import time
+from typing import Callable, Iterator
 
 from .catalog import CatalogRevision
+from .cap_benchmark import SlotPhaseTiming, WindowPhaseTiming
 from .contracts import EvaluationSplit, ExecutionContract, PredicateSpec, PrimitiveSpec, RulebookDefinition, RulebookEvaluation, RuntimeBudget, canonical_json, rulebook_id
 from .execution import ExecutionInterrupted, execute_rulebook
 from .features import FeatureResolution, compose_entry_mask, compose_technical_exit_mask
@@ -165,40 +167,83 @@ def scheduled_candidates(space: CandidateSpace, assignment: FrontierAssignment) 
         canonical = layout.base + local
         yield global_slot, stratum.stratum_id, canonical, space.definition_at(canonical)
 
-def discover_and_evaluate(snapshot: HistorySnapshot, features: FeatureResolution, space: CandidateSpace, assignment: FrontierAssignment, *, monotonic: object, split: EvaluationSplit | None = None, execution_contract: ExecutionContract | None = None) -> DiscoveryResult:
+def discover_and_evaluate(snapshot: HistorySnapshot, features: FeatureResolution, space: CandidateSpace, assignment: FrontierAssignment, *, monotonic: object, split: EvaluationSplit | None = None, execution_contract: ExecutionContract | None = None, phase_observer: Callable[[SlotPhaseTiming | WindowPhaseTiming], None] | None = None) -> DiscoveryResult:
     """Evaluate only frozen slots; deadline leaves current slot uncommitted."""
     if not isinstance(snapshot, HistorySnapshot) or not isinstance(features, FeatureResolution): raise ValueError("discovery requires HistorySnapshot and FeatureResolution")
     if not callable(monotonic): raise ValueError("monotonic must be callable")
+    if phase_observer is not None and not callable(phase_observer): raise ValueError("phase_observer must be callable or None")
+    observe = (lambda _event: None) if phase_observer is None else phase_observer
     split = make_evaluation_split(snapshot) if split is None else split
     execution_contract = ExecutionContract() if execution_contract is None else execution_contract
     if not isinstance(split, EvaluationSplit) or not isinstance(execution_contract, ExecutionContract):
         raise ValueError("discovery requires frozen split and execution contract")
     attempted=[]; frozen=[]; outcomes=[]; evaluations=[]
+
+    def exhausted(slot: int) -> DiscoveryResult:
+        """Report a global cursor; current-window attempts are not the chain count."""
+
+        return DiscoveryResult(
+            "time_budget_exhausted",
+            space.size,
+            slot,
+            slot,
+            slot,
+            space.size - slot,
+            tuple(attempted),
+            tuple(frozen),
+            tuple(outcomes),
+            tuple(evaluations),
+        )
+
     for slot, _, canonical, definition in scheduled_candidates(space, assignment):
         if float(monotonic()) >= 16_200:
-            return DiscoveryResult("time_budget_exhausted", space.size, len(attempted), slot, slot, space.size-len(attempted), tuple(attempted), tuple(frozen), tuple(outcomes), tuple(evaluations))
+            return exhausted(slot)
+        entry_started = time.monotonic()
         entry = compose_entry_mask(features.store, definition)
+        observe(
+            SlotPhaseTiming(
+                slot,
+                "entry_mask",
+                max(0.0, time.monotonic() - entry_started),
+            )
+        )
         train_entries = int(entry[split.training.start_ordinal:split.training.end_ordinal+1].sum())
         attempted.append(canonical)
         if train_entries < 12:
             outcomes.append((slot, "training_entry_upper_bound")); continue
         technical = compose_technical_exit_mask(features.store, definition)
         stop = lambda: float(monotonic()) >= 17_700
+        training_started = time.monotonic()
         train = execute_rulebook(features.store, entry, technical, definition, split.training, should_stop=stop)
+        observe(
+            SlotPhaseTiming(
+                slot,
+                "training",
+                max(0.0, time.monotonic() - training_started),
+            )
+        )
         if isinstance(train, ExecutionInterrupted):
-            attempted.pop(); return DiscoveryResult("time_budget_exhausted", space.size, len(attempted), slot, slot, space.size-len(attempted), tuple(attempted), tuple(frozen), tuple(outcomes), tuple(evaluations))
+            attempted.pop(); return exhausted(slot)
         train_metrics = partition_metrics(train)
         if train_metrics.n < 12 or train_metrics.win_rate is None or train_metrics.win_rate < 65 or train_metrics.mean_return_pct is None or train_metrics.mean_return_pct < 15:
             outcomes.append((slot, "training_threshold")); continue
         frozen.append(rulebook_id(definition))
+        test_started = time.monotonic()
         test = execute_rulebook(features.store, entry, technical, definition, split.test, should_stop=stop)
+        observe(
+            SlotPhaseTiming(
+                slot,
+                "test",
+                max(0.0, time.monotonic() - test_started),
+            )
+        )
         if isinstance(test, ExecutionInterrupted):
-            attempted.pop(); frozen.pop(); return DiscoveryResult("time_budget_exhausted", space.size, len(attempted), slot, slot, space.size-len(attempted), tuple(attempted), tuple(frozen), tuple(outcomes), tuple(evaluations))
+            attempted.pop(); frozen.pop(); return exhausted(slot)
         test_metrics = partition_metrics(test)
         evaluations.append(RulebookEvaluation(definition, snapshot.ticker, features.plan.snapshot, space.catalog.catalog_hash, split, execution_contract, features.plan.build_contract, features.plan.profile, features.receipt, train_metrics, test_metrics, training_trades=train, test_trades=test))
         outcomes.append((slot, "qualified" if qualifies(train_metrics, test_metrics) else "test_threshold"))
     next_slot = assignment.start_slot + assignment.attempt_count
     state = "frontier_exhausted_no_qualified_candidate" if next_slot == space.size else "no_qualified_candidate_within_budget"
-    return DiscoveryResult(state, space.size, len(attempted), next_slot, None, space.size-next_slot, tuple(attempted), tuple(frozen), tuple(outcomes), tuple(evaluations))
+    return DiscoveryResult(state, space.size, next_slot, next_slot, None, space.size-next_slot, tuple(attempted), tuple(frozen), tuple(outcomes), tuple(evaluations))
 
 __all__=["CandidateSpace","DiscoveryResult","FrontierAssignment","SearchBudget","StratumAssignment","assign_frontier","candidate_space","discover_and_evaluate","scheduled_candidates"]

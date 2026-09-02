@@ -1,0 +1,91 @@
+{
+  "error_text": null,
+  "job_id": "4377533cc10b41f8aaff12f824022b22",
+  "output_paths": [
+    "backtest-result/ticker-signals/VCB/VCB_signals_midterm.json",
+    "backtest-result/ticker-signals/DHC/DHC_signals_midterm.json",
+    "backtest-result/ticker-signals/DSN/DSN_signals_midterm.json",
+    "backtest-result/ticker-signals/ELC/ELC_signals_midterm.json",
+    "backtest-result/ticker-signals/BVH/BVH_signals_midterm.json",
+    "backtest-result/ticker-signals/HAP/HAP_signals_midterm.json",
+    "backtest-result/ticker-signals/DRC/DRC_signals_midterm.json",
+    "backtest-result/ticker-signals/CSM/CSM_signals_midterm.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VCB/VCB_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "VCB"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DHC/DHC_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "DHC"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DSN/DSN_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "DSN"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/ELC/ELC_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "ELC"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/BVH/BVH_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "BVH"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/HAP/HAP_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "HAP"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DRC/DRC_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "DRC"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/CSM/CSM_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "CSM"
+    }
+  ]
+}

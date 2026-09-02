@@ -30,9 +30,9 @@ from .storage import write_selection_snapshot
 
 
 CampaignState = Literal["queued", "running", "cancelling", "cancelled", "blocked", "interrupted", "completed", "completed_with_errors", "failed"]
-HistoricalItemState = Literal["queued", "running", "retry_pending", "qualified", "no_qualified_candidate_within_budget", "time_budget_exhausted", "frontier_exhausted_no_qualified_candidate", "data_ineligible", "source_changed", "failed", "cancelled", "not_started_budget_limited"]
+HistoricalItemState = Literal["queued", "running", "retry_pending", "qualified", "no_qualified_candidate_within_budget", "time_budget_exhausted", "frontier_exhausted_no_qualified_candidate", "data_ineligible", "source_changed", "failed", "cancelled", "not_started_budget_limited", "current_setup_found", "no_current_setup", "no_historically_qualified_rulebook", "blocked_common_as_of", "data_stale", "data_invalid", "current_evaluation_failed", "not_evaluated"]
 _OPERATIONS = frozenset({"discover", "qualify", "current_scan"})
-_ITEM_STATES = frozenset({"queued", "running", "retry_pending", "qualified", "no_qualified_candidate_within_budget", "time_budget_exhausted", "frontier_exhausted_no_qualified_candidate", "data_ineligible", "source_changed", "failed", "cancelled", "not_started_budget_limited"})
+_ITEM_STATES = frozenset({"queued", "running", "retry_pending", "qualified", "no_qualified_candidate_within_budget", "time_budget_exhausted", "frontier_exhausted_no_qualified_candidate", "data_ineligible", "source_changed", "failed", "cancelled", "not_started_budget_limited", "current_setup_found", "no_current_setup", "no_historically_qualified_rulebook", "blocked_common_as_of", "data_stale", "data_invalid", "current_evaluation_failed", "not_evaluated"})
 _HASH = re.compile(r"^[0-9a-f]{64}$")
 _RECEIPT_ID = re.compile(r"^frpr_[0-9a-f]{64}$")
 _TERMINAL = frozenset({"cancelled", "completed", "completed_with_errors", "failed"})
@@ -102,6 +102,7 @@ class CampaignRequest:
     selection_policy: SelectionPolicy
     per_ticker_budget: int
     frontier_assignment: FrontierAssignment | None = None
+    activation_policy_digest: str | None = None
     qualification_revision: str = "both-partitions-12-65-15-v1"
     group_snapshot: tuple[str, ...] = ()
     parent_campaign_id: str | None = None
@@ -132,6 +133,12 @@ class CampaignRequest:
             raise ValueError("campaign requires frozen core contracts")
         if isinstance(self.per_ticker_budget, bool) or not isinstance(self.per_ticker_budget, int) or self.per_ticker_budget <= 0:
             raise ValueError("per_ticker_budget must be positive")
+        if self.activation_policy_digest is not None:
+            object.__setattr__(
+                self,
+                "activation_policy_digest",
+                _hash(self.activation_policy_digest, "activation_policy_digest"),
+            )
         if self.operation == "discover":
             assignment = self.frontier_assignment
             if not isinstance(assignment, FrontierAssignment) or len(members) != 1 or assignment.source_ticker != members[0]:
@@ -147,7 +154,7 @@ class CampaignRequest:
 
     def to_identity_dict(self) -> dict[str, object]:
         assignment = self.frontier_assignment
-        return {
+        identity: dict[str, object] = {
             "operation": self.operation, "frozen_members": self.frozen_members,
             "source_snapshots": [item.to_identity_dict() for item in self.source_snapshots],
             "catalog_hash": self.catalog_hash, "engine_revision": self.engine_revision,
@@ -169,6 +176,12 @@ class CampaignRequest:
                 "assignment_hash": assignment.assignment_hash,
             },
         }
+        # Existing manifests were hashed before activation policy authority
+        # existed.  Keep an absent optional field absent so those immutable
+        # campaign IDs remain readable; a non-empty digest is identity-bound.
+        if self.activation_policy_digest is not None:
+            identity["activation_policy_digest"] = self.activation_policy_digest
+        return identity
 
 
 @dataclass(frozen=True)
@@ -256,6 +269,12 @@ class SelectionSnapshot:
             "blocker_relations": list(self.blocker_relations),
         }
 
+    @property
+    def selection_snapshot_id(self) -> str:
+        """Return the content address written for this immutable selection."""
+
+        return hashlib.sha256(canonical_json(self.to_dict()).encode("utf-8")).hexdigest()
+
 
 def request_hash(request: CampaignRequest) -> str:
     """Return canonical semantic campaign identity; omit operational diagnostics."""
@@ -318,7 +337,20 @@ def continue_discovery(
         parent.request, frontier_assignment=next_assignment,
         parent_campaign_id=parent.campaign_id,
         execution_window_id=f"continue-{request_hash(parent.request)}-{parent.next_slot}",
-        cache_choice=None, cache_path=None, cache_age_seconds=None,
+        # Legacy/isolated continuations retain their existing no-cache state.
+        # A policy-bound worker must receive the explicitly chosen cache
+        # treatment again; otherwise its immutable continuation cannot run.
+        cache_choice=(
+            parent.request.cache_choice
+            if parent.request.activation_policy_digest is not None
+            else None
+        ),
+        cache_path=(
+            parent.request.cache_path
+            if parent.request.activation_policy_digest is not None
+            else None
+        ),
+        cache_age_seconds=None,
     )
 
 
@@ -457,6 +489,7 @@ def _request_from_payload(value: object) -> CampaignRequest:
         )),
         selection_policy=SelectionPolicy(**selection_payload),
         per_ticker_budget=identity.pop("per_ticker_budget"),
+        activation_policy_digest=identity.pop("activation_policy_digest", None),
         frontier_assignment=_assignment_from_dict(identity.pop("frontier_assignment")),
         qualification_revision=identity.pop("qualification_revision"),
         group_snapshot=tuple(identity.pop("group_snapshot")),
@@ -589,9 +622,7 @@ def write_campaign_selection_snapshot(
     if not isinstance(snapshot, SelectionSnapshot):
         raise ValueError("selection snapshot is invalid")
     snapshot_payload = snapshot.to_dict()
-    snapshot_id = hashlib.sha256(
-        canonical_json(snapshot_payload).encode("utf-8")
-    ).hexdigest()
+    snapshot_id = snapshot.selection_snapshot_id
     if manifest.selection_snapshot_id is not None:
         if manifest.selection_snapshot_id != snapshot_id:
             raise ValueError("terminal discovery already has a selection snapshot")
@@ -690,6 +721,7 @@ def _is_linked_continuation(parent: CampaignManifest, child: CampaignManifest) -
         "runtime_budget",
         "selection_policy",
         "per_ticker_budget",
+        "activation_policy_digest",
         "qualification_revision",
         "group_snapshot",
     )
@@ -713,8 +745,17 @@ def _is_linked_continuation(parent: CampaignManifest, child: CampaignManifest) -
             getattr(parent_assignment, field_name) == getattr(child_assignment, field_name)
             for field_name in assignment_fields
         )
-        and child_request.cache_choice is None
-        and child_request.cache_path is None
+        and (
+            (
+                child_request.cache_choice is None
+                and child_request.cache_path is None
+            )
+            if parent_request.activation_policy_digest is None
+            else (
+                child_request.cache_choice == parent_request.cache_choice
+                and child_request.cache_path == parent_request.cache_path
+            )
+        )
         and child_request.cache_age_seconds is None
     )
 

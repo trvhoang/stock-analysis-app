@@ -8,14 +8,14 @@
 
 **Tech Stack:** Python 3.12, pandas, NumPy already available in project, SQLAlchemy Core/text through existing loader, unittest, Docker.
 
-**Status:** Tasks 1–2 complete and verified (2026-08-26). Task 3 catalog,
+**Status:** Tasks 1–8 complete and verified (2026-08-28). Task 3 catalog,
 causal FeatureStore, request-scoped resolution receipt, and safe persistent
 computed-component cache are implemented (2026-08-27). Task 4 reference
 executor and its inert identity-bound, benchmark-gated event-plan guard are
 implemented (2026-08-27). Host and canonical Docker focused Flexible suites
-pass 73/73 and compilation passes. Task 6 is active: Catalog v1 fixes the
-automatic ATR variant at stop 2.0×, target 3.0×, no trailing (plus allowed
-no-price-exit). Task 6 is complete (2026-08-27): seeded structural strata,
+pass 73/73 and compilation passes. Catalog v1 fixes the automatic ATR variant
+at stop 2.0×, target 3.0×, no trailing (plus allowed no-price-exit). Task 6 is
+complete (2026-08-27): seeded structural strata,
 frozen quotas, continuation-safe affine traversal, deadline truth, compact
 rejections, and frozen train/test typed evidence. Core Docker gate passes 80/80
 plus compilation. Task 7 is complete: immutable Flexible-only definitions,
@@ -28,15 +28,26 @@ to the dependent Campaigns and Current Scan plan.
 selection-scope validation, first-inclusive-overlap two-pointer timing evidence,
 exact 75% training duplicate filtering, and deterministic training-only Top 3
 selection are implemented. Focused Flexible Docker gate passes 56/56 and
-compilation passes. Task 6 still awaits Task 3 catalog/cache completion and
-Task 4 execution parity coverage.
+compilation passes. Task 4 execution parity coverage and Task 6 discovery
+coverage are complete.
 
 **Catalog v1 lock (2026-08-26):** fast-first Swing values are EMA `(3,8)`,
 `(5,13)`, `(5,21)`, `(8,21)`; RSI periods `5/9/14`, levels `50/52/55`;
 breakouts `10/20/40`; relative-volume windows `5/10/20`, minima
 `1.10/1.20/1.30`; fixed ADX(14) minima `15/20/25`; mirrored technical exits; timeout
 `10/15/22/30`; fixed ATR(14). Automatic conjunctions cap BUY and gate/filter
-subsets at two each. Implement Task 3 catalog/cache from this exact snapshot.
+subsets at two each. Task 3 catalog/cache is implemented from this exact
+snapshot.
+
+**Correctness remediation (2026-08-28):** complete cache hits now assemble raw
+arrays without recalculating indicators; OHLC quality ratios exclude volume;
+discovery deadline counters preserve the global cursor; ticker and group
+qualification require an explicit valid cache choice and the frozen request
+split/plan hashes; audit-only targets remain data-ineligible instead of being
+reported as no-candidate. Signal-set reads verify path, receipt, anchor, and
+skip corrupt legacy entries. Continue recomputes Top 3 from all committed
+qualified evidence in the verified parent chain. The focused Flexible Docker
+gate passes 219/219 plus compilation.
 
 ## Global Constraints
 
@@ -382,7 +393,7 @@ def resolve_feature_store(snapshot, contract: FeatureBuildContract,
                           choice: Literal["reuse", "rebuild"], now: datetime) -> FeatureResolution: ...
 ~~~
 
-- [ ] **Step 1: Write RED causal tests.**
+- [x] **Step 1: Write RED causal tests.**
 
 ~~~python
 def test_relative_volume_excludes_current_bar_from_baseline():
@@ -396,7 +407,7 @@ def test_breakout_uses_prior_high_not_current_high():
 def test_shared_rsi14_reuses_when_second_profile_adds_ema21(): ...
 ~~~
 
-- [ ] **Step 2: Run RED.**
+- [x] **Step 2: Run RED.**
 
 Run:
 
@@ -406,7 +417,7 @@ docker exec stock_app python -m unittest tests.test_flexible_rulebook_catalog te
 
 Expected: missing catalog/features APIs.
 
-- [ ] **Step 3: Implement catalog revision 1, FeatureStore, and cache.**
+- [x] **Step 3: Implement catalog revision 1, FeatureStore, and cache.**
 
 Implement exactly BUY EMA bullish cross/RSI upcross/prior-high breakout;
 EMA-up/relative-volume/ADX gates; EMA bearish/RSI down/prior-low breakdown
@@ -458,7 +469,7 @@ appended/corrected source is a new-key full rebuild. Keep an
 `append_extension_v1` seam disabled until a separate benchmark and exact-digest
 parity gate approve it; a correction never uses that seam.
 
-- [ ] **Step 4: Add no-look-ahead and catalog-validation tests.**
+- [x] **Step 4: Add no-look-ahead and catalog-validation tests.**
 
 ~~~python
 def test_future_mutation_does_not_change_prior_feature_rows():
@@ -489,7 +500,7 @@ def test_interrupted_write_stale_lease_low_disk_and_write_failure_continue_uncac
 def test_cache_root_is_never_discovered_as_rulebook_or_signal_artifact(tmp_path): ...
 ~~~
 
-- [ ] **Step 5: Run GREEN and update status.**
+- [x] **Step 5: Run GREEN and update status.**
 
 Run all three suites. Record catalog/profile hashes, cache schema/revisions,
 unsupported indicator list, and cache failure-as-safe-miss contract.
@@ -537,7 +548,7 @@ def execute_rulebook(store: FeatureStore, entry_mask: np.ndarray,
                      should_stop: Callable[[], bool] | None = None) -> tuple[CompletedTrade, ...]: ...
 ~~~
 
-- [ ] **Step 1: Write RED execution-order tests.**
+- [x] **Step 1: Write RED execution-order tests.**
 
 ~~~python
 def test_buy_at_close_signal_enters_next_raw_open():
@@ -553,7 +564,7 @@ def test_stop_first_and_minimum_hold_block_early_exit():
 def test_test_partition_starts_flat_after_crossing_training_trade(): ...
 ~~~
 
-- [ ] **Step 2: Run RED.**
+- [x] **Step 2: Run RED.**
 
 Run:
 
@@ -563,7 +574,7 @@ docker exec stock_app python -m unittest tests.test_flexible_rulebook_execution 
 
 Expected: missing state-machine API.
 
-- [ ] **Step 3: Implement the authoritative reference state machine.**
+- [x] **Step 3: Implement the authoritative reference state machine.**
 
 Use raw next open, one active position, E+3 earliest exit, and one immediate
 technical-exit queue only when its next raw-open fill is legal. Discard rather
@@ -581,7 +592,7 @@ deadline/cancellation function at deterministic bounded bar chunks and return an
 uncommitted-slot sentinel before ledger write when time expires; never persist a
 partial trade sequence as a candidate rejection.
 
-- [ ] **Step 4: Add deadline/technical/trailing tests.**
+- [x] **Step 4: Add deadline/technical/trailing tests.**
 
 ~~~python
 def test_deadline_uses_close_only_after_open_queue_and_price_checks(): ...
@@ -601,7 +612,7 @@ def test_deadline_interrupt_leaves_candidate_slot_uncommitted_for_resume(): ...
 def test_execution_uses_feature_store_arrays_without_dataframe_copy(): ...
 ~~~
 
-- [ ] **Step 5: Add a benchmark-gated fast-path parity layer.**
+- [x] **Step 5: Add a benchmark-gated fast-path parity layer.**
 
 Keep `execute_rulebook_reference` as the oracle. Build an EventExitPlan only for
 an exact source/receipt/technical-mask/price-exit/partition tuple; otherwise
@@ -621,7 +632,7 @@ def test_event_path_preserves_deadline_checkpoint_and_uncommitted_slot_contract(
 def test_performance_work_counter_is_lower_or_equal_without_wall_clock_assertion(): ...
 ~~~
 
-- [ ] **Step 6: Run GREEN and update status.**
+- [x] **Step 6: Run GREEN and update status.**
 
 Run execution suite. Record every exit precedence rule, reference/fast parity
 gate, and benchmark-only enablement in status note.
@@ -670,7 +681,7 @@ def compare_entry_timing(
 ) -> PairwiseTimingEvidence: ...
 ~~~
 
-- [ ] **Step 1: Write RED qualification/rank tests.**
+- [x] **Step 1: Write RED qualification/rank tests.**
 
 ~~~python
 def test_requires_threshold_in_both_train_and_test():
@@ -685,7 +696,7 @@ def test_training_metrics_choose_the_representative_before_distinctness(): ...
 def test_rank_rejects_mixed_ticker_source_split_or_execution_scope(): ...
 ~~~
 
-- [ ] **Step 2: Run RED.**
+- [x] **Step 2: Run RED.**
 
 Run:
 
@@ -695,7 +706,7 @@ docker exec stock_app python -m unittest tests.test_flexible_rulebook_metrics -v
 
 Expected: missing metrics API.
 
-- [ ] **Step 3: Implement exact gross metrics.**
+- [x] **Step 3: Implement exact gross metrics.**
 
 Use return > 0 for win; preserve unrounded values; Sharpe null for insufficient
 or zero-variance samples. Enforce exactly n>=12, win_rate>=65, and
@@ -719,7 +730,7 @@ the blocker with greatest integer ratio, then lower training rank, then lexical
 ID. It produces a pure immutable selection input/result; storage owns a
 campaign-chain SelectionSnapshot, never mutates the evaluation/signal set.
 
-- [ ] **Step 4: Add deterministic sensitivity tests.**
+- [x] **Step 4: Add deterministic sensitivity tests.**
 
 ~~~python
 def test_sensitivity_pairs_each_overlapping_trade_once_and_keeps_unmatched():
@@ -748,7 +759,7 @@ def test_excluded_duplicate_remains_qualified_and_reusable_with_blocker(): ...
 def test_multiple_blockers_choose_ratio_then_rank_then_lexical_deterministically(): ...
 ~~~
 
-- [ ] **Step 5: Run GREEN and update status.**
+- [x] **Step 5: Run GREEN and update status.**
 
 Run metrics suite. Record that training timing enforces Top 3 distinctness while
 test timing remains evidence only.
@@ -801,7 +812,7 @@ def discover_and_evaluate(snapshot: HistorySnapshot, features: FeatureResolution
                           *, monotonic: Callable[[], float]) -> DiscoveryResult: ...
 ~~~
 
-- [ ] **Step 1: Write RED deterministic-budget tests.**
+- [x] **Step 1: Write RED deterministic-budget tests.**
 
 ~~~python
 def test_large_candidate_space_is_lazy_and_same_index_is_stable():
@@ -830,7 +841,7 @@ def test_time_counts_source_cache_train_test_selection_and_write(): ...
 def test_cache_hit_cannot_change_assignment_quota_or_frozen_test_schedule(): ...
 ~~~
 
-- [ ] **Step 2: Run RED.**
+- [x] **Step 2: Run RED.**
 
 Run:
 
@@ -840,7 +851,7 @@ docker exec stock_app python -m unittest tests.test_flexible_rulebook_search -v
 
 Expected: missing search API.
 
-- [ ] **Step 3: Implement canonical stratified search.**
+- [x] **Step 3: Implement canonical stratified search.**
 
 Build/resolve one FeatureResolution before the candidate loop. Keep CandidateSpace
 lazy: derive a canonical definition only for its assigned global/stratum slot.
@@ -872,7 +883,7 @@ count exhaustion has its own truthful state. Emit
 frozen test has non-error terminal outcomes. Cache performance never changes the
 frozen schedule.
 
-- [ ] **Step 4: Add source/test isolation tests.**
+- [x] **Step 4: Add source/test isolation tests.**
 
 ~~~python
 def test_test_rows_cannot_change_schedule_or_frozen_training_candidate_list():
@@ -887,7 +898,7 @@ def test_partial_train_return_sharpe_or_test_metrics_cannot_prune_or_reallocate(
 def test_continue_finishes_parent_frozen_test_before_new_training_slot(): ...
 ~~~
 
-- [ ] **Step 5: Run GREEN and update status.**
+- [x] **Step 5: Run GREEN and update status.**
 
 Run search suite. Record frozen strata/quota values, deadline checkpoint
 contract, safe-pruning boundary, and cache-invariant schedule rule.
@@ -1022,7 +1033,7 @@ def qualify_rulebook_for_ticker(engine, definition: RulebookDefinition, ticker: 
 def reusable_rulebooks(root: Path) -> tuple[RulebookDefinition, ...]: ...
 ~~~
 
-- [ ] **Step 1: Write RED portability tests.**
+- [x] **Step 1: Write RED portability tests.**
 
 ~~~python
 def test_vcb_rejection_does_not_delete_rulebook_before_fpt_qualification(tmp_path):
@@ -1033,7 +1044,7 @@ def test_vcb_rejection_does_not_delete_rulebook_before_fpt_qualification(tmp_pat
     self.assertTrue((tmp_path / "rulebooks" / f"{rulebook_id(definition)}.json").exists())
 ~~~
 
-- [ ] **Step 2: Run RED.**
+- [x] **Step 2: Run RED.**
 
 Run:
 
@@ -1043,7 +1054,7 @@ docker exec stock_app python -m unittest tests.test_flexible_rulebook_service -v
 
 Expected: missing service API.
 
-- [ ] **Step 3: Implement orchestration.**
+- [x] **Step 3: Implement orchestration.**
 
 Load once, build once, discover/qualify, write immutable definition plus
 ticker-specific evidence. Explicitly return display_only versus qualified,
@@ -1067,7 +1078,7 @@ without prompting. Campaign code—not this core service—owns parent verificat
 cursor advancement, and source_changed status. Never call V3 pipeline/job/status/
 position APIs.
 
-- [ ] **Step 4: Add V3-isolation test.**
+- [x] **Step 4: Add V3-isolation test.**
 
 ~~~python
 def test_service_source_never_imports_v3_pipeline_or_persistence():
@@ -1087,7 +1098,7 @@ def test_threshold_only_definition_change_reuses_base_components_and_changes_onl
 def test_single_qualification_requires_declared_component_cache_choice(tmp_path): ...
 ~~~
 
-- [ ] **Step 5: Run core gate and update handoff.**
+- [x] **Step 5: Run core gate and update handoff.**
 
 Run:
 

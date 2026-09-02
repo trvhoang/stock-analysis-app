@@ -1,30 +1,9 @@
 {
-  "config": {
-    "end_date": "2026-08-24",
-    "group_name": "BANK",
-    "horizon": "swing",
-    "output_dir": "backtest-result/ticker-signals",
-    "permutation_block_size": 20,
-    "permutation_count": 1000,
-    "permutation_seed": 42,
-    "request_type": "backtest_batch_v4",
-    "start_date": "2011-08-24",
-    "tickers": [
-      "ACB",
-      "BID",
-      "CTG",
-      "HDB",
-      "MBB",
-      "SHB",
-      "STB",
-      "TCB",
-      "VCB",
-      "VIB"
-    ],
-    "worker_count": 6
-  },
-  "factory_ref": "backtest_engine.pipeline:run_backtest_batch_from_env",
+  "error_text": "Regenerate under Backtest schema 5.",
   "job_id": "3c810f213cad4bb8a1cdba6f0b988c79",
-  "schema_version": 4,
-  "status_dir": "backtest-status"
+  "output_paths": [],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "requires_regeneration",
+  "ticker_results": []
 }

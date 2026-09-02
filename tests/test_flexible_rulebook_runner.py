@@ -29,6 +29,8 @@ from flexible_rulebook.contracts import (
 )
 from flexible_rulebook.runner import (
     FrozenSourceVerificationError,
+    SharedInfrastructureError,
+    TransientItemError,
     claim_campaign,
     continue_campaign,
     heartbeat_campaign,
@@ -387,6 +389,92 @@ class FlexibleRulebookRunnerTests(unittest.TestCase):
         self.assertEqual(blocked.safe_error_code, "SOURCE.CHANGED")
         self.assertEqual(blocked.next_slot, 0)
         self.assertEqual(claimed_next.state, "running")
+
+    def test_runner_retries_one_transient_item_failure_then_completes(self) -> None:
+        class RetryOnceService:
+            calls = 0
+
+            def run(self, manifest: object, *, verified_sources: tuple[HistorySnapshot, ...]) -> object:
+                self.calls += 1
+                if self.calls == 1:
+                    raise TransientItemError("temporary item timeout")
+                return transition(manifest, "completed")
+
+        service = RetryOnceService()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            campaign_id = submit_campaign(self._request(), root)
+            claim_campaign(campaign_id, root)
+            result = run_campaign(campaign_id, root, service, source_loader=lambda _source: self._verified_history())
+        self.assertEqual((service.calls, result.state), (2, "completed"))
+
+    def test_shared_failure_blocks_campaign_without_item_data_invalidity(self) -> None:
+        class SharedFailureService:
+            def run(self, manifest: object, *, verified_sources: tuple[HistorySnapshot, ...]) -> object:
+                raise SharedInfrastructureError("database unavailable")
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            campaign_id = submit_campaign(self._request(), root)
+            claim_campaign(campaign_id, root)
+            result = run_campaign(campaign_id, root, SharedFailureService(), source_loader=lambda _source: self._verified_history())
+            restored = read_campaign(campaign_id, root)
+        self.assertEqual((result.state, result.safe_error_code, restored.items[0].state), ("blocked", "INFRA.SHARED_UNAVAILABLE", "queued"))
+
+    def test_invalid_worker_contract_is_terminal_failed_without_retry(self) -> None:
+        class InvalidService:
+            calls = 0
+
+            def run(self, manifest: object, *, verified_sources: tuple[HistorySnapshot, ...]) -> object:
+                self.calls += 1
+                raise ValueError("invalid catalog")
+
+        service = InvalidService()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            campaign_id = submit_campaign(self._request(), root)
+            claim_campaign(campaign_id, root)
+            result = run_campaign(campaign_id, root, service, source_loader=lambda _source: self._verified_history())
+        self.assertEqual((service.calls, result.state, result.safe_error_code), (1, "failed", "INFRA.WORKER_CONTRACT"))
+
+    def test_incompatible_checkpoint_is_safe_failed_and_releases_lease(self) -> None:
+        class IncompatibleService:
+            def run(self, manifest: object, *, verified_sources: tuple[HistorySnapshot, ...]) -> object:
+                return object()
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            campaign_id = submit_campaign(self._request(), root)
+            claim_campaign(campaign_id, root)
+            result = run_campaign(
+                campaign_id,
+                root,
+                IncompatibleService(),
+                source_loader=lambda _source: self._verified_history(),
+            )
+            next_campaign_id = submit_campaign(
+                replace(self._request(), per_ticker_budget=9), root
+            )
+            claimed_next = claim_campaign(next_campaign_id, root)
+
+        self.assertEqual(
+            (result.state, result.safe_error_code, claimed_next.state),
+            ("failed", "INFRA.WORKER_CONTRACT", "running"),
+        )
+
+    def test_cancelling_campaign_stops_without_source_or_service_work(self) -> None:
+        class MustNotRun:
+            def run(self, manifest: object, *, verified_sources: tuple[HistorySnapshot, ...]) -> object:
+                raise AssertionError("service must not run")
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            campaign_id = submit_campaign(self._request(), root)
+            claim_campaign(campaign_id, root)
+            from flexible_rulebook.runner import request_cancel
+            request_cancel(campaign_id, root)
+            result = run_campaign(campaign_id, root, MustNotRun(), source_loader=lambda _source: (_ for _ in ()).throw(AssertionError("source must not load")))
+        self.assertEqual(result.state, "cancelled")
 
 
 if __name__ == "__main__":

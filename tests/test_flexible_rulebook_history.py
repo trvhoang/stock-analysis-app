@@ -133,6 +133,17 @@ class FlexibleRulebookHistoryTests(unittest.TestCase):
         self.assertEqual(concern_snapshot.quality_state, "display_only")
         self.assertIsNotNone(concern_snapshot.fingerprint)
 
+    def test_ohlc_ordering_quality_ratio_ignores_volume_scale(self) -> None:
+        frame = self._frame(["2011-01-03", "2026-01-02"])
+        frame.loc[1, "high"] = 95_000
+        frame.loc[1, "volume"] = 10_000_000
+
+        with patch("flexible_rulebook.history._load_ticker_history", return_value=frame):
+            snapshot = load_flexible_history(object(), "VCB", as_of=date(2026, 1, 2))
+
+        self.assertEqual(snapshot.quality_state, "display_only")
+        self.assertIn("OHLC ordering mismatch exceeds 1%", snapshot.quality_reasons)
+
     def test_same_as_of_and_row_count_but_corrected_close_changes_fingerprint(self) -> None:
         first = self._frame(["2011-01-03", "2026-01-02"])
         corrected = first.copy(deep=True)

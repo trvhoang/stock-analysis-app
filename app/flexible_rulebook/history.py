@@ -154,7 +154,9 @@ def _assess_raw_ohlcv(
         ],
         axis=1,
     ).clip(lower=0).max(axis=1)
-    bar_maximum = pd.concat(list(numeric.values()), axis=1).max(axis=1)
+    # Quality ratio is defined against the largest price field only. Volume is
+    # a different scale and must never dilute an OHLC ordering concern.
+    bar_maximum = pd.concat([numeric[column] for column in _PRICE_COLUMNS], axis=1).max(axis=1)
     if (mismatch.div(bar_maximum) > _MAX_OHLC_ORDERING_MISMATCH).any():
         concerns.append("OHLC ordering mismatch exceeds 1%")
 

@@ -18,7 +18,7 @@ from .models import BatchTickerStatus, JobStatus
 
 LOGGER = logging.getLogger(__name__)
 _ACTIVE_PROCESSES: dict[str, subprocess.Popen] = {}
-REGENERATION_REASON = "Regenerate under amended rulebook."
+REGENERATION_REASON = "Regenerate under Backtest schema 5."
 
 
 def _status_path(job_id: str, status_dir: str) -> Path:
@@ -84,7 +84,7 @@ def _write_request(
     target = _request_path(job_id, status_dir)
     _write_json_atomically(
         {
-            "schema_version": 4,
+            "schema_version": 5,
             "job_id": job_id,
             "config": config.to_dict(),
             "factory_ref": factory_ref,
@@ -101,6 +101,8 @@ def read_job_status(job_id: str, status_dir: str) -> JobStatus:
     payload = json.loads(
         _status_path(job_id, status_dir).read_text(encoding="utf-8")
     )
+    if not isinstance(payload, dict) or payload.get("schema_version") != 5:
+        raise ValueError("unsupported job status schema")
     return JobStatus(
         job_id=payload["job_id"],
         state=payload["state"],

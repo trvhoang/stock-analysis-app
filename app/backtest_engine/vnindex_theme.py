@@ -1,5 +1,7 @@
 """Optional VN-Index background-theme alignment and confirmation."""
 
+from datetime import date
+
 import pandas as pd
 
 from commons import technical_analysis
@@ -42,6 +44,8 @@ def align_vnindex_asof(
 def build_vnindex_confirmation(
     vnindex_frame: pd.DataFrame,
     horizon: str,
+    *,
+    common_as_of: date,
 ) -> pd.Series:
     """Return ``close > SMA`` using the existing MA calculation path."""
 
@@ -52,10 +56,13 @@ def build_vnindex_confirmation(
 
     working = vnindex_frame.copy(deep=True)
     if horizon == "midterm":
-        working = to_weekly_ohlcv(working)
+        working = to_weekly_ohlcv(working, common_as_of=common_as_of)
         period = 20
     else:
         working["date"] = pd.to_datetime(working["date"])
+        working = working.loc[
+            working["date"].le(pd.Timestamp(common_as_of))
+        ].reset_index(drop=True)
         period = 50
 
     working = technical_analysis.calculate_ma_cross(working, [(period, period)])

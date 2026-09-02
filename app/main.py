@@ -19,6 +19,7 @@ from pages.analyze_visualization import analyze_page
 from pages.suggestion_visualization import suggestion_page
 from pages.technical_visualization import technical_analysis_page
 from pages.backtest_lab import render_backtest_page
+from pages.flexible_rulebook import render_flexible_rulebook_page
 from backtest_engine.pipeline import run_backtest_batch_from_env
 from apis.routes import router as api_router
 
@@ -77,7 +78,7 @@ def main():
 
     # App title and page selection
     st.title("Stock Analysis App")
-    page = st.sidebar.selectbox("Select Page", ["Data", "Result", "Analyze", "Suggestion", "Technical Analyze", "Backtest"], index=0)
+    page = st.sidebar.selectbox("Select Page", ["Data", "Result", "Analyze", "Suggestion", "Technical Analyze", "Backtest", "Flexible Rulebook"], index=0)
 
     # --- Revamped State Clearing Logic ---
     # Track the previous page to detect a page switch
@@ -102,6 +103,8 @@ def main():
         technical_analysis_page(engine)
     elif page == "Backtest":
         render_backtest_page(engine=engine, engine_factory=run_backtest_batch_from_env)
+    elif page == "Flexible Rulebook":
+        render_flexible_rulebook_page(engine)
 
 if __name__ == "__main__":
     main()

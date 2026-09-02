@@ -1,88 +1,54 @@
 {
   "audit_eligibility": {
     "effective_date_range": [
-      "2011-08-24",
-      "2026-08-24"
+      null,
+      null
     ],
-    "eligible": true,
-    "reasons": [],
-    "source": "fresh_v3_raw_history",
-    "status": "clean",
-    "warnings": [
-      "date gap of 4890 calendar days before 2025-05-13",
-      "date gap of 10 calendar days before 2026-02-23"
-    ]
+    "eligible": false,
+    "reasons": [
+      "Regenerate under Backtest schema 5."
+    ],
+    "source": "unavailable",
+    "status": "unavailable",
+    "warnings": []
   },
-  "candidates": [
-    {
-      "preferred_variant": "no-background-theme",
-      "rulebook_id": "swing_rulebook_v4__adx",
-      "selected_gates": [
-        "rulebook_adx_gate"
-      ],
-      "treatments": {
-        "background-theme": {
-          "dsr_status": "unavailable",
-          "test": {
-            "n": 18,
-            "p_value": null,
-            "p_value_status": "not_estimated_n_le_block_size",
-            "profit_pct": -41.64721794843462,
-            "sharpe": -0.4208849166170655,
-            "win_rate": 27.77777777777778
-          },
-          "theme_mode": "AND",
-          "theme_variant": "background-theme",
-          "training": {
-            "n": 0,
-            "p_value": null,
-            "p_value_status": "not_estimated_n_le_block_size",
-            "profit_pct": 0.0,
-            "sharpe": null,
-            "win_rate": 0.0
-          },
-          "training_dsr": null
-        },
-        "no-background-theme": {
-          "dsr_status": "unavailable",
-          "test": {
-            "n": 26,
-            "p_value": 0.6463536463536463,
-            "p_value_status": "informational",
-            "profit_pct": -4.355642284449544,
-            "sharpe": -0.024776132096543602,
-            "win_rate": 34.61538461538461
-          },
-          "theme_mode": null,
-          "theme_variant": "no-background-theme",
-          "training": {
-            "n": 5,
-            "p_value": null,
-            "p_value_status": "not_estimated_n_le_block_size",
-            "profit_pct": -5.047140819196394,
-            "sharpe": -0.1125964714250912,
-            "win_rate": 40.0
-          },
-          "training_dsr": null
-        }
-      }
-    }
-  ],
+  "candidates": [],
+  "contract_version": "backtest_schema5_v1",
   "effective_data_range": {
-    "end": "2026-08-24",
-    "reason": null,
-    "start": "2011-08-24"
+    "end": null,
+    "reason": "Regenerate under Backtest schema 5.",
+    "start": null
   },
-  "empty": false,
-  "evaluated_at": "2026-08-24T20:56:34.487826+07:00",
+  "empty": true,
+  "evaluated_at": "2026-09-01T19:45:31.718901+07:00",
   "evaluation_label": "Exploratory \u2014 gross",
+  "evidence_eligibility": {
+    "common_as_of": null,
+    "coverage_ratio": 0.0,
+    "eligible": false,
+    "expected_sessions": 0,
+    "first_available_bar": null,
+    "last_available_bar": null,
+    "max_gap_sessions": 0,
+    "observed_sessions": 0,
+    "reasons": [
+      "Regenerate under Backtest schema 5."
+    ],
+    "status": "unavailable",
+    "ticker_fingerprint": null,
+    "vnindex_fingerprint": null
+  },
   "failure_reason": null,
   "horizon": "swing",
-  "rejection_reason": null,
+  "partition_labels": {
+    "test": "historical test \u2014 previously observed",
+    "training": "in-sample"
+  },
+  "rejection_reason": "Regenerate under Backtest schema 5.",
   "requested_date_range": {
-    "end": "2026-08-24",
-    "reason": null,
-    "start": "2011-08-24"
+    "end": null,
+    "reason": "Regenerate under Backtest schema 5.",
+    "start": null
   },
   "rulebook": {
     "adx_minimum": 17,
@@ -113,27 +79,15 @@
     "native_timeframe": "daily",
     "rsi_period": 9,
     "rsi_upcross_level": 52,
-    "rule_id": "swing_rulebook_v4",
+    "rule_id": "swing_rulebook_v5",
     "theme_sma_window": 50,
     "volume_multiplier": 1.15,
     "volume_window": 10,
     "weekly_frequency": null
   },
-  "schema_version": 4,
-  "split": {
-    "method": "calendar_10y_5y",
-    "test": {
-      "end": "2026-08-24",
-      "start": "2025-05-13"
-    },
-    "train": {
-      "end": "2011-12-23",
-      "start": "2011-08-24"
-    }
-  },
-  "terminal_state": "success",
+  "schema_version": 5,
+  "split": null,
+  "terminal_state": "requires_regeneration",
   "ticker": "VPL",
-  "top_rulebook_ids": [
-    "swing_rulebook_v4__adx"
-  ]
+  "top_rulebook_ids": []
 }

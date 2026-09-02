@@ -1,4 +1,4 @@
-"""Exploratory schema-4 train/test evaluation contracts."""
+"""Exploratory schema-5 baseline-control train/test contracts."""
 
 from datetime import date, timedelta
 import unittest
@@ -9,6 +9,7 @@ from backtest_engine.config import rulebook_for
 from backtest_engine.exploratory import (
     EvaluationSplit,
     build_exploratory_candidate,
+    execute_partition,
     partition_metrics,
     rank_top_candidates,
     split_native_frame,
@@ -79,6 +80,19 @@ class ExploratoryEvaluationTests(unittest.TestCase):
         self.assertEqual(split.train_end, date(2020, 7, 1))
         self.assertEqual(split.test_start, date(2021, 1, 1))
 
+    def test_calendar_split_requires_terminal_coverage(self):
+        frame = pd.DataFrame(
+            {"date": pd.date_range("2011-09-01", "2022-01-03", freq="B")}
+        )
+
+        split = split_native_frame(
+            frame,
+            requested_start=date(2011, 9, 1),
+            requested_end=date(2026, 9, 1),
+        )
+
+        self.assertEqual("chronological_65_35", split.method)
+
     def test_partition_drops_trade_when_entry_crosses_boundary(self):
         crossing = TradeEvent(
             signal_date=date(2020, 12, 31),
@@ -96,6 +110,50 @@ class ExploratoryEvaluationTests(unittest.TestCase):
         train = Window(pd.Timestamp("2020-01-01"), pd.Timestamp("2020-12-31"))
 
         self.assertEqual(partition_completed_events((crossing,), train), [])
+
+    def test_partition_drops_trade_when_exit_crosses_boundary(self):
+        crossing = TradeEvent(
+            signal_date=date(2020, 12, 28),
+            entry_date=date(2020, 12, 29),
+            entry_price=100,
+            atr=10,
+            stop_loss=85,
+            take_profit=125,
+            exit_date=date(2021, 1, 4),
+            exit_price=110,
+            exit_reason="timeout",
+            return_pct=10.0,
+            source_window=(date(2020, 12, 28), date(2021, 1, 4)),
+        )
+        train = Window(pd.Timestamp("2020-01-01"), pd.Timestamp("2020-12-31"))
+
+        self.assertEqual(partition_completed_events((crossing,), train), [])
+
+    def test_execute_partition_cannot_use_an_exit_beyond_its_supplied_end(self):
+        dates = pd.bdate_range("2025-01-01", periods=10)
+        frame = pd.DataFrame(
+            {
+                "date": dates,
+                "open": [100] * 10,
+                "high": [105] * 10,
+                "low": [95] * 10,
+                "close": [100] * 10,
+                "ATR_14": [10] * 10,
+            }
+        )
+        frame.loc[6, "low"] = 80
+        entries = pd.Series(False, index=frame.index)
+        entries.loc[1] = True
+
+        events = execute_partition(
+            frame,
+            _execution(("rulebook_adx_gate",)),
+            entries,
+            start=dates[0].date(),
+            end=dates[5].date(),
+        )
+
+        self.assertEqual((), events)
 
     def test_partition_metrics_marks_p_value_na_at_or_below_block_size(self):
         events = tuple(_event(date(2020, 1, 1) + timedelta(days=index * 3), 1.0 if index % 2 else -0.5) for index in range(5))
@@ -132,6 +190,41 @@ class ExploratoryEvaluationTests(unittest.TestCase):
         self.assertEqual(candidate.preferred_variant, "no-background-theme")
         self.assertEqual(candidate.themed.dsr_status, "unavailable")
         self.assertEqual(candidate.themed.training.n, 1)
+        self.assertEqual(candidate.no_theme.training.n, 5)
+        self.assertEqual(candidate.to_dict()["candidate_role"], "baseline_control")
+
+    def test_exact_rank_tie_uses_lexical_identity_and_hard_stops_at_three(self):
+        events = tuple(
+            _event(date(2020, 1, 1) + timedelta(days=index * 3), value)
+            for index, value in enumerate((1.0, -0.5, 1.0, 1.0, -0.5))
+        )
+        candidates = []
+        for gate in (
+            "rulebook_volume_gate",
+            "rulebook_rsi_upcross",
+            "rulebook_joint_trend_pass",
+            "rulebook_adx_gate",
+        ):
+            candidates.append(build_exploratory_candidate(
+                _execution((gate,)),
+                _execution((gate,), "background-theme"),
+                events,
+                events,
+                (),
+                (),
+                permutation_count=1000,
+                permutation_seed=42,
+                permutation_block_size=20,
+            ))
+
+        self.assertEqual(
+            [candidate.rule_id for candidate in rank_top_candidates(candidates)],
+            [
+                "swing_rulebook_v5__adx",
+                "swing_rulebook_v5__joint_trend",
+                "swing_rulebook_v5__rsi_upcross",
+            ],
+        )
 
     def test_rank_uses_unrounded_training_metrics_then_lexical_id(self):
         no_theme_events = tuple(
@@ -157,7 +250,7 @@ class ExploratoryEvaluationTests(unittest.TestCase):
 
         self.assertEqual(
             [candidate.rule_id for candidate in rank_top_candidates((volume, adx))],
-            ["swing_rulebook_v4__adx", "swing_rulebook_v4__volume"],
+            ["swing_rulebook_v5__adx", "swing_rulebook_v5__volume"],
         )
 
 

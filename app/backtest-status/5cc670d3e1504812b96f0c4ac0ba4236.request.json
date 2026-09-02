@@ -1,24 +1,9 @@
 {
-  "config": {
-    "end_date": "2026-08-24",
-    "group_name": "V\u1ecaN V\u01af\u01a0NG",
-    "horizon": "swing",
-    "output_dir": "backtest-result/ticker-signals",
-    "permutation_block_size": 20,
-    "permutation_count": 1000,
-    "permutation_seed": 42,
-    "request_type": "backtest_batch_v4",
-    "start_date": "2011-08-24",
-    "tickers": [
-      "VHM",
-      "VIC",
-      "VPL",
-      "VRE"
-    ],
-    "worker_count": 6
-  },
-  "factory_ref": "backtest_engine.pipeline:run_backtest_batch_from_env",
+  "error_text": "Regenerate under Backtest schema 5.",
   "job_id": "5cc670d3e1504812b96f0c4ac0ba4236",
-  "schema_version": 4,
-  "status_dir": "backtest-status"
+  "output_paths": [],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "requires_regeneration",
+  "ticker_results": []
 }

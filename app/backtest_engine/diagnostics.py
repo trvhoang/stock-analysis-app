@@ -1,4 +1,4 @@
-"""Read-only schema-4 exploratory diagnostics; never inspect or write artifacts."""
+"""Read-only schema-5 exploratory diagnostics; never inspect or write artifacts."""
 
 import pandas as pd
 
@@ -6,7 +6,13 @@ from .config import BacktestConfig, ENTRY_GATE_NAMES, rulebook_for
 from .data_quality import audit_history, validate_ohlcv
 from .exploratory import evaluate_exploratory_candidates
 from .indicators import build_rulebook_frame
-from .pipeline import _build_confirmation_frame, _prepare_ticker, _theme_signal
+from .pipeline import (
+    _build_confirmation_frame,
+    _load_validated_history,
+    _requested_dates,
+    _theme_signal,
+)
+from .timeframes import latest_common_completed_bar
 
 
 def _iso_date(value: object) -> str | None:
@@ -23,28 +29,57 @@ def _audit_report(audit) -> dict[str, object]:
     }
 
 
-def _frame_from_supplied_history(config: BacktestConfig, raw_history: pd.DataFrame):
+def _frame_from_supplied_history(
+    config: BacktestConfig,
+    raw_history: pd.DataFrame,
+    common_as_of,
+):
     quality = validate_ohlcv(raw_history)
-    if not quality.is_valid:
+    if not quality.is_valid or quality.valid_frame is None:
         raise ValueError("invalid backtest data: " + "; ".join(quality.errors))
-    return build_rulebook_frame(raw_history, rulebook_for(config.horizon)), audit_history(config.ticker, raw_history)
+    validated = quality.valid_frame
+    return (
+        build_rulebook_frame(
+            validated,
+            rulebook_for(config.horizon),
+            common_as_of=common_as_of,
+        ),
+        audit_history(config.ticker, validated),
+        validated,
+    )
 
 
 def collect_rulebook_diagnostics(config: BacktestConfig, engine, *, raw_history: pd.DataFrame | None = None, vnindex_history: pd.DataFrame | None = None) -> dict[str, object]:
     """Report the all-subset paired evaluation without writes or binary decisions."""
 
     if raw_history is None:
-        frame, audit, raw_history = _prepare_ticker(config.ticker, config, engine)
-    else:
-        frame, audit = _frame_from_supplied_history(config, raw_history)
+        raw_history = _load_validated_history(config.ticker, config, engine)
+    sources = {config.ticker: raw_history}
+    if vnindex_history is not None:
+        quality = validate_ohlcv(vnindex_history)
+        if not quality.is_valid or quality.valid_frame is None:
+            raise ValueError("invalid VN-Index data: " + "; ".join(quality.errors))
+        vnindex_history = quality.valid_frame
+        sources["VNINDEX"] = vnindex_history
+    _, requested_end = _requested_dates(config)
+    common_as_of = latest_common_completed_bar(sources, requested_end)
+    frame, audit, raw_history = _frame_from_supplied_history(
+        config,
+        raw_history,
+        common_as_of,
+    )
     if vnindex_history is None:
         theme_eligible = pd.Series(False, index=frame.index, dtype=bool)
         theme_source = "unavailable; themed evidence has zero eligible entries"
     else:
-        quality = validate_ohlcv(vnindex_history)
-        if not quality.is_valid:
-            raise ValueError("invalid VN-Index data: " + "; ".join(quality.errors))
-        theme_eligible = _theme_signal(frame, _build_confirmation_frame(vnindex_history, config.horizon))
+        theme_eligible = _theme_signal(
+            frame,
+            _build_confirmation_frame(
+                vnindex_history,
+                config.horizon,
+                common_as_of=common_as_of,
+            ),
+        )
         theme_source = "provided VN-Index history"
     end = config.end_date or pd.Timestamp(raw_history["date"].iloc[-1]).date()
     start = config.start_date or pd.Timestamp(raw_history["date"].iloc[0]).date()

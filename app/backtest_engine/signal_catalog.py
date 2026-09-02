@@ -1,10 +1,11 @@
-"""Read only current schema-4 exploratory rulebook aggregates."""
+"""Read only current schema-5 exploratory rulebook aggregates."""
 
 from collections.abc import Mapping, Sequence
 
 from .config import DEFAULT_SIGNAL_DIR, HORIZONS, _normalize_ticker
 from .persistence import load_rulebook_result, signal_artifact_path
 from .result_store import ensure_result_root, list_groups
+from .signal_removal import recover_pending_signal_removal
 
 
 _HORIZON_LABELS = {"swing": "Swing", "midterm": "Mid-term"}
@@ -14,7 +15,7 @@ def _top_candidates(result: Mapping[str, object]) -> list[dict[str, object]]:
     candidates = result.get("candidates")
     top_ids = result.get("top_rulebook_ids")
     if not isinstance(candidates, list) or not isinstance(top_ids, list):
-        raise ValueError("schema-4 result candidates are invalid")
+        raise ValueError("schema-5 result candidates are invalid")
     by_id = {
         candidate.get("rulebook_id"): candidate
         for candidate in candidates
@@ -23,7 +24,7 @@ def _top_candidates(result: Mapping[str, object]) -> list[dict[str, object]]:
     try:
         return [dict(by_id[rulebook_id]) for rulebook_id in top_ids]
     except KeyError as error:
-        raise ValueError("schema-4 result Top-3 identity is invalid") from error
+        raise ValueError("schema-5 result Top-3 identity is invalid") from error
 
 
 def _catalog_success_row(result: Mapping[str, object], candidate: Mapping[str, object]) -> dict[str, object]:
@@ -38,6 +39,7 @@ def _catalog_success_row(result: Mapping[str, object], candidate: Mapping[str, o
         "Selected gates": list(candidate["selected_gates"]),
         "Preferred treatment": preferred,
         "Evaluation": result["evaluation_label"],
+        "Evidence": result["evidence_eligibility"]["status"],
         "Training n": training["n"],
         "Training win rate %": training["win_rate"],
         "Training profit %": training["profit_pct"],
@@ -63,8 +65,17 @@ def _terminal_row(result: Mapping[str, object]) -> dict[str, object]:
 
 
 def list_current_signal_set_rows(signal_dir: str = DEFAULT_SIGNAL_DIR) -> dict[str, list[dict[str, object]]]:
-    """List Top-3 rows and terminal schema-4 states; legacy paths remain invisible."""
+    """List Top-3 rows and terminal schema-5 states; old paths remain invisible."""
 
+    try:
+        recover_pending_signal_removal(signal_dir)
+    except (OSError, TypeError, ValueError) as error:
+        return {
+            "valid": [],
+            "invalid": [],
+            "terminal": [],
+            "warnings": [f"Signal removal recovery is required: {error}"],
+        }
     root = ensure_result_root(signal_dir)
     valid: list[dict[str, object]] = []
     invalid: list[dict[str, object]] = []
@@ -92,9 +103,9 @@ def list_current_signal_set_rows(signal_dir: str = DEFAULT_SIGNAL_DIR) -> dict[s
             try:
                 result = load_rulebook_result(path)
                 if result["ticker"] != ticker or result["horizon"] != horizon:
-                    raise ValueError("schema-4 document identity differs from its path")
+                    raise ValueError("schema-5 document identity differs from its path")
             except (OSError, TypeError, ValueError) as error:
-                invalid.append({"Ticker": ticker, "Horizon": _HORIZON_LABELS[horizon], "_source": str(path), "_issue": f"Invalid schema-4 signal artifact: {error}", "_groups": groups_by_ticker.get(ticker, ())})
+                invalid.append({"Ticker": ticker, "Horizon": _HORIZON_LABELS[horizon], "_source": str(path), "_issue": f"Invalid schema-5 signal artifact: {error}", "_groups": groups_by_ticker.get(ticker, ())})
                 continue
             if result["terminal_state"] == "success":
                 for candidate in _top_candidates(result):
@@ -109,9 +120,13 @@ def list_current_signal_set_rows(signal_dir: str = DEFAULT_SIGNAL_DIR) -> dict[s
 
 
 def list_saved_signal_options(ticker: str, signal_dir: str = DEFAULT_SIGNAL_DIR) -> list[dict[str, object]]:
-    """Return only schema-4 Top-3 preferred selections across both horizons."""
+    """Return only schema-5 Top-3 preferred selections across both horizons."""
 
     normalized = _normalize_ticker(ticker)
+    try:
+        recover_pending_signal_removal(signal_dir)
+    except (OSError, TypeError, ValueError):
+        return []
     root = ensure_result_root(signal_dir)
     options = []
     for horizon in HORIZONS:
@@ -139,14 +154,18 @@ def list_saved_signal_options(ticker: str, signal_dir: str = DEFAULT_SIGNAL_DIR)
 
 
 def tickers_with_no_saved_signal(tickers: Sequence[str], signal_dir: str = DEFAULT_SIGNAL_DIR) -> tuple[str, ...]:
-    """Return requested tickers without a readable nonempty schema-4 aggregate."""
+    """Return requested tickers without a readable nonempty schema-5 aggregate."""
 
     if isinstance(tickers, (str, bytes)) or not isinstance(tickers, Sequence):
         raise ValueError("tickers must be a sequence")
+    normalized_tickers = tuple(_normalize_ticker(ticker) for ticker in tickers)
+    try:
+        recover_pending_signal_removal(signal_dir)
+    except (OSError, TypeError, ValueError):
+        return normalized_tickers
     root = ensure_result_root(signal_dir)
     missing = []
-    for requested in tickers:
-        ticker = _normalize_ticker(requested)
+    for ticker in normalized_tickers:
         found = False
         for horizon in HORIZONS:
             path = signal_artifact_path(ticker, horizon, str(root))

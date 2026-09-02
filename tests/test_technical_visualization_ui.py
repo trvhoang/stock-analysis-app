@@ -1,10 +1,12 @@
 import unittest
 
 import pandas as pd
+from plotly.subplots import make_subplots
 
 from pages.technical_visualization import (
     TECHNICAL_CHART_OPTIONS,
     TECHNICAL_INDICATOR_TABS,
+    _add_selected_indicator,
     build_price_candlestick,
     get_ma_pair_options,
     get_indicator_chart_spec,
@@ -88,6 +90,39 @@ class TestTechnicalVisualizationUI(unittest.TestCase):
             trace_json["text"][0],
             "Date: 2026-08-01<br>Open: 50.30k<br>High: 51.00k<br>Low: 49.80k<br>Close: 50.70k",
         )
+
+    def test_selected_indicator_adds_overlay_cross_markers_and_panel_thresholds(self):
+        frame = pd.DataFrame(
+            {
+                "date": pd.to_datetime(["2026-08-01", "2026-08-02"]),
+                "low": [49.0, 50.0], "high": [51.0, 52.0],
+                "SMA_5": [50.0, 51.0], "SMA_10": [49.5, 50.5],
+                "cross_5_10": [1, -1], "RSI_14": [45.0, 55.0],
+            }
+        )
+        figure = make_subplots(rows=2, cols=1)
+        _add_selected_indicator(
+            figure, frame, "MA Cross", get_indicator_chart_spec("MA Cross", 5, 10), 1, 5, 10
+        )
+        self.assertEqual([trace.name for trace in figure.data], ["SMA 5", "SMA 10", "Golden Cross", "Death Cross"])
+
+        panel = make_subplots(rows=2, cols=1)
+        _add_selected_indicator(panel, frame, "RSI", get_indicator_chart_spec("RSI", 5, 10), 2, 5, 10)
+        self.assertEqual([trace.name for trace in panel.data], ["RSI 14"])
+        self.assertEqual(len(panel.layout.shapes), 2)
+
+    def test_selected_indicator_is_noop_when_required_columns_are_missing(self):
+        figure = make_subplots(rows=2, cols=1)
+        _add_selected_indicator(
+            figure,
+            pd.DataFrame({"date": pd.to_datetime(["2026-08-01"]), "close": [50.0]}),
+            "RSI",
+            get_indicator_chart_spec("RSI", 5, 10),
+            2,
+            5,
+            10,
+        )
+        self.assertEqual(len(figure.data), 0)
 
 
 if __name__ == "__main__":

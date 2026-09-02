@@ -13,6 +13,7 @@ import numpy as np
 import pytz
 
 from flexible_rulebook.catalog import catalog_revision_1, feature_profile
+from flexible_rulebook.cap_benchmark import SlotPhaseTiming
 from flexible_rulebook.contracts import ExecutionContract, FeatureBuildContract
 from flexible_rulebook.execution import CompletedTrade
 from flexible_rulebook.features import FeatureResolution, resolve_feature_store
@@ -84,6 +85,40 @@ class FlexibleRulebookSearchTests(unittest.TestCase):
 
         self.assertEqual((result.state, result.chain_attempted_count, result.next_slot, result.uncommitted_slot), ("time_budget_exhausted", 0, 0, 0))
 
+    def test_continuation_deadline_reports_global_cursor_and_remaining_slots(self) -> None:
+        catalog = self._small_catalog(); space = candidate_space(catalog)
+        assignment = assign_frontier(
+            space,
+            frontier_seed="frb-default-seed-v1",
+            source_ticker="VCB",
+            start_slot=5,
+            budget=SearchBudget(attempt_count=2),
+        )
+        snapshot = HistorySnapshot(
+            "VCB",
+            pd.DataFrame({"date": [date(2025, 1, 2), date(2025, 1, 3)], "open": [100, 100], "high": [101, 101], "low": [99, 99], "close": [100, 100], "volume": [100, 100]}),
+            "a" * 64,
+            "eligible",
+            date(2025, 1, 2),
+            date(2025, 1, 3),
+            date(2025, 1, 2),
+            date(2025, 1, 3),
+            "a" * 64,
+        )
+
+        result = discover_and_evaluate(
+            snapshot,
+            object.__new__(FeatureResolution),
+            space,
+            assignment,
+            monotonic=lambda: 16_200,
+        )
+
+        self.assertEqual(result.chain_attempted_count, 5)
+        self.assertEqual(result.next_slot, 5)
+        self.assertEqual(result.uncommitted_slot, 5)
+        self.assertEqual(result.unsearched_count, space.size - 5)
+
     def test_discovery_ledger_rows_reconstruct_frozen_slot_provenance(self) -> None:
         space = candidate_space(self._small_catalog())
         assignment = assign_frontier(space, frontier_seed="frb-default-seed-v1", source_ticker="VCB", start_slot=0, budget=SearchBudget(attempt_count=1))
@@ -110,6 +145,33 @@ class FlexibleRulebookSearchTests(unittest.TestCase):
                 result = discover_and_evaluate(snapshot, features, space, assignment, monotonic=lambda: 0)
         self.assertEqual(execute.call_count, 2)
         self.assertEqual((result.frozen_rulebook_ids[0][:4], result.outcomes[0][1], len(result.evaluations)), ("frb_", "qualified", 1))
+
+    def test_phase_observer_records_slot_addressed_entry_training_and_test_execution(self) -> None:
+        catalog = self._small_catalog(); space = candidate_space(catalog)
+        dates = [date(2025, 1, 2) + timedelta(days=index) for index in range(40)]
+        snapshot = HistorySnapshot("VCB", pd.DataFrame({"date": dates, "open": [100 + index for index in range(40)], "high": [101 + index for index in range(40)], "low": [99 + index for index in range(40)], "close": [100 + index for index in range(40)], "volume": [100] * 40}), "a" * 64, "eligible", dates[0], dates[-1], dates[0], dates[-1], "a" * 64)
+        phases = []
+        with tempfile.TemporaryDirectory() as directory:
+            features = resolve_feature_store(snapshot, FeatureBuildContract(), feature_profile(catalog), Path(directory), choice="rebuild", now=datetime.now(pytz.timezone("Asia/Ho_Chi_Minh")))
+            assignment = assign_frontier(space, frontier_seed="frb-default-seed-v1", source_ticker="VCB", start_slot=0, budget=SearchBudget(attempt_count=1))
+            def trades(partition):
+                return tuple(CompletedTrade(f"trade-{partition.label}-{index}", dates[partition.start_ordinal + index], dates[partition.start_ordinal + index], dates[partition.start_ordinal + index], partition.start_ordinal + index, partition.start_ordinal + index, partition.start_ordinal + index, 100, 120.0, "timeout", 20.0) for index in range(12))
+            with patch("flexible_rulebook.search.compose_entry_mask", return_value=np.ones(40, dtype=bool)), patch("flexible_rulebook.search.execute_rulebook", side_effect=[trades(type("P", (), {"label": "training", "start_ordinal": 0})()), trades(type("P", (), {"label": "test", "start_ordinal": 26})())]):
+                discover_and_evaluate(
+                    snapshot,
+                    features,
+                    space,
+                    assignment,
+                    monotonic=lambda: 0,
+                    phase_observer=phases.append,
+                )
+
+        self.assertTrue(all(isinstance(event, SlotPhaseTiming) for event in phases))
+        self.assertEqual(
+            [(event.global_slot, event.phase) for event in phases],
+            [(0, "entry_mask"), (0, "training"), (0, "test")],
+        )
+        self.assertTrue(all(event.seconds >= 0.0 for event in phases))
 
     def test_discovery_records_the_persisted_split_and_execution_contract(self) -> None:
         catalog = self._small_catalog(); space = candidate_space(catalog)

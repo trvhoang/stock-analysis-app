@@ -32,6 +32,8 @@ A high-level overview of the project's directory structure.
 │   ├── commons/          # Shared logic and SQL queries
 │   │   ├── common_functions.py # Business logic shared by UI and API
 │   │   └── common_queries.py
+│   ├── backtest_engine/  # Schema-5 Backtest contracts, evidence, execution, and storage
+│   ├── backtest-research/# Non-canonical, research-only experiment evidence
 │   └── pages/            # Streamlit visualization and data pages
 │       ├── data_preparation.py
 │       ├── analyze_visualization.py
@@ -97,6 +99,15 @@ Details on the role of each Python module within the `app/` directory.
     - **`routes.py`**: Defines RESTful endpoints for ticker analysis and programmatic data updates.
     - **`schemas.py`**: Defines Pydantic models for request validation and structured JSON responses.
 
+- **`backtest_engine/`**:
+    - **Schema-5 ownership:** Owns immutable Swing/Mid-term rulebooks, candidate subsets, paired no-theme/VN-Index-AND treatments, training/test ranking, Top 3 identities, and strict current artifact/job contracts.
+    - **Causal clock:** Freezes one latest common completed daily bar across ticker and VN-Index sources; Mid-term derives only completed `W-FRI` bars through that cutoff.
+    - **Evidence identity:** Hashes canonical raw OHLCV rows for ticker and VN-Index. BUY eligibility requires a clean raw audit, at least 95% coverage of effective VN-Index sessions, no missing run over 20 sessions, and an exact latest-bar match.
+    - **Execution:** Simulates long-only next-open entries, frozen signal-bar ATR stop/target levels, stop-first OHLC collision handling, raw-open gap stops, and exits completed wholly inside their reporting partition.
+    - **Persistence and replay:** Writes schema-5 artifacts atomically. View/Validate accept current schema-5 evidence only, recompute source identity before replay, and keep ineligible output display-only.
+    - **Runtime parity:** Production uses array-backed trade execution, seeded moving-block construction, and indexed Wilder recurrences only where trace/numeric parity with retained reference implementations is exact. Ticker batch execution remains sequential.
+    - **Research isolation:** `research.py` and `research_runner.py` evaluate only predeclared controlled variants and write content-addressed evidence outside canonical product paths. Test observations cannot change training selection, and no research result auto-promotes.
+
 ## 4. Data Flow
 
 ### Data Ingestion Flow
@@ -128,6 +139,26 @@ graph TD
     subgraph "Browser"
         G -->|Displays DataFrames & Text| H[Streamlit UI];
     end
+```
+
+### Backtest Schema-5 Flow
+
+```mermaid
+graph TD
+    A[Collect request: ticker batch and horizon] --> B[Bound OHLCV reads]
+    B --> C[Latest common completed ticker/VN-Index bar]
+    C --> D[Raw audit + source fingerprints + density/gap eligibility]
+    C --> E[Daily or completed W-FRI indicator frame]
+    E --> F[All non-empty gate subsets]
+    F --> G[No-theme and VN-Index-AND treatments]
+    G --> H[10y/5y or 65/35 partition-complete trades]
+    H --> I[Training DSR treatment choice]
+    I --> J[Training win rate, profit, Sharpe ranking]
+    J --> K[Top 3 schema-5 artifact]
+    D --> K
+    K --> L[View Signals]
+    K --> M[Validate Signals: fresh source recheck]
+    M --> N[Display-only or BUY-eligible advice; no trade execution]
 ```
 
 ## 5. Database Schema

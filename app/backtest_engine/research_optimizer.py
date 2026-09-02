@@ -22,6 +22,7 @@ from .validation import (
     moving_block_permutation_test,
 )
 from .vnindex_theme import align_vnindex_asof, build_vnindex_confirmation
+from .timeframes import latest_common_completed_bar
 
 
 _GATE_COLUMNS = (
@@ -414,10 +415,15 @@ def _theme_signal_for_frame(
     ticker_frame: pd.DataFrame,
     vnindex_raw: pd.DataFrame,
     horizon: str,
+    common_as_of: date,
 ) -> pd.Series:
     """Build the existing causal VNIndex confirmation aligned to one V3 frame."""
 
-    confirmation = build_vnindex_confirmation(vnindex_raw, horizon)
+    confirmation = build_vnindex_confirmation(
+        vnindex_raw,
+        horizon,
+        common_as_of=common_as_of,
+    )
     confirmation_frame = pd.DataFrame(
         {
             "date": pd.DatetimeIndex(confirmation.index),
@@ -445,10 +451,23 @@ def collect_research_from_histories(
     _require_valid_history("VNINDEX", vnindex_raw)
     source_start, source_end = _source_bounds(vcb_raw)
     audit = audit_history("VCB", vcb_raw)
+    common_as_of = latest_common_completed_bar(
+        {"VCB": vcb_raw, "VNINDEX": vnindex_raw},
+        as_of,
+    )
     results_by_horizon = {}
     for horizon in HORIZONS:
-        frame = build_rulebook_frame(vcb_raw, rulebook_for(horizon))
-        theme_signal = _theme_signal_for_frame(frame, vnindex_raw, horizon)
+        frame = build_rulebook_frame(
+            vcb_raw,
+            rulebook_for(horizon),
+            common_as_of=common_as_of,
+        )
+        theme_signal = _theme_signal_for_frame(
+            frame,
+            vnindex_raw,
+            horizon,
+            common_as_of,
+        )
         results_by_horizon[horizon] = evaluate_horizon(frame, horizon, theme_signal)
     return ResearchRun(
         as_of=as_of,

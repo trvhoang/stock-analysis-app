@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import date, datetime
+from math import isfinite
 from typing import Optional
 
 from .config import (
@@ -139,6 +140,7 @@ class TradeEvent:
     exit_reason: str
     return_pct: float
     source_window: tuple[date, date]
+    maximum_adverse_excursion_pct: float | None = None
 
     def __post_init__(self) -> None:
         if self.entry_price <= 0 or self.exit_price <= 0:
@@ -149,6 +151,14 @@ class TradeEvent:
             raise ValueError(f"exit_reason must be one of {EXIT_REASONS}")
         if len(self.source_window) != 2:
             raise ValueError("source_window must contain start and end dates")
+        if (
+            self.maximum_adverse_excursion_pct is not None
+            and (
+                not isfinite(float(self.maximum_adverse_excursion_pct))
+                or float(self.maximum_adverse_excursion_pct) < 0.0
+            )
+        ):
+            raise ValueError("maximum adverse excursion must be finite and non-negative")
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -163,6 +173,7 @@ class TradeEvent:
             "exit_reason": self.exit_reason,
             "return_pct": self.return_pct,
             "source_window": [_json_date(value) for value in self.source_window],
+            "maximum_adverse_excursion_pct": self.maximum_adverse_excursion_pct,
         }
 
 
@@ -229,7 +240,7 @@ class JobStatus:
 
     def to_dict(self) -> dict[str, object]:
         return {
-            "schema_version": 4,
+            "schema_version": 5,
             "job_id": self.job_id,
             "state": self.state,
             "progress": self.progress,

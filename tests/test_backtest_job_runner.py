@@ -67,7 +67,7 @@ class BacktestJobRunnerTests(unittest.TestCase):
         config = BacktestBatchConfig(tickers=("fpt", "vcb"), horizon="swing")
 
         self.assertEqual(config.tickers, ("FPT", "VCB"))
-        self.assertEqual(config.to_dict()["request_type"], "backtest_batch_v4")
+        self.assertEqual(config.to_dict()["request_type"], "backtest_batch_v5")
         with self.assertRaisesRegex(ValueError, "duplicate"):
             BacktestBatchConfig(tickers=("FPT", "fpt"))
         with self.assertRaisesRegex(ValueError, "between 1 and 15"):
@@ -92,6 +92,7 @@ class BacktestJobRunnerTests(unittest.TestCase):
             request = json.loads(request_path.read_text(encoding="utf-8"))
 
         self.assertEqual(request["config"], config.to_dict())
+        self.assertEqual(5, request["schema_version"])
         self.assertEqual(
             request["factory_ref"],
             f"{_instant_engine.__module__}:_instant_engine",
@@ -117,6 +118,7 @@ class BacktestJobRunnerTests(unittest.TestCase):
             request_path.write_text(
                 json.dumps(
                     {
+                        "schema_version": 5,
                         "job_id": "bad",
                         "config": config.to_dict(),
                         "factory_ref": "not_a_module:missing",
@@ -149,6 +151,26 @@ class BacktestJobRunnerTests(unittest.TestCase):
         self.assertEqual(final.progress, 1.0)
         self.assertEqual(final.output_paths, ("FPT.json",))
         self.assertIsNone(final.error_text)
+
+    def test_schema_four_status_is_rejected_without_migration(self):
+        with self._temporary_status_dir() as directory:
+            path = Path(directory) / "old.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 4,
+                        "job_id": "old",
+                        "state": "done",
+                        "progress": 1.0,
+                        "output_paths": [],
+                        "error_text": None,
+                        "ticker_results": [],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "unsupported job status schema"):
+                read_job_status("old", directory)
 
     def test_progress_is_monotonic_and_failure_is_persisted(self):
         config = BacktestConfig.for_ticker("FPT")

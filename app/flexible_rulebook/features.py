@@ -255,6 +255,39 @@ class CacheOffer:
 
 
 @dataclass(frozen=True)
+class FeaturePreflight:
+    """Fresh source/cache offer captured before a qualification batch runs."""
+
+    snapshot: HistorySnapshot
+    build_contract: FeatureBuildContract
+    feature_plan: FeaturePlan
+    cache_offer: CacheOffer
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.snapshot, HistorySnapshot) or self.snapshot.quality_state == "invalid":
+            raise ValueError("feature preflight requires usable HistorySnapshot")
+        if not isinstance(self.build_contract, FeatureBuildContract):
+            raise ValueError("feature preflight requires FeatureBuildContract")
+        if not isinstance(self.feature_plan, FeaturePlan):
+            raise ValueError("feature preflight requires FeaturePlan")
+        if not isinstance(self.cache_offer, CacheOffer):
+            raise ValueError("feature preflight requires CacheOffer")
+        if self.feature_plan.build_contract != self.build_contract:
+            raise ValueError("feature plan/build contract mismatch")
+        if self.feature_plan.snapshot != _feature_snapshot(self.snapshot):
+            raise ValueError("feature plan/source snapshot mismatch")
+
+    @property
+    def key(self) -> tuple[str, str]:
+        """Stable batch key: target ticker plus immutable build contract hash."""
+
+        return (
+            self.snapshot.ticker,
+            self.build_contract.feature_build_contract_hash,
+        )
+
+
+@dataclass(frozen=True)
 class FeatureResolution:
     """Request-only feature assembly and immutable component receipt."""
 
@@ -289,6 +322,12 @@ def _feature_snapshot(snapshot: HistorySnapshot) -> FeatureSnapshot:
     )
 
 
+def feature_snapshot_for_history(snapshot: HistorySnapshot) -> FeatureSnapshot:
+    """Convert one validated history load into its immutable feature identity."""
+
+    return _feature_snapshot(snapshot)
+
+
 def _cache_state(store: FeatureStore, spec: PrimitiveSpec) -> dict[str, object]:
     return {
         "as_of_date": store.dates[-1].isoformat(),
@@ -297,6 +336,24 @@ def _cache_state(store: FeatureStore, spec: PrimitiveSpec) -> dict[str, object]:
         "primitive": spec.to_dict(),
         "state_revision": "flexible-primitive-state-v1",
     }
+
+
+def _raw_store_arrays(snapshot: HistorySnapshot) -> tuple[tuple[date, ...], np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Extract immutable raw arrays without calculating any indicator component."""
+
+    if not isinstance(snapshot, HistorySnapshot) or snapshot.quality_state == "invalid":
+        raise ValueError("cannot build features from invalid history")
+    frame = snapshot.frame
+    parsed_dates = pd.to_datetime(frame["date"], errors="raise")
+    dates = tuple(item.date() for item in parsed_dates)
+    return (
+        dates,
+        _integer_column(frame, "open"),
+        _integer_column(frame, "high"),
+        _integer_column(frame, "low"),
+        _integer_column(frame, "close"),
+        _integer_column(frame, "volume"),
+    )
 
 
 def _cached_component_is_compatible(
@@ -369,15 +426,24 @@ def resolve_feature_store(
                 if component is not None and _cached_component_is_compatible(component, snapshot, primitive_key.primitive_spec):
                     cached[primitive_key.primitive_spec] = component
 
-    # Build once per request when any component needs calculation; no raw source
-    # or composed candidate mask enters the persistent cache.
-    built = build_feature_store(snapshot, contract, profile)
+    requested_specs = tuple(key.primitive_spec for key in plan.primitive_keys)
+    missing_specs = tuple(spec for spec in requested_specs if spec not in cached)
+    # Build only the missing computed components. A complete cache hit must not
+    # recalculate any indicator; raw OHLCV extraction remains local assembly.
+    built = (
+        build_feature_store(snapshot, contract, FeatureProfile(missing_specs))
+        if missing_specs
+        else None
+    )
+    dates, raw_open, raw_high, raw_low, raw_close, raw_volume = _raw_store_arrays(snapshot)
     resolved: dict[PrimitiveSpec, Mapping[str, np.ndarray]] = {}
     component_digests: list[tuple[str, str]] = []
     for primitive_key in plan.primitive_keys:
         spec = primitive_key.primitive_spec
         component = cached.get(spec)
         if component is None:
+            if built is None:
+                raise ValueError("missing feature component was not built")
             arrays = dict(built.components[spec])
             state = _cache_state(built, spec)
             outcome = try_write_component(Path(root), primitive_key.primitive_key, arrays, state, now)
@@ -390,8 +456,8 @@ def resolve_feature_store(
         resolved[spec] = component.arrays
         component_digests.append((primitive_key.primitive_key, component.digest))
     store = FeatureStore(
-        snapshot=built.snapshot, dates=built.dates, open=built.open, high=built.high,
-        low=built.low, close=built.close, volume=built.volume, components=resolved,
+        snapshot=snapshot, dates=dates, open=raw_open, high=raw_high,
+        low=raw_low, close=raw_close, volume=raw_volume, components=resolved,
     )
     receipt = FeatureResolutionReceipt(plan, tuple(component_digests))
     return FeatureResolution(store, plan, receipt)
@@ -408,14 +474,7 @@ def build_feature_store(
         raise ValueError("cannot build features from invalid history")
     if not isinstance(contract, FeatureBuildContract) or not isinstance(profile, FeatureProfile):
         raise ValueError("build requires FeatureBuildContract and FeatureProfile")
-    frame = snapshot.frame
-    parsed_dates = pd.to_datetime(frame["date"], errors="raise")
-    dates = tuple(item.date() for item in parsed_dates)
-    raw_open = _integer_column(frame, "open")
-    raw_high = _integer_column(frame, "high")
-    raw_low = _integer_column(frame, "low")
-    raw_close = _integer_column(frame, "close")
-    raw_volume = _integer_column(frame, "volume")
+    dates, raw_open, raw_high, raw_low, raw_close, raw_volume = _raw_store_arrays(snapshot)
     components: dict[PrimitiveSpec, Mapping[str, np.ndarray]] = {}
     for spec in profile.primitive_specs:
         _validate_spec(spec)
@@ -542,12 +601,14 @@ def compose_technical_exit_mask(store: FeatureStore, definition: RulebookDefinit
 __all__ = [
     "FeatureStore",
     "CacheOffer",
+    "FeaturePreflight",
     "FeatureResolution",
     "build_feature_store",
     "compose_entry_mask",
     "compose_technical_exit_mask",
     "primitive_mask",
     "current_feature_build_contract",
+    "feature_snapshot_for_history",
     "inspect_primitive_cache",
     "resolve_feature_store",
 ]

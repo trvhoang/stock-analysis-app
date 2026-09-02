@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import copy
+import tempfile
 import unittest
 
 import pandas as pd
 
 from backtest_engine.position_monitor import monitor_position
+from backtest_engine.manual_position_store import create_manual_position
+from tests.test_backtest_position_store import _reference
 
 
 def _daily_history(rows: int, close: int = 100) -> pd.DataFrame:
@@ -41,6 +44,22 @@ def _position(horizon: str = "swing", max_hold_bars: int | None = None) -> dict[
 
 
 class PositionMonitorTests(unittest.TestCase):
+    def test_v5_saved_position_preserves_horizon_for_native_monitoring(self):
+        with tempfile.TemporaryDirectory() as directory:
+            position = create_manual_position(
+                "FPT",
+                100,
+                "2026-01-05",
+                signal_reference=_reference("swing"),
+                entry_context={"match_level": 100.0, "current_price": 100, "as_of_date": "2026-01-05"},
+                risk_snapshot={"atr": 5, "stop_loss": 92, "take_profit": 112, "max_hold_bars": 22},
+                positions_dir=directory,
+            )
+
+        result = monitor_position(position, _daily_history(4), "2026-01-08")
+
+        self.assertEqual(result["horizon"], "swing")
+
     def test_v3_frozen_rulebook_snapshot_uses_its_horizon_without_combo_replay(self):
         history = _daily_history(4)
         position = _position()

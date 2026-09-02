@@ -17,7 +17,7 @@ import pytz
 
 from .config import HORIZONS, THEME_VARIANTS, _normalize_ticker, rulebook_for
 
-# Read-only legacy history support. New position writes use schema-4 references.
+# Read-only legacy history support. New position writes use schema-5 references.
 CERTIFICATION_METRICS = ("win_rate", "profit", "sharpe")
 
 

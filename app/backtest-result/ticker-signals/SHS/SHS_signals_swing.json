@@ -6,28 +6,49 @@
     ],
     "eligible": false,
     "reasons": [
-      "ValueError: invalid backtest data: high contains non-positive prices"
+      "Regenerate under Backtest schema 5."
     ],
     "source": "unavailable",
     "status": "unavailable",
     "warnings": []
   },
   "candidates": [],
+  "contract_version": "backtest_schema5_v1",
   "effective_data_range": {
     "end": null,
-    "reason": "ValueError: invalid backtest data: high contains non-positive prices",
+    "reason": "Regenerate under Backtest schema 5.",
     "start": null
   },
   "empty": true,
-  "evaluated_at": "2026-08-26T23:00:06.941906+07:00",
+  "evaluated_at": "2026-09-01T19:45:31.407809+07:00",
   "evaluation_label": "Exploratory \u2014 gross",
-  "failure_reason": "ValueError: invalid backtest data: high contains non-positive prices",
+  "evidence_eligibility": {
+    "common_as_of": null,
+    "coverage_ratio": 0.0,
+    "eligible": false,
+    "expected_sessions": 0,
+    "first_available_bar": null,
+    "last_available_bar": null,
+    "max_gap_sessions": 0,
+    "observed_sessions": 0,
+    "reasons": [
+      "Regenerate under Backtest schema 5."
+    ],
+    "status": "unavailable",
+    "ticker_fingerprint": null,
+    "vnindex_fingerprint": null
+  },
+  "failure_reason": null,
   "horizon": "swing",
-  "rejection_reason": null,
+  "partition_labels": {
+    "test": "historical test \u2014 previously observed",
+    "training": "in-sample"
+  },
+  "rejection_reason": "Regenerate under Backtest schema 5.",
   "requested_date_range": {
-    "end": "2026-08-26",
-    "reason": null,
-    "start": "2011-08-26"
+    "end": null,
+    "reason": "Regenerate under Backtest schema 5.",
+    "start": null
   },
   "rulebook": {
     "adx_minimum": 17,
@@ -58,15 +79,15 @@
     "native_timeframe": "daily",
     "rsi_period": 9,
     "rsi_upcross_level": 52,
-    "rule_id": "swing_rulebook_v4",
+    "rule_id": "swing_rulebook_v5",
     "theme_sma_window": 50,
     "volume_multiplier": 1.15,
     "volume_window": 10,
     "weekly_frequency": null
   },
-  "schema_version": 4,
+  "schema_version": 5,
   "split": null,
-  "terminal_state": "failed",
+  "terminal_state": "requires_regeneration",
   "ticker": "SHS",
   "top_rulebook_ids": []
 }

@@ -1,7 +1,183 @@
 # FOCUS.md
-# Updated: 2026-08-27
+# Updated: 2026-09-02
 
 ## Current Task
+
+**Backtest View Signals compact remove control follow-up (2026-09-02;
+complete):** Replaced the View Signals text action with a compact `🗑️` button
+beside `Select all visible`. It remains disabled with zero selected candidates;
+its tooltip retains the explicit `Remove selected signals (N)` meaning. A
+toolbar placeholder and selection-generation key keep its state current and
+prevent a stale editor payload from restoring a cleared selection. Docker
+Backtest-page tests pass (45/45); page compilation passes. No SQL, dependency,
+or git change.
+
+**Backtest View Signals filtering and bulk candidate management (2026-09-02;
+complete):** Exact multi-ticker text filtering, configurable visible columns
+with Evidence/Theme hidden by default, visible-row numbering, native
+visible-only checkbox selection, and safe bulk removal are complete. Removal
+preserves nonselected candidates, reranks Top 3, converts a final candidate to
+a valid regeneratable schema-5 `empty` artifact, and blocks the entire request
+if an OPEN or CLOSED saved position references any selection. A durable
+before/after journal restores a coherent catalog after a mid-batch filesystem
+failure; malformed journals fail closed. Docker compilation passed; focused
+persistence/catalog/removal/page suites pass **68/68** and canonical discovery
+passes **790/790**. No git action or dependency change was made. Design:
+`docs/superpowers/specs/2026-09-02-backtest-view-signals-bulk-management-design.md`;
+plan: `docs/superpowers/plans/2026-09-02-backtest-view-signals-bulk-management.md`.
+
+**Backtest V4 schema-5 evidence integrity and enhancement (2026-09-01;
+design and ordered plan approved, Tasks 1–11 complete):** Exact
+SMA-seeded Wilder formulas, one explicit common-as-of/W-FRI clock, honest
+partition exits, gap-safe stops, immutable source fingerprints, and the 95%
+VN-Index-session/no-gap-over-20 eligibility gate are complete. Strict schema 5
+now owns artifacts, requests, jobs, Top-3 baseline identities, evidence labels,
+and current position references. Superseded schema-4 artifacts and job
+sidecars are atomic `requires_regeneration` markers; older theme-only schema-2
+files and schema-4/older positions remain ignored or frozen history.
+Validate Signals recomputes ticker and VN-Index source identity before replay,
+invalidates changed evidence, blocks ineligible BUY, and no longer treats a
+consumed BUY trigger as SELL. Only explicit exit/deterioration or frozen price
+conditions can return `can SELL`; no trade is executed. View/Validate expose
+evidence and exact `in-sample` / `historical test — previously observed`
+labels. The complete Backtest suite passes **224/224** and affected modules
+compile. Task 7's frozen eight-ticker database diagnostic completed at one
+`2026-08-28` common-as-of and exact 1,000 permutations; ordinary Collect
+workers regenerated all 16 canonical artifacts as schema-5 success documents.
+Seven tickers are evidence-eligible; HAP remains display-only/ineligible for a
+58-session source gap. The verification and artifact hashes are in
+`docs/superpowers/reports/2026-09-01-backtest-schema-5-baseline-verification.md`.
+Task 8 now supplies only the two approved immutable research pairs, causal
+setup/trigger masks, first-overlap timing, training diagnostics, and
+training-only acceptance; its selection snapshot is test-blind and remains
+`research_only`. Focused tests pass 14/14, the full Backtest suite passes
+**238/238**, compilation passes, and product-import isolation is clean.
+Task 9's read-only-by-default runner freezes training before historical test,
+requires exact Mid-term baseline/W-FRI/source identity, and writes only
+content-addressed non-canonical research evidence. The sample produced 14
+complete runs and two HAP `not_run` records; no variant passed every training
+gate, so the promotion gate remains closed. Research tests pass 21/21; the
+full Backtest suite passes **245/245**. Report:
+`docs/superpowers/reports/2026-09-01-backtest-schema-5-controlled-experiments.md`.
+Task 10 now preserves byte-exact reference semantics across all 16 frozen
+ticker/horizon benchmarks while reducing Swing p95 by about 75–78% and
+Mid-term p95 by about 64–67%; peak RSS remains about 253–258 MB. Exact parity
+tests pass 8/8 and the full Backtest gate passes **253/253**. Ticker execution
+remains sequential. Task 11 passed the canonical **773/773** test gate,
+compilation, practical LPS/VPL and 15-ticker batch checks, protected-boundary
+review, architecture sync, and final handoff. Final report:
+`docs/superpowers/reports/2026-09-01-backtest-schema-5-final-verification.md`.
+Design:
+`docs/superpowers/specs/2026-09-01-backtest-v4-schema-5-enhancement-design.md`;
+plan:
+`docs/superpowers/plans/2026-09-01-backtest-v4-schema-5-enhancement.md`.
+
+**Backtest V4 enhancement review prompt (2026-09-01; complete):** Created
+`ENHANCE-PROMPT.md` as a read-only, evidence-first audit and enhancement brief.
+It requires dual verification of material claims, an adversarial second-pass
+blind-spot register, separate trading-quality and runtime analysis, controlled
+Swing/Mid-term experiments, recommendation falsification, and a mandatory
+design self-critique/readiness gate before any implementation plan or code.
+
+**Comprehensive Unit Testing — targeted public-boundary slices (2026-08-31;
+complete):** Added
+seven focused `price_utils` tests covering exact BIGINT conversion, precision
+and invalid-value rejection, UI scaling, export preservation, and unsupported
+output modes; eight `validation` tests covering classification boundaries,
+score directions, split selection, and report eligibility/input gates; and
+seventeen `technical_analysis` tests covering grouping, gates, dimensions,
+correlation, ATR, OBV, Bollinger, ADX, moving-average, RSI, stochastic, trend,
+formatting, and alias helpers; validation now includes one private-helper
+contract test. Analyze-page coverage adds bounded movement and classifier tests;
+data-preparation coverage adds trading-day, source, exchange, and progress
+helper tests, plus BIGINT staging and transaction-safety tests. Docker focused
+gates pass 7/7, 9/9, 17/17, 11/11, 10/10, and 10/10; the combined commons
+regression gate passes 42/42. Backtest Lab coverage now tests input, batching,
+status, display, saved-set, raw-price, selection, deletion, position-creation,
+and overview-load helpers. It also fixes invalid price display: non-numeric raw
+values now render `"-"`, not `NaN`. Result-page coverage now verifies bound
+raw-connection queries, VNINDEX exclusion, responsive tables, and
+close-on-failure. Suggestion-page coverage verifies its empty-universe warning
+plus threaded four-ranking projection. Technical chart coverage verifies
+selected overlays, cross markers, panel thresholds, and missing-column no-ops.
+API route coverage adds five tests for ticker normalization/advice projection,
+missing-data 404, bullish-only ranking, busy ingestion rejection, bad-date
+rejection, and background-task scheduling. Entrypoint coverage adds three
+isolated tests for API/database/bootstrap ownership, all seven page routes,
+and state clearing when leaving Technical Analyze. Docker's canonical
+`unittest discover -s tests -v` gate now passes **697/697** in 25.2 seconds.
+Broader Analyze-page coverage exposed and repaired a Portfolio Analyze
+classification mismatch: its final-advice key now reuses the same direct
+up/down probability rule as Ticker Analyze, so low up probability is not
+silently treated as bearish evidence. The regression covers `25%` up and
+`60%` down evidence as `Down` (not `Strong Down`).
+The prior `scripts` import gap is repaired by mounting the root scripts
+directory read-only in development Compose; the app container was recreated
+with explicit root `.env` interpolation, with no database or volume removal.
+No production SQL, dependency, database, or git change was made. Current
+unit-test task is complete for the targeted commons, utility, API-route, and
+entrypoint slices; only broader optional coverage remains.
+
+**Flexible Rulebook UI Scope Expansion and Progress (2026-08-30; complete):**
+Tasks 1–6 are complete. The Discover workspace now accepts additive ticker and
+seed scope with required operator identity and approval note, computes the
+latest common completed bar across the full union (minimum latest eligible
+ticker bar when member watermarks differ), submits one idempotent
+benchmark job, and activates the union only after 100 cold windows per pair
+pass. Durable sidecars expose pair/window progress and safe failures. Discover
+campaigns, Qualification, and Current Group BUY Scan expose phase-aware
+progress callbacks/bars. Operator identity now defaults once to `admin
+DDMonYY` in Ho Chi Minh time; the editable note defaults from normalized added
+tickers and never overwrites manual wording. Active expansion progress now
+polls its durable sidecar every three seconds and stops polling at terminal
+states. Docker verification passes 321 Flexible tests and
+affected modules compile. No V3, positions, protected SQL, Docker, dependency,
+or git changes were made. Design:
+`docs/superpowers/specs/2026-08-30-flexible-rulebook-ui-scope-expansion-progress-design.md`;
+plan:
+`docs/superpowers/plans/2026-08-30-flexible-rulebook-ui-scope-expansion-progress.md`;
+verification:
+`docs/superpowers/reports/2026-08-30-flexible-rulebook-ui-scope-expansion-progress-verification.md`.
+
+**Flexible Rulebook Discover full-unlock activation plan (2026-08-30;
+implementation is complete):** Tasks 1–6 are complete. Direct fixed-cap
+evidence, the isolated cap runner, immutable activation policies, and the
+activated campaign boundary now enforce one exact policy-bound runtime:
+historical anchor/split validation precedes a fresh eligible source freeze;
+worker services receive the complete request; and the persisted cache choice
+is retained across an activated continuation. Source anchors include the full
+quality revision. Task 5 adds the active-policy scoped Discover selectors,
+explicit preflight/cache-choice start, safe state invalidation, campaign
+Refresh/Cancel/Resume/Continue controls, and cache-offer recheck at submission.
+The Task 5 Docker gate passes 113 tests and Flexible modules/pages compile.
+Task 6 full verification passes **300** Flexible Docker tests, compilation,
+and both non-writing CLI help checks. A real PostgreSQL cap corpus for VCB is
+now recorded as 100/100 complete cold windows at fixed cap 8, one worker,
+with no eligibility failures; immutable policy
+`f5a304a583890c527e359477687b7bae9af66b21cd6bde267a2abb2a4ea014b6` is active
+under `/data/flexible-benchmark`. Discover is unlocked only for VCB and
+`frb-default-seed-v1`, still requiring its normal preflight and explicit cache
+treatment. The evidence and operator sequence are in
+`docs/superpowers/reports/2026-08-28-flexible-rulebook-discovery-activation-verification.md`.
+
+**Flexible Rulebook production benchmark implementation (Task 5B, complete
+2026-08-28):** the read-only Docker CLI, canonical evidence report, isolated
+cold/warm cache roots, full worker path, phase telemetry, 4h55 ticker budget,
+and cap-safety guard are implemented. Host Flexible verification passes **245
+tests** (20 Streamlit-runtime skips) plus compilation and CLI help. Docker
+server `24.0.6` passes the focused benchmark gate **29/29**; the later
+production cap run and activation are recorded in the current runbook. See
+`docs/superpowers/reports/2026-08-28-flexible-rulebook-production-benchmark-verification.md`.
+
+**Flexible Rulebook UI selector amendment complete (2026-08-28):** Cross-ticker
+Qualification now selects only available immutable rulebook IDs and valid named
+Groups from read-only dropdown controls. Discover uses the active policy scope
+and preflight/cache-choice gate (or remains safely disabled under the zero-
+attempt policy when no policy exists), with explicit next-step guidance to
+Library, Qualification, and Current Group BUY Scan. Library empty state now identifies
+the configured Flexible root, missing artifacts, benchmark gate, and V3
+isolation. Docker verification passes 226/226
+Flexible tests plus compilation.
 
 **Horizon Rulebook Signal Redesign and Validate Positions Risk — Phase B are
 complete (2026-08-25).**
@@ -11,7 +187,7 @@ Positions Phase B is complete and verified by 68 focused Docker tests plus
 container compilation. Evidence:
 `docs/superpowers/reports/2026-08-25-validate-positions-phase-b-verification.md`.
 
-**Active work:** Flexible Rulebook Core Plan. Tasks 3 and 4 implementation is
+**Historical work:** Flexible Rulebook Core Plan. Tasks 3 and 4 implementation is
 complete (2026-08-27): catalog-v1, causal FeatureStore/lazy masks, individual
 computed-component cache, receipt proof, reference execution, and inert
 identity-bound event-plan parity guard exist. Cache accepts only matching
@@ -45,7 +221,17 @@ Full Flexible Docker gate passes 96/96 and all Flexible modules compile.
 Campaign manifests/resume cursors begin only in the dependent Campaigns and
 Current Scan plan.
 
-**Active work:** Flexible Campaigns and Current Scan plan, Task 1. Its isolated
+**Correctness remediation complete (2026-08-28):** cache reuse no longer
+recalculates already-valid primitive components; OHLC quality ratios exclude
+volume; continuation deadline counters preserve the global cursor; qualification
+requires an explicit valid cache choice plus frozen request split/plan hashes;
+audit-only targets remain data-ineligible; and signal-set identity checks now
+verify path, receipt, and source anchor. Continue selection now recomputes from
+all committed qualified evidence in the verified parent chain. Regression and
+full Flexible Docker verification passes **219/219** plus compilation.
+
+**Historical Task 1 implementation note:** Flexible Campaigns and Current Scan
+plan Task 1. Its isolated
 campaign contract now freezes semantic request identity, ignores cache/runtime
 diagnostics in request hashing, validates discovery-only frontier assignment,
 enforces legal campaign and item states, and creates source-verified linked
@@ -68,7 +254,7 @@ frozen training-only timing-distinct policy. A chain reader accepts only contigu
 parents with preserved frozen semantics, terminal state, and verified immutable
 SelectionSnapshots.
 
-**Active work:** Flexible Campaigns Task 2 has begun with durable idempotent
+**Historical Task 2 milestones:** Flexible Campaigns Task 2 began with durable idempotent
 submit/read APIs and legal cancellation state handling. A duplicate frozen
 request attaches to its existing queued campaign; queued cancellation is
 terminal before a worker claim, while a running campaign becomes cancelling.
@@ -103,6 +289,45 @@ Focused Docker search evidence is 8/8; full Flexible evidence is 134/134 plus
 compilation. Concrete service/artifact checkpointing and isolated worker wiring
 remain.
 
+**Current checkpoint (authoritative, 2026-08-27):** Campaign Task 1 is complete.
+Campaign Task 2 is complete through its Docker gate using the `desktop-linux`
+context: receipt-first
+`DiscoveryService`, serialized worker/watchdog boundary, source/contract and
+receipt-bound Resume proof, cancellation, deterministic fault classes, one
+transient retry, and safe incompatible-checkpoint failure with lease release.
+The full Flexible campaign suite is **189/189 plus compilation**. Task 3 is
+complete: the read-only group adapter, fresh all-member preflight, unioned
+primitive profiles, explicit cache choice, independent target qualification,
+source-change isolation, and receipt-backed group artifacts are implemented and
+Docker-verified. **Campaign Task 4 is now complete:** common-as-of Current BUY
+Scan enforces one latest bar for the frozen group, verifies source/evidence
+anchors before cache work, groups primitive profiles by ticker/build contract,
+persists all feature receipts before current-mask evaluation, and writes
+current-scan result artifacts. Display-only, source/receipt/cache failures can
+never become no-current-setup. **Campaign Task 5 is complete through its safe
+policy and deterministic fixtures:** safe defaults remain 15 tickers, zero
+discovery attempts, one worker; no production scale benchmark has been claimed
+or enabled. The synthetic 20-ticker current-scan fixture measured 0.473677s
+cold and 0.166481s warm in Docker. The FPT-shaped maximal-slot discovery
+fixture completed 100 cold and 100 warm full train/test/selection/write samples
+(cold p99 total 0.133270s; warm 0.110010s), but both fixtures exclude
+production DB/source-load and resource telemetry. They neither create a
+`BenchmarkRecord` nor expand policy. **Campaign Task 6 is complete
+(2026-08-28):** the
+standalone radio workspace and sidebar route are present; Discover stays
+disabled under the zero-attempt policy; Library projects immutable definitions
+and signal evidence with read-only filtering, pagination, artifact downloads,
+and campaign-specific selection/75%-overlap status; Qualification and Current
+Group BUY Scan preflight before execution. Discovery now validates a worker
+cursor before persisting evidence and publishes a selection snapshot only for a
+fully committed window. Campaign-specific selection membership is immutable and
+separate from the campaign-independent signal-set identity. Current Scan now
+verifies qualified evidence anchors before it can offer cached components.
+The implementation review found no SQL/DB path, no V3 coupling, and no unsafe
+artifact mutation. The canonical Docker focused gate passes **209/209**, and
+the required Flexible modules compile. Evidence:
+`docs/superpowers/reports/2026-08-28-flexible-rulebook-task6-verification.md`.
+
 **Campaign receipt checkpoint (2026-08-27):** `ReceiptCheckpointService` now
 requires one runner-verified discovery source, resolves only a receipt matching
 the frozen source/FeaturePlan/FeatureBuildContract, writes that immutable receipt
@@ -113,11 +338,28 @@ receipt/assignment/stratum/outcome provenance only for committed slots; the full
 Flexible Docker gate then passed 136/136 plus compilation. Receipt-bound ledger
 chunk persistence is now exposed through the service boundary, and campaign-item
 checkpointing writes the immutable worker-owned item artifact before returning
-the coordinator's updated manifest checkpoint. Focused campaign evidence is
-24/24 plus compilation. The remaining Task 2 work is to compose receipt
-resolution, candidate evaluation, ledger and item checkpoints into one concrete
-discovery service, then add the isolated subprocess worker/watchdog and fault
-classification paths.
+the coordinator's updated manifest checkpoint. `DiscoveryService` now composes
+receipt resolution, frozen candidate evaluation, ledger persistence, qualified
+definition/signal evidence, item checkpointing, and contiguous cursor/state
+updates. The isolated `worker.py` boundary now accepts only an atomic JSON
+request with validated top-level callable references; `start_campaign_worker`
+and `watch_campaign_worker` launch one module subprocess and convert timeout or
+dead-worker loss to resumable `interrupted` without forging success. Focused
+worker/fault evidence is 7/7, discovery-service evidence is 3/3, and runner
+evidence is 24/24; the local Flexible suite is 159/159 plus compilation.
+Docker rerun used the `desktop-linux` context after the default client pipe was
+stale. `runner.py`
+now also provides deterministic safe `WorkerFault` classification for source,
+shared-infrastructure, transient-item, invariant, and watchdog failures;
+receipt-bound Resume proof happens before lease claim. Runner now retries an
+explicit transient item failure once, blocks shared infrastructure failure,
+fails invariant worker contracts, and cancels before source work when
+cancellation is already requested. Deadline no-skip and receipt-mismatch fault
+tests are covered locally. Task 2 Docker verification passes. Task 3 adds the
+read-only `FrozenGroup` adapter, fresh all-member preflight, unioned primitive
+profiles, explicit cache choice, independent target qualification, and
+source-change isolation; focused group/service evidence is 6/6 plus the full
+Flexible suite at 163/163.
 Approved design:
 `docs/superpowers/specs/2026-08-25-flexible-rulebook-design.md`. Execution
 sequence remains `docs/superpowers/plans/2026-08-25-flexible-rulebook-core.md`

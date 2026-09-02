@@ -8,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from unittest.mock import patch
 
 from flexible_rulebook.contracts import (
     FeatureBuildContract,
@@ -170,6 +171,21 @@ class FlexibleRulebookFeatureTests(unittest.TestCase):
         self.assertTrue(np.array_equal(
             rebuilt.store.array_for(rsi, "rsi"), reused.store.array_for(rsi, "rsi"), equal_nan=True,
         ))
+
+    def test_reuse_with_all_components_cached_does_not_rebuild_feature_store(self) -> None:
+        rsi = self._rsi()
+        snapshot = self._snapshot(closes=[100, 99, 98, 100, 104, 106])
+        now = pd.Timestamp("2026-02-01T12:00:00+07:00").to_pydatetime()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            resolve_feature_store(snapshot, self._contract(), FeatureProfile((rsi,)), root, choice="rebuild", now=now)
+            with patch("flexible_rulebook.features.build_feature_store", side_effect=AssertionError("unexpected rebuild")):
+                resolved = resolve_feature_store(
+                    snapshot, self._contract(), FeatureProfile((rsi,)), root,
+                    choice="reuse", now=now + timedelta(minutes=1),
+                )
+
+        self.assertEqual(resolved.receipt.plan.feature_plan_hash, resolved.plan.feature_plan_hash)
 
 
 if __name__ == "__main__":

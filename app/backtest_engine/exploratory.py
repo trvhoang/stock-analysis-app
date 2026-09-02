@@ -1,4 +1,4 @@
-"""Pure schema-4 exploratory rulebook evaluation."""
+"""Pure schema-5 exploratory rulebook evaluation."""
 
 from __future__ import annotations
 
@@ -104,6 +104,7 @@ class ExploratoryCandidate:
     def to_dict(self) -> dict[str, object]:
         return {
             "rulebook_id": self.rule_id,
+            "candidate_role": "baseline_control",
             "selected_gates": list(self.selected_gates),
             "preferred_variant": self.preferred_variant,
             "treatments": {
@@ -152,6 +153,7 @@ def split_native_frame(
     if (
         _is_full_fifteen_year_request(requested_start, requested_end)
         and first <= requested_start_at + pd.Timedelta(days=7)
+        and last >= pd.Timestamp(requested_end) - pd.Timedelta(days=7)
     ):
         cutoff = pd.Timestamp(requested_end) - pd.DateOffset(years=5)
         method: Literal["calendar_10y_5y", "chronological_65_35"] = "calendar_10y_5y"

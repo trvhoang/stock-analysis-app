@@ -1,4 +1,4 @@
-"""Generic manual history preserves P&L records and new V4 exploratory links."""
+"""Generic manual history preserves P&L records and new V5 exploratory links."""
 
 import tempfile
 import unittest
@@ -29,13 +29,13 @@ class ManualPositionStoreTests(unittest.TestCase):
             history = load_manual_position_history("FPT", directory)
         self.assertEqual((opened["status"], closed["status"], len(history["history"])), ("open", "closed", 2))
 
-    def test_v4_open_reference_prevents_only_its_exact_rulebook_overlap(self):
+    def test_v5_open_reference_prevents_only_its_exact_rulebook_overlap(self):
         reference = _reference("swing")
         with tempfile.TemporaryDirectory() as directory:
             record = create_manual_position("FPT", 50300, "2026-08-07", signal_reference=reference, entry_context=_entry_context(), risk_snapshot=_risk_snapshot(), positions_dir=directory)
             with self.assertRaisesRegex(ValueError, "already has an OPEN position"):
                 create_manual_position("FPT", 50400, "2026-08-08", signal_reference=reference, entry_context=_entry_context(), risk_snapshot=_risk_snapshot(), positions_dir=directory)
-        self.assertEqual(record["signal_reference"]["schema_version"], 4)
+        self.assertEqual(record["signal_reference"]["schema_version"], 5)
 
     def test_update_recalculates_risk_and_close_writes_same_record(self):
         with tempfile.TemporaryDirectory() as directory:

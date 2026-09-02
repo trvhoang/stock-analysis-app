@@ -304,12 +304,12 @@ class PositionOverviewTests(unittest.TestCase):
         self.assertIsNone(row["profit_raw"])
         self.assertIsNone(row["profit_pct"])
 
-    def test_summary_preserves_v4_saved_set_identity_for_grouped_buy_rows(self):
+    def test_summary_preserves_v5_saved_set_identity_for_grouped_buy_rows(self):
         position = _position("FPT")
         position["signal_reference"] = {
-            "schema_version": 4,
+            "schema_version": 5,
             "horizon": "midterm",
-            "rulebook_id": "midterm_rulebook_v4__rsi",
+            "rulebook_id": "midterm_rulebook_v5__rsi",
             "preferred_variant": "no-background-theme",
         }
 
@@ -318,7 +318,7 @@ class PositionOverviewTests(unittest.TestCase):
 
         self.assertEqual(
             overview["signal_set"],
-            "Mid-term — midterm_rulebook_v4__rsi — no-background-theme",
+            "Mid-term — midterm_rulebook_v5__rsi — no-background-theme",
         )
         self.assertEqual(buy["signal_set"], overview["signal_set"])
 

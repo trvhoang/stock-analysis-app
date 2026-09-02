@@ -1,4 +1,4 @@
-"""V3 result-root and recoverable Group management without artifact migration."""
+"""Schema-5 result-root and recoverable Group management without migration."""
 
 from __future__ import annotations
 
@@ -142,7 +142,7 @@ def _recover_group_move(group_dir: Path) -> None:
 
 
 def ensure_result_root(signal_dir: str = DEFAULT_SIGNAL_DIR) -> Path:
-    """Create only current V3 and Group roots; never inspect or move V2 files."""
+    """Create only current schema-5 and Group roots; never inspect frozen files."""
 
     signal_root = Path(signal_dir)
     signal_root.mkdir(parents=True, exist_ok=True)
@@ -167,7 +167,7 @@ def list_validation_group_choices(signal_dir: str = DEFAULT_SIGNAL_DIR) -> tuple
 
 
 def _artifact_tickers(signal_root: Path) -> tuple[str, ...]:
-    """Find only readable nonempty schema-4 results across every horizon."""
+    """Find only readable nonempty schema-5 results across every horizon."""
 
     tickers: list[str] = []
     for candidate in signal_root.iterdir():

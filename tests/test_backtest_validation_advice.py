@@ -29,7 +29,7 @@ class ValidationAdviceTests(unittest.TestCase):
                 position,
                 False,
             ),
-            "can SELL",
+            "HOLD",
         )
         self.assertEqual(
             position_action(
@@ -37,6 +37,31 @@ class ValidationAdviceTests(unittest.TestCase):
                 position,
                 False,
             ),
+            "HOLD",
+        )
+
+    def test_position_action_uses_explicit_exit_or_deterioration_not_consumed_entry(self):
+        position_action = getattr(validation_advice, "_position_action", None)
+        position = {"risk_snapshot": {"stop_loss": 48000, "take_profit": 54000}}
+
+        self.assertEqual(
+            position_action(
+                {"literal_entry": False, "technical_exit": True, "latest_close": 50000},
+                position,
+                False,
+            ),
+            "can SELL",
+        )
+        self.assertEqual(
+            position_action(
+                {"literal_entry": False, "deteriorated": True, "latest_close": 50000},
+                position,
+                False,
+            ),
+            "can SELL",
+        )
+        self.assertEqual(
+            position_action({"latest_close": 50000}, {"risk_snapshot": None}, False),
             "HOLD",
         )
 
@@ -75,12 +100,13 @@ class ValidationAdviceTests(unittest.TestCase):
             (66.67, "nearly_match"),
         )
 
-    def test_validate_replays_preferred_top_candidate_and_blocks_audit_ineligible_buy(self):
-        candidate = {"rulebook_id": "swing_rulebook_v4__adx", "selected_gates": ["rulebook_adx_gate"], "preferred_variant": "background-theme", "treatments": {}}
+    def test_validate_replays_preferred_top_candidate_and_blocks_evidence_ineligible_buy(self):
+        candidate = {"rulebook_id": "swing_rulebook_v5__adx", "candidate_role": "baseline_control", "selected_gates": ["rulebook_adx_gate"], "preferred_variant": "background-theme", "treatments": {}}
         replay = {
             "candidate": candidate, "preferred_variant": "background-theme",
             "current": {"literal_entry": True, "gate_facts": {"rulebook_adx_gate": True}, "theme_eligible": True},
-            "audit_eligibility": {"eligible": False},
+            "audit_eligibility": {"eligible": True},
+            "evidence_eligibility": {"eligible": False, "status": "ineligible", "reasons": ["coverage_ratio_below_0.95"]},
         }
         document = {"terminal_state": "success", "top_rulebook_ids": [candidate["rulebook_id"]]}
         with patch("backtest_engine.validation_advice.load_current_rulebook_document", return_value=document), patch(
@@ -91,7 +117,32 @@ class ValidationAdviceTests(unittest.TestCase):
         item = result["results"][0]
         self.assertEqual(item["preferred_variant"], "background-theme")
         self.assertFalse(item["buy_eligible"])
-        self.assertEqual(item["buy_block_reason"], "audit_ineligible")
+        self.assertEqual(item["buy_block_reason"], "evidence_ineligible")
+        self.assertEqual(item["signal_reference"]["schema_version"], 5)
+
+    def test_manual_and_schema_four_positions_do_not_consume_current_v5_identity(self):
+        candidate = {"rulebook_id": "swing_rulebook_v5__adx", "candidate_role": "baseline_control", "selected_gates": ["rulebook_adx_gate"], "preferred_variant": "no-background-theme", "treatments": {}}
+        replay = {
+            "candidate": candidate,
+            "preferred_variant": "no-background-theme",
+            "current": {"literal_entry": True, "gate_facts": {"rulebook_adx_gate": True}},
+            "audit_eligibility": {"eligible": True},
+            "evidence_eligibility": {"eligible": True, "status": "eligible", "reasons": []},
+        }
+        document = {"terminal_state": "success", "top_rulebook_ids": [candidate["rulebook_id"]]}
+        history = {"history": [
+            {"status": "open", "signal_reference": None},
+            {"status": "open", "signal_reference": {"schema_version": 4, "horizon": "swing", "rulebook_id": "swing_rulebook_v4__adx", "preferred_variant": "no-background-theme"}},
+        ]}
+        with patch("backtest_engine.validation_advice.load_current_rulebook_document", return_value=document), patch(
+            "backtest_engine.validation_advice.check_current_situation", return_value=replay
+        ), patch("backtest_engine.validation_advice.load_manual_position_history", return_value=history):
+            result = validate_saved_signals("VCB", object())
+
+        item = result["results"][0]
+        self.assertTrue(item["buy_eligible"])
+        self.assertEqual(item["position_action"], "can BUY")
+        self.assertEqual(len(result["historical_positions"]), 2)
 
 
 if __name__ == "__main__":

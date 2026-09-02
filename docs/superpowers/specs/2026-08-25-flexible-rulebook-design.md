@@ -1,7 +1,8 @@
 # Flexible Rulebook Design
 
 **Date:** 2026-08-25  
-**Status:** Approved design, amended 2026-08-26; implementation not started.  
+**Status:** Approved design, amended 2026-08-26 and 2026-08-28; core and campaign
+implementation verified through Campaign Task 6 (2026-08-28).  
 **Scope:** Independent daily Swing research subsystem for portable long-only technical rulebooks.
 
 ## Goal, scope, and non-goals
@@ -748,17 +749,22 @@ with a radio/selectbox, not `st.tabs`, so inactive heavy workspaces do not run:
    artifact, safe error code, cancel/resume, and `time_budget_exhausted` truth.
    Continue reads only its persisted parent; it exposes no editable source,
    catalog, seed, build contract, or cache choice. Show persistence as unverified
-   development storage unless a durable root is separately approved.
+   development storage unless a durable root is separately approved. An empty
+   library names the configured Flexible root, states that no definitions or
+   signal-set evidence exist, explains the benchmark-gated Discover state, and
+   states that legacy V3 artifacts are not used.
 2. **Rulebook Library** — paged/filterable immutable definitions and evaluated
    evidence. Show animal alias plus short/full hash, catalog/profile, source and
    split, both train/test gross metrics, training rank, selected representative
    number, duplicate blocker/overlap ratio, and download/detail links. Rejected
    timing duplicates remain visible in a collapsed evidence view.
-3. **Cross-ticker Qualification** — immutable rulebook IDs plus a ticker or
-   named Group. Freeze and display target members before submit. A cache
-   preflight table is grouped by ticker/build contract and makes one batch
-   reuse-valid-components/recalculate-all choice per group; V3 `N/A` and V3
-   Group helpers are absent.
+3. **Cross-ticker Qualification** — select one or more available immutable
+   rulebook IDs from a checkbox-style dropdown plus a ticker or a read-only
+   named Group dropdown populated from valid, non-conflicting Group documents,
+   including Unicode display names used by the existing Group JSON.
+   Freeze and display target members before submit. A cache preflight table is
+   grouped by ticker/build contract and makes one batch reuse-valid-components/
+   recalculate-all choice per group; V3 `N/A` and V3 Group helpers are absent.
 4. **Current Group BUY Scan** — named Group only; common-as-of preflight before
    any evaluation; all compatible qualified pairs; one cache decision table;
    per-ticker outcome and exact common as-of. A positive line says only
