@@ -1,6 +1,7 @@
 """Focused tests for deterministic technical-analysis helpers."""
 
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -26,11 +27,63 @@ from commons.technical_analysis import (
     calculate_adx,
     get_latest_adx_value,
     calculate_trend_correlation,
+    fetch_calendar_technical_history,
+    fetch_raw_technical_history,
     group_technical_indicators,
 )
 
 
 class TechnicalAnalysisTests(unittest.TestCase):
+    def test_calendar_technical_fetch_filters_source_before_any_indicator_consumer(self) -> None:
+        raw = pd.DataFrame(
+            {"date": pd.to_datetime(["2026-09-01", "2026-09-02"]),
+             "open": [50_000, 50_100], "high": [51_000, 51_100],
+             "low": [49_000, 49_100], "close": [50_500, 50_600],
+             "volume": [1_000_000, 1_100_000]}
+        )
+        filtered = raw.iloc[[0]].copy()
+        with patch(
+            "commons.technical_analysis.fetch_raw_technical_history",
+            return_value=raw,
+        ), patch(
+            "commons.technical_analysis.load_calendar_aligned_history",
+            return_value=(filtered, object(), (pd.Timestamp("2026-09-02").date(),)),
+        ) as aligned:
+            result = fetch_calendar_technical_history("FPT", 100, object())
+
+        pd.testing.assert_frame_equal(filtered, result)
+        self.assertEqual(
+            {"start": raw["date"].iloc[0].date(), "end": raw["date"].iloc[-1].date()},
+            aligned.call_args.kwargs,
+        )
+
+    def test_raw_technical_fetch_preserves_bigint_values_and_closes_connection(self) -> None:
+        class Connection:
+            def __init__(self):
+                self.closed = False
+
+            def close(self):
+                self.closed = True
+
+        class Engine:
+            def __init__(self, connection):
+                self.connection = connection
+
+            def raw_connection(self):
+                return self.connection
+
+        connection = Connection()
+        frame = pd.DataFrame(
+            {"date": [pd.Timestamp("2026-09-01")], "open": [50_000], "high": [51_000],
+             "low": [49_000], "close": [50_500], "volume": [1_000_000]}
+        )
+        with patch("commons.technical_analysis.pd.read_sql", return_value=frame) as read_sql:
+            result = fetch_raw_technical_history(" fpt ", 100, Engine(connection))
+
+        self.assertEqual(int(result.loc[0, "close"]), 50_500)
+        self.assertTrue(connection.closed)
+        self.assertEqual(read_sql.call_args.kwargs["params"], {"ticker": "FPT", "limit": 100})
+        self.assertIn("%(ticker)s", read_sql.call_args.args[0])
     def test_group_technical_indicators_preserves_unknown_records(self) -> None:
         data = [[0, "RSI", "", "Up"], [1, "Mystery", "", "Down"], [2]]
         grouped = group_technical_indicators(data)

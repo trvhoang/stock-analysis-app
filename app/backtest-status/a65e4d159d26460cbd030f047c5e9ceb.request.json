@@ -1,0 +1,27 @@
+{
+  "config": {
+    "end_date": "2026-09-05",
+    "group_name": "\u0110I\u1ec6N N\u01af\u1edaC",
+    "horizon": "swing",
+    "output_dir": "backtest-result/ticker-signals",
+    "permutation_block_size": 20,
+    "permutation_count": 1000,
+    "permutation_seed": 42,
+    "request_type": "backtest_batch_v5",
+    "start_date": "2011-09-05",
+    "tickers": [
+      "REE",
+      "NT2",
+      "POW",
+      "BWE",
+      "TDM",
+      "BWS",
+      "GEG"
+    ],
+    "worker_count": 6
+  },
+  "factory_ref": "backtest_engine.pipeline:run_backtest_batch_from_env",
+  "job_id": "a65e4d159d26460cbd030f047c5e9ceb",
+  "schema_version": 5,
+  "status_dir": "backtest-status"
+}

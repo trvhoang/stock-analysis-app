@@ -1,3 +1,4 @@
+import inspect
 import unittest
 from datetime import date
 from pathlib import Path
@@ -124,6 +125,28 @@ class DataPreparationTests(unittest.TestCase):
             [["FPT", date(2026, 8, 11)], ["VCB", date(2026, 8, 1)]],
         )
 
+    def test_latest_session_highlights_use_one_read_only_index_and_ticker_query(self):
+        engine = MagicMock()
+        connection = engine.raw_connection.return_value
+        cursor = connection.cursor.return_value
+        cursor.fetchone.return_value = (date(2026, 9, 3), date(2026, 9, 4))
+
+        highlights = data_preparation.load_latest_session_highlights(engine)
+
+        self.assertEqual(
+            highlights,
+            data_preparation.LatestSessionHighlights(
+                vnindex_session=date(2026, 9, 3),
+                ticker_session=date(2026, 9, 4),
+            ),
+        )
+        statement = cursor.execute.call_args.args[0]
+        self.assertIn("ticker = 'VNINDEX'", statement)
+        self.assertIn("ticker <> 'VNINDEX'", statement)
+        connection.commit.assert_not_called()
+        cursor.close.assert_called_once_with()
+        connection.close.assert_called_once_with()
+
     def test_run_full_ingestion_downloads_both_sources_before_one_commit(self):
         source_type = getattr(data_preparation, "ExtractedSource", None)
         self.assertIsNotNone(source_type, "source-first ingestion contract is required")
@@ -163,6 +186,96 @@ class DataPreparationTests(unittest.TestCase):
         )
         self.assertEqual(progress[0][0], 0)
         self.assertEqual(progress[-1][0], 100)
+
+    def test_acknowledged_invalid_session_cleanup_removes_only_the_five_exact_dates(self):
+        cursor = MagicMock()
+        cursor.fetchall.return_value = [
+            (date(2023, 8, 26),),
+            (date(2025, 5, 4),),
+            (date(2025, 5, 11),),
+            (date(2026, 2, 7),),
+            (date(2026, 3, 8),),
+        ]
+
+        removed = data_preparation.exclude_acknowledged_invalid_trading_sessions(cursor)
+
+        self.assertEqual(
+            removed,
+            (
+                date(2023, 8, 26),
+                date(2025, 5, 4),
+                date(2025, 5, 11),
+                date(2026, 2, 7),
+                date(2026, 3, 8),
+            ),
+        )
+        statement, params = cursor.execute.call_args.args
+        self.assertIn("DELETE FROM trading_data", statement)
+        self.assertEqual(
+            params["dates"],
+            [
+                date(2023, 8, 26),
+                date(2025, 5, 4),
+                date(2025, 5, 11),
+                date(2026, 2, 7),
+                date(2026, 3, 8),
+            ],
+        )
+
+    def test_invalid_trading_session_scan_reports_every_weekend_date_and_ticker(self):
+        cursor = MagicMock()
+        cursor.fetchall.return_value = [
+            (date(2026, 2, 7), 2, ["FPT", "VNINDEX"]),
+            (date(2026, 3, 8), 1, ["VNINDEX"]),
+        ]
+
+        invalid = data_preparation.scan_invalid_trading_sessions(cursor)
+
+        self.assertEqual(
+            invalid,
+            (
+                data_preparation.InvalidTradingSession(
+                    date(2026, 2, 7), 2, ("FPT", "VNINDEX")
+                ),
+                data_preparation.InvalidTradingSession(
+                    date(2026, 3, 8), 1, ("VNINDEX",)
+                ),
+            ),
+        )
+        statement = cursor.execute.call_args.args[0]
+        self.assertIn("EXTRACT(ISODOW FROM date) IN (6, 7)", statement)
+
+    def test_run_full_ingestion_rolls_back_when_validity_scan_finds_weekend_rows(self):
+        source_type = getattr(data_preparation, "ExtractedSource", None)
+        self.assertIsNotNone(source_type, "source-first ingestion contract is required")
+        engine = MagicMock()
+        connection = MagicMock()
+        cursor = MagicMock()
+        engine.raw_connection.return_value = connection
+        connection.cursor.return_value = cursor
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            stock = source_type("stock", root / "stock", None)
+            index = source_type("index", root / "index", "VNINDEX")
+            with patch.object(
+                data_preparation, "_download_and_extract_source", side_effect=(stock, index)
+            ), patch.object(data_preparation, "_ensure_schema"), patch.object(
+                data_preparation, "_latest_dates", return_value={}
+            ), patch.object(data_preparation, "_stage_source"), patch.object(
+                data_preparation,
+                "scan_invalid_trading_sessions",
+                return_value=(
+                    data_preparation.InvalidTradingSession(
+                        date(2026, 2, 14), 1, ("VNINDEX",)
+                    ),
+                ),
+            ):
+                result = data_preparation.run_full_ingestion(date(2026, 8, 14), 15, engine)
+
+        self.assertFalse(result)
+        connection.commit.assert_not_called()
+        connection.rollback.assert_called_once_with()
 
     def test_run_full_ingestion_rolls_back_every_new_row_when_index_stage_fails(self):
         source_type = getattr(data_preparation, "ExtractedSource", None)
@@ -220,6 +333,13 @@ class DataPreparationTests(unittest.TestCase):
         with patch.object(
             data_preparation, "run_full_ingestion", side_effect=run_ingestion
         ), patch.object(
+            data_preparation,
+            "load_latest_session_highlights",
+            return_value=data_preparation.LatestSessionHighlights(
+                vnindex_session=date(2026, 9, 3),
+                ticker_session=date(2026, 9, 4),
+            ),
+        ), patch.object(
             data_preparation.st,
             "spinner",
             side_effect=AssertionError("Data Page must use a progress bar, not a spinner."),
@@ -234,6 +354,9 @@ class DataPreparationTests(unittest.TestCase):
             self.assertEqual(app.number_input[0].value, 15)
             self.assertEqual([widget.label for widget in app.button], ["Get data"])
             self.assertEqual([item.value for item in app.caption], ["Action"])
+            source = inspect.getsource(data_preparation.data_page)
+            self.assertIn('icon=":material/cloud_download:"', source)
+            self.assertIn('width="stretch"', source)
 
             app.button[0].click().run()
 
@@ -245,6 +368,11 @@ class DataPreparationTests(unittest.TestCase):
         )
         self.assertEqual(len(callback_received), 1)
         self.assertIsNotNone(callback_received[0])
+        self.assertEqual(
+            [(item.label, item.value) for item in app.get("metric")],
+            [("VN-Index", "Up to 03/09/2026"), ("Ticker", "Up to 04/09/2026")],
+        )
+        self.assertTrue(any("different sessions" in item.value for item in app.warning))
 
 
 if __name__ == "__main__":

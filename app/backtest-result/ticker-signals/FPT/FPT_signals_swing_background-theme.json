@@ -20,7 +20,7 @@
     "start": null
   },
   "empty": true,
-  "evaluated_at": "2026-09-01T19:45:31.923871+07:00",
+  "evaluated_at": "2026-09-05T00:10:50.322871+07:00",
   "evaluation_label": "Exploratory \u2014 gross",
   "evidence_eligibility": {
     "common_as_of": null,
@@ -63,6 +63,7 @@
       5,
       3
     ],
+    "alligator_source": "HL2",
     "atr_period": 14,
     "atr_sl_multiplier": 1.5,
     "atr_tp_multiplier": 2.5,

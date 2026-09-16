@@ -122,6 +122,35 @@ class RulebookIndicatorTests(unittest.TestCase):
 
         self.assertEqual(point.tolist(), [3.0, 1.0, 2.0])
 
+    def test_alligator_uses_hl2_median_price_before_its_causal_offsets(self):
+        source = make_ohlcv(rows=40)
+        source["high"] = source["close"] + 900
+        source["low"] = source["close"] - 300
+        source["close"] = source["close"] + 200
+
+        frame = build_rulebook_frame(
+            source,
+            rulebook_for("swing"),
+            common_as_of=source["date"].iloc[-1].date(),
+        )
+        median_price = (source["high"] + source["low"]) / 2.0
+
+        np.testing.assert_allclose(
+            frame["rulebook_alligator_jaw"].to_numpy(),
+            backtest_indicators._smma(median_price, 8).shift(5).to_numpy(),
+            equal_nan=True,
+        )
+        np.testing.assert_allclose(
+            frame["rulebook_alligator_teeth"].to_numpy(),
+            backtest_indicators._smma(median_price, 5).shift(3).to_numpy(),
+            equal_nan=True,
+        )
+        np.testing.assert_allclose(
+            frame["rulebook_alligator_lips"].to_numpy(),
+            backtest_indicators._smma(median_price, 3).shift(2).to_numpy(),
+            equal_nan=True,
+        )
+
     def test_volume_gate_excludes_the_current_bar_from_its_baseline(self):
         daily = make_ohlcv(rows=40)
         daily.loc[10, "volume"] = 1_300

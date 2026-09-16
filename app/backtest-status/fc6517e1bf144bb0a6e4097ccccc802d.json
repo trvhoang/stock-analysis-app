@@ -1,0 +1,161 @@
+{
+  "error_text": null,
+  "job_id": "fc6517e1bf144bb0a6e4097ccccc802d",
+  "output_paths": [
+    "backtest-result/ticker-signals/GEE/GEE_signals_swing.json",
+    "backtest-result/ticker-signals/GEG/GEG_signals_swing.json",
+    "backtest-result/ticker-signals/GEX/GEX_signals_swing.json",
+    "backtest-result/ticker-signals/GMD/GMD_signals_swing.json",
+    "backtest-result/ticker-signals/GVR/GVR_signals_swing.json",
+    "backtest-result/ticker-signals/HAG/HAG_signals_swing.json",
+    "backtest-result/ticker-signals/HAH/HAH_signals_swing.json",
+    "backtest-result/ticker-signals/HCM/HCM_signals_swing.json",
+    "backtest-result/ticker-signals/HDB/HDB_signals_swing.json",
+    "backtest-result/ticker-signals/HDG/HDG_signals_swing.json",
+    "backtest-result/ticker-signals/HNG/HNG_signals_swing.json",
+    "backtest-result/ticker-signals/HPA/HPA_signals_swing.json",
+    "backtest-result/ticker-signals/HPG/HPG_signals_swing.json",
+    "backtest-result/ticker-signals/HSG/HSG_signals_swing.json",
+    "backtest-result/ticker-signals/HT1/HT1_signals_swing.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/GEE/GEE_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "GEE"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/GEG/GEG_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "GEG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/GEX/GEX_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "GEX"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/GMD/GMD_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "GMD"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/GVR/GVR_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "GVR"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/HAG/HAG_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "HAG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/HAH/HAH_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "HAH"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/HCM/HCM_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "HCM"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/HDB/HDB_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "HDB"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/HDG/HDG_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "HDG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/HNG/HNG_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "HNG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/HPA/HPA_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "HPA"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/HPG/HPG_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "HPG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/HSG/HSG_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "HSG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/HT1/HT1_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "HT1"
+    }
+  ]
+}

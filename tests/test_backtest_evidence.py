@@ -1,11 +1,17 @@
 """Schema-5 source identity and evidence-density contracts."""
 
 from dataclasses import FrozenInstanceError
+from datetime import date
 import unittest
 
 import pandas as pd
 
-from backtest_engine.evidence import assess_evidence, source_fingerprint
+from backtest_engine.evidence import (
+    assess_evidence,
+    canonical_vnindex_calendar,
+    restrict_to_canonical_sessions,
+    source_fingerprint,
+)
 
 
 def _session_frame(rows: int = 100) -> pd.DataFrame:
@@ -24,6 +30,40 @@ def _session_frame(rows: int = 100) -> pd.DataFrame:
 
 
 class BacktestEvidenceTests(unittest.TestCase):
+    def test_vnindex_rows_are_the_only_weekday_sessions_and_ticker_extras_are_excluded(self):
+        vnindex = _session_frame(rows=4).drop(index=[2]).reset_index(drop=True)
+        ticker = pd.concat(
+            [vnindex, _session_frame(rows=3).iloc[[-1]]],
+            ignore_index=True,
+        )
+        common_as_of = vnindex["date"].iloc[-1].date()
+
+        calendar = canonical_vnindex_calendar(
+            vnindex,
+            common_as_of,
+            start=date(2020, 1, 1),
+        )
+        filtered, outside = restrict_to_canonical_sessions(ticker, calendar)
+
+        self.assertEqual(
+            (date(2020, 1, 1), date(2020, 1, 2), date(2020, 1, 6)),
+            calendar.sessions,
+        )
+        self.assertEqual((date(2020, 1, 3),), calendar.assumed_non_sessions)
+        self.assertEqual((date(2020, 1, 3),), outside)
+        self.assertEqual(calendar.sessions, tuple(day.date() for day in filtered["date"]))
+
+    def test_vnindex_weekend_row_is_invalid_calendar_evidence(self):
+        vnindex = _session_frame(rows=3)
+        vnindex.loc[2, "date"] = pd.Timestamp("2020-01-04")
+
+        with self.assertRaisesRegex(ValueError, "weekend"):
+            canonical_vnindex_calendar(
+                vnindex,
+                date(2020, 1, 4),
+                start=date(2020, 1, 1),
+            )
+
     def test_fingerprint_changes_for_append_and_historical_correction(self):
         original = _session_frame(100)
         first = source_fingerprint(

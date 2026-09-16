@@ -19,6 +19,9 @@ class SuggestionVisualizationTests(unittest.TestCase):
         suggestion_page(MagicMock())
 
         tickers.assert_called_once()
+        streamlit.button.assert_called_once_with(
+            "Generate Suggestions", icon=":material/lightbulb:"
+        )
         streamlit.warning.assert_called_once_with(
             "No tickers found with the specified volume threshold."
         )
@@ -49,10 +52,15 @@ class SuggestionVisualizationTests(unittest.TestCase):
         suggestion_page(engine)
 
         tickers.assert_called_once_with(engine, 1_000_000, 1)
+        streamlit.button.assert_called_once_with(
+            "Generate Suggestions", icon=":material/lightbulb:"
+        )
         self.assertEqual(analyze.call_count, 2)
         self.assertEqual(streamlit.dataframe.call_count, 4)
         for call in streamlit.dataframe.call_args_list:
-            self.assertTrue(call.kwargs["use_container_width"])
+            self.assertEqual("stretch", call.kwargs["width"])
+            self.assertTrue(call.kwargs["hide_index"])
+            self.assertNotIn("use_container_width", call.kwargs)
         headings = [call.args[0] for call in streamlit.subheader.call_args_list]
         self.assertEqual(
             headings,

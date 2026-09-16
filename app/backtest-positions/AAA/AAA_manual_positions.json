@@ -1,0 +1,143 @@
+{
+  "history": [
+    {
+      "actual_buy_price": 7130,
+      "actual_sell_price": null,
+      "buy_date": "2026-09-04",
+      "certified_signal": {
+        "evaluation_label": "Exploratory \u2014 gross",
+        "horizon": "swing",
+        "preferred_variant": "no-background-theme",
+        "rulebook_id": "swing_rulebook_v5__rsi_upcross",
+        "selected_gates": [
+          "rulebook_rsi_upcross"
+        ],
+        "treatment": {
+          "dsr_status": "available",
+          "test": {
+            "n": 35,
+            "p_value": 0.4995004995004995,
+            "p_value_status": "informational",
+            "profit_pct": 0.33224957830136015,
+            "sharpe": 0.0016781601306058741,
+            "win_rate": 40.0
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 59,
+            "p_value": 0.07792207792207792,
+            "p_value_status": "informational",
+            "profit_pct": 72.86218379342657,
+            "sharpe": 0.1711306057890396,
+            "win_rate": 49.152542372881356
+          },
+          "training_dsr": 0.9023095621894651
+        }
+      },
+      "closed_at": null,
+      "entry_context": {
+        "as_of_date": "2026-09-04",
+        "current_price": 7130,
+        "match_level": 100.0,
+        "signal_date": "2026-09-04"
+      },
+      "id": "e994a8590a1f47dd8bc21c47a1603692",
+      "opened_at": "2026-09-05T21:27:06.064428+07:00",
+      "origin": "current_positions",
+      "quantity": null,
+      "risk_snapshot": {
+        "atr": 144,
+        "max_hold_bars": 22,
+        "stop_loss": 6914,
+        "take_profit": 7490
+      },
+      "risk_suggestion_text": "Swing: 54.6% - medium",
+      "sell_date": null,
+      "sell_reason": null,
+      "signal_reference": {
+        "contract_version": "backtest_schema5_v1",
+        "evidence_eligibility": {
+          "common_as_of": "2026-09-04",
+          "coverage_ratio": 0.9995891536565324,
+          "eligible": true,
+          "expected_sessions": 2434,
+          "first_available_bar": "2016-11-25",
+          "last_available_bar": "2026-09-04",
+          "max_gap_sessions": 1,
+          "observed_sessions": 2433,
+          "reasons": [],
+          "status": "eligible",
+          "ticker_fingerprint": "77e35a14f6a28cc60c25e4c2d6caccd167b655d23e1398302eb158693f944241",
+          "vnindex_fingerprint": "9d1fafbacd4e26db5c173657d61a162a5f0b33b40ec9fc0faf665b9b0ef8b439"
+        },
+        "exploratory_candidate": {
+          "candidate_role": "baseline_control",
+          "preferred_variant": "no-background-theme",
+          "rulebook_id": "swing_rulebook_v5__rsi_upcross",
+          "selected_gates": [
+            "rulebook_rsi_upcross"
+          ],
+          "treatments": {
+            "background-theme": {
+              "dsr_status": "available",
+              "test": {
+                "n": 29,
+                "p_value": 0.7142857142857143,
+                "p_value_status": "informational",
+                "profit_pct": -8.65129495966415,
+                "sharpe": -0.05680438802037045,
+                "win_rate": 37.93103448275862
+              },
+              "theme_mode": "AND",
+              "theme_variant": "background-theme",
+              "training": {
+                "n": 43,
+                "p_value": 0.07792207792207792,
+                "p_value_status": "informational",
+                "profit_pct": 50.98316387897804,
+                "sharpe": 0.169557208651436,
+                "win_rate": 48.837209302325576
+              },
+              "training_dsr": 0.8616522844004155
+            },
+            "no-background-theme": {
+              "dsr_status": "available",
+              "test": {
+                "n": 35,
+                "p_value": 0.4995004995004995,
+                "p_value_status": "informational",
+                "profit_pct": 0.33224957830136015,
+                "sharpe": 0.0016781601306058741,
+                "win_rate": 40.0
+              },
+              "theme_mode": null,
+              "theme_variant": "no-background-theme",
+              "training": {
+                "n": 59,
+                "p_value": 0.07792207792207792,
+                "p_value_status": "informational",
+                "profit_pct": 72.86218379342657,
+                "sharpe": 0.1711306057890396,
+                "win_rate": 49.152542372881356
+              },
+              "training_dsr": 0.9023095621894651
+            }
+          }
+        },
+        "horizon": "swing",
+        "link_keys": [
+          "4e4bf2226e1d581c8e3017eac49a9e82459e7fd09be124558ba253ba714a5a71"
+        ],
+        "preferred_variant": "no-background-theme",
+        "rulebook_id": "swing_rulebook_v5__rsi_upcross",
+        "schema_version": 5,
+        "ticker": "AAA"
+      },
+      "status": "open",
+      "ticker": "AAA"
+    }
+  ],
+  "schema_version": 1,
+  "ticker": "AAA"
+}

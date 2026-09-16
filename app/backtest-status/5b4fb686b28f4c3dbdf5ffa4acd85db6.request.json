@@ -1,0 +1,32 @@
+{
+  "config": {
+    "end_date": "2026-09-05",
+    "group_name": "H\u00d3A CH\u1ea4T",
+    "horizon": "swing",
+    "output_dir": "backtest-result/ticker-signals",
+    "permutation_block_size": 20,
+    "permutation_count": 1000,
+    "permutation_seed": 42,
+    "request_type": "backtest_batch_v5",
+    "start_date": "2011-09-05",
+    "tickers": [
+      "AAA",
+      "BCC",
+      "BMP",
+      "CSV",
+      "DDV",
+      "DGC",
+      "DPR",
+      "GVR",
+      "HT1",
+      "PAT",
+      "PHR",
+      "PTB"
+    ],
+    "worker_count": 6
+  },
+  "factory_ref": "backtest_engine.pipeline:run_backtest_batch_from_env",
+  "job_id": "5b4fb686b28f4c3dbdf5ffa4acd85db6",
+  "schema_version": 5,
+  "status_dir": "backtest-status"
+}

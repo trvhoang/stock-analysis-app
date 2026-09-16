@@ -11,6 +11,7 @@ import backtest_engine.pipeline as pipeline
 from backtest_engine.config import BacktestBatchConfig, BacktestConfig
 from backtest_engine.data_quality import audit_history
 from backtest_engine.exploratory import EvaluationSplit, ExploratoryEvaluation
+from backtest_engine.listing_status import ListingStatus
 from backtest_engine.persistence import load_rulebook_result, signal_artifact_path
 
 
@@ -57,6 +58,14 @@ def _empty_evaluation() -> ExploratoryEvaluation:
     )
 
 
+def _listed_statuses(*tickers: str) -> dict[str, ListingStatus]:
+    latest = date(2026, 9, 8)
+    return {
+        ticker: ListingStatus(ticker, "listed", latest, latest)
+        for ticker in tickers
+    }
+
+
 class BacktestPipelineTests(unittest.TestCase):
     def test_single_run_passes_internal_evidence_to_persistence(self):
         raw = _frame()
@@ -68,6 +77,8 @@ class BacktestPipelineTests(unittest.TestCase):
         with TemporaryDirectory() as directory:
             config = BacktestConfig(ticker="FPT", output_dir=directory)
             with patch.object(
+                pipeline, "load_listing_statuses", return_value=_listed_statuses("FPT"),
+            ), patch.object(
                 pipeline, "_load_validated_history", return_value=raw
             ), patch.object(
                 pipeline, "_prepare_ticker", return_value=(_frame(), audit, raw)
@@ -89,6 +100,20 @@ class BacktestPipelineTests(unittest.TestCase):
         self.assertTrue(assess.call_args.kwargs["audit_eligible"])
         self.assertEqual("FPT", assess.call_args.kwargs["ticker"])
 
+    def test_calendar_preparation_removes_ticker_rows_without_a_vnindex_session(self):
+        ticker = _history_ending("2024-01-12").iloc[-5:].reset_index(drop=True)
+        vnindex = ticker.drop(index=[2]).reset_index(drop=True)
+
+        filtered, excluded = pipeline._calendar_prepare_ticker_history(
+            ticker,
+            vnindex,
+            start=ticker["date"].iloc[0].date(),
+            end=ticker["date"].iloc[-1].date(),
+        )
+
+        self.assertEqual((ticker["date"].iloc[2].date(),), excluded)
+        self.assertNotIn(ticker["date"].iloc[2], set(filtered["date"]))
+
     def test_evaluation_failure_passes_available_evidence_to_failure_persistence(self):
         raw = _frame()
         audit = audit_history("FPT", raw)
@@ -98,6 +123,8 @@ class BacktestPipelineTests(unittest.TestCase):
         evidence = object()
         config = BacktestConfig(ticker="FPT")
         with patch.object(
+            pipeline, "load_listing_statuses", return_value=_listed_statuses("FPT"),
+        ), patch.object(
             pipeline, "_load_validated_history", return_value=raw
         ), patch.object(
             pipeline, "_prepare_ticker", return_value=(_frame(), audit, raw)
@@ -130,6 +157,8 @@ class BacktestPipelineTests(unittest.TestCase):
                 output_dir=directory,
             )
             with patch.object(
+                pipeline, "load_listing_statuses", return_value=_listed_statuses("FPT"),
+            ), patch.object(
                 pipeline,
                 "load_ticker_history",
                 side_effect=lambda ticker, *_args: sources[ticker].copy(deep=True),
@@ -164,6 +193,8 @@ class BacktestPipelineTests(unittest.TestCase):
                 "load_ticker_history",
                 side_effect=lambda ticker, *_args: sources[ticker].copy(deep=True),
             ), patch.object(
+                pipeline, "load_listing_statuses", return_value=_listed_statuses("FPT", "VCB"),
+            ), patch.object(
                 pipeline, "assign_tickers_group"
             ), patch.object(
                 pipeline, "_evaluate_ticker", return_value=_empty_evaluation()
@@ -183,6 +214,65 @@ class BacktestPipelineTests(unittest.TestCase):
             self.assertEqual(date(2024, 1, 10), confirmation["date"].max().date())
         self.assertEqual({"FPT": "2024-01-10", "VCB": "2024-01-10"}, effective_ends)
 
+    def test_lifetime_batch_resolves_vnindex_valid_bounds_before_loading_history(self):
+        sources = {
+            "FPT": _history_ending("2024-01-12"),
+            "VNINDEX": _history_ending("2024-01-15"),
+        }
+        with TemporaryDirectory() as directory:
+            config = BacktestBatchConfig(
+                tickers=("FPT",), use_lifetime_range=True, output_dir=directory,
+            )
+            with patch.object(
+                pipeline, "load_lifetime_date_bounds", return_value=(date(2010, 1, 4), date(2024, 1, 15)),
+            ) as lifetime_bounds, patch.object(
+                pipeline, "load_listing_statuses", return_value=_listed_statuses("FPT"),
+            ), patch.object(
+                pipeline,
+                "load_ticker_history",
+                side_effect=lambda ticker, *_args: sources[ticker].copy(deep=True),
+            ) as load_history, patch.object(
+                pipeline, "assign_tickers_group"
+            ), patch.object(
+                pipeline, "_evaluate_ticker", return_value=_empty_evaluation()
+            ):
+                pipeline.run_backtest_batch_pipeline(config, None, object())
+
+        lifetime_bounds.assert_called_once_with(("FPT",), unittest.mock.ANY)
+        self.assertTrue(all(
+            call.args[1:3] == (date(2010, 1, 4), date(2024, 1, 15))
+            for call in load_history.call_args_list
+        ))
+
+    def test_lifetime_batch_skips_delisted_ticker_before_resolving_shared_bounds(self):
+        config = BacktestBatchConfig(
+            tickers=("FPT", "LTG"), use_lifetime_range=True,
+        )
+        listing = {
+            "FPT": ListingStatus("FPT", "listed", date(2026, 9, 8), date(2026, 9, 8)),
+            "LTG": ListingStatus("LTG", "delisted", date(2026, 6, 19), date(2026, 9, 8)),
+        }
+        with patch.object(
+            pipeline, "load_listing_statuses", return_value=listing, create=True,
+        ), patch.object(
+            pipeline, "load_lifetime_date_bounds", return_value=(date(2010, 1, 4), date(2026, 9, 8)),
+        ) as lifetime_bounds, patch.object(
+            pipeline, "assign_tickers_group",
+        ), patch.object(
+            pipeline, "_load_validated_history", return_value=_frame(),
+        ), patch.object(
+            pipeline, "_shared_confirmation", side_effect=RuntimeError("stop after bounds"),
+        ), patch.object(
+            pipeline, "_persist_failure", return_value=["failed.json"],
+        ):
+            outcome = pipeline.run_backtest_batch_pipeline(config, None, object())
+
+        lifetime_bounds.assert_called_once_with(("FPT",), unittest.mock.ANY)
+        by_ticker = {item["ticker"]: item for item in outcome["ticker_results"]}
+        self.assertEqual("skipped", by_ticker["LTG"]["state"])
+        self.assertEqual(0, by_ticker["LTG"]["attempts"])
+        self.assertEqual((listing["LTG"].reason,), tuple(by_ticker["LTG"]["error_texts"]))
+
     def test_single_run_always_loads_theme_and_writes_one_aggregate(self):
         raw = _frame()
         audit = audit_history("FPT", raw)
@@ -192,6 +282,8 @@ class BacktestPipelineTests(unittest.TestCase):
         with TemporaryDirectory() as directory:
             config = BacktestConfig(ticker="FPT", output_dir=directory)
             with patch.object(
+                pipeline, "load_listing_statuses", return_value=_listed_statuses("FPT"),
+            ), patch.object(
                 pipeline, "_load_validated_history", return_value=raw
             ), patch.object(
                 pipeline, "_prepare_ticker", return_value=(_frame(), audit, raw)
@@ -223,6 +315,8 @@ class BacktestPipelineTests(unittest.TestCase):
         with TemporaryDirectory() as directory:
             config = BacktestConfig(ticker="FPT", output_dir=directory)
             with patch.object(
+                pipeline, "load_listing_statuses", return_value=_listed_statuses("FPT"),
+            ), patch.object(
                 pipeline, "_load_validated_history", return_value=raw
             ), patch.object(
                 pipeline, "_prepare_ticker", return_value=(_frame(), audit, raw)
@@ -236,10 +330,32 @@ class BacktestPipelineTests(unittest.TestCase):
         self.assertIn("VN unavailable", result["failure_reason"])
         self.assertEqual(result["candidates"], [])
 
+    def test_single_run_skips_delisted_ticker_without_writing_an_artifact(self):
+        config = BacktestConfig(ticker="LTG")
+        listing = {
+            "LTG": ListingStatus(
+                "LTG", "delisted", date(2026, 6, 19), date(2026, 9, 8)
+            )
+        }
+        progress = []
+        with patch.object(
+            pipeline, "load_listing_statuses", return_value=listing
+        ), patch.object(pipeline, "_load_validated_history") as load_history, patch.object(
+            pipeline, "_persist_failure"
+        ) as persist_failure:
+            paths = pipeline.run_backtest_pipeline(config, progress.append, object())
+
+        self.assertEqual([], paths)
+        self.assertEqual([1.0], progress)
+        load_history.assert_not_called()
+        persist_failure.assert_not_called()
+
     def test_batch_preflight_failure_writes_one_failed_aggregate_per_ticker(self):
         with TemporaryDirectory() as directory:
             config = BacktestBatchConfig(tickers=("FPT", "VCB"), output_dir=directory)
-            with patch.object(pipeline, "assign_tickers_group"), patch.object(
+            with patch.object(
+                pipeline, "load_listing_statuses", return_value=_listed_statuses("FPT", "VCB"),
+            ), patch.object(pipeline, "assign_tickers_group"), patch.object(
                 pipeline, "_load_validated_history", return_value=_frame()
             ), patch.object(
                 pipeline, "_shared_confirmation", side_effect=RuntimeError("VN unavailable")

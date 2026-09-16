@@ -1,0 +1,145 @@
+{
+  "error_text": null,
+  "job_id": "320c797b1e0c4a819cd8ce87a83475e1",
+  "output_paths": [],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "THG"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "TRA"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-11; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "TTD"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "VCB"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "VCI"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "VGC"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "VGI"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "VHC"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "VHM"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "VIB"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "VIC"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "VIX"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "VJC"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "VND"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "VPL"
+    }
+  ]
+}

@@ -114,6 +114,16 @@ Outcomes (`result_delta`) are classified into three categories to generate proba
     *   **Golden Cross:** A bullish signal where the short-term SMA crosses *above* the long-term SMA. (`short_ma > long_ma` now, and `short_ma <= long_ma` in the previous period).
     *   **Death Cross:** A bearish signal where the short-term SMA crosses *below* the long-term SMA. (`short_ma < long_ma` now, and `short_ma >= long_ma` in the previous period).
 
+### Bill Williams Alligator (Backtest and Horizon Technical Analysis)
+*   **Input:** Median price `HL2 = (high + low) / 2`, never close.
+*   **Smoothing:** Each line uses a causal, SMA-seeded recursive SMMA of HL2.
+*   **Swing:** Jaw `SMMA(8)` shifted 5 native bars, Teeth `SMMA(5)` shifted 3,
+    Lips `SMMA(3)` shifted 2.
+*   **Mid-term:** HL2 is calculated from completed `W-FRI` OHLCV bars, then
+    Jaw `SMMA(13)` shifted 8, Teeth `SMMA(8)` shifted 5, Lips `SMMA(5)` shifted 3.
+*   **Causality:** A shifted line may use only its own or earlier completed
+    native bars. The current bar never reads future prices.
+
 ### Trend Classification
 The application determines the current trend for indicators based on the following rules:
 

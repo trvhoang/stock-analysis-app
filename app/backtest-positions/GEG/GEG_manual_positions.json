@@ -1,0 +1,147 @@
+{
+  "history": [
+    {
+      "actual_buy_price": 12850,
+      "actual_sell_price": null,
+      "buy_date": "2026-09-04",
+      "certified_signal": {
+        "evaluation_label": "Exploratory \u2014 gross",
+        "horizon": "swing",
+        "preferred_variant": "no-background-theme",
+        "rulebook_id": "swing_rulebook_v5__adx__joint_trend__volume",
+        "selected_gates": [
+          "rulebook_adx_gate",
+          "rulebook_joint_trend_pass",
+          "rulebook_volume_gate"
+        ],
+        "treatment": {
+          "dsr_status": "available",
+          "test": {
+            "n": 23,
+            "p_value": 0.2917082917082917,
+            "p_value_status": "informational",
+            "profit_pct": 4.9736559226188914,
+            "sharpe": 0.037667252651155815,
+            "win_rate": 43.47826086956522
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 34,
+            "p_value": 0.000999000999000999,
+            "p_value_status": "informational",
+            "profit_pct": 56.790860687857254,
+            "sharpe": 0.22342698662615004,
+            "win_rate": 50.0
+          },
+          "training_dsr": 0.8950323325325675
+        }
+      },
+      "closed_at": null,
+      "entry_context": {
+        "as_of_date": "2026-09-04",
+        "current_price": 12850,
+        "match_level": 100.0,
+        "signal_date": "2026-09-04"
+      },
+      "id": "216cd85f842c46a2812a96b8d730e255",
+      "opened_at": "2026-09-05T21:27:34.516546+07:00",
+      "origin": "current_positions",
+      "quantity": null,
+      "risk_snapshot": {
+        "atr": 199,
+        "max_hold_bars": 22,
+        "stop_loss": 12552,
+        "take_profit": 13348
+      },
+      "risk_suggestion_text": "Swing: 100.0% - very",
+      "sell_date": null,
+      "sell_reason": null,
+      "signal_reference": {
+        "contract_version": "backtest_schema5_v1",
+        "evidence_eligibility": {
+          "common_as_of": "2026-09-04",
+          "coverage_ratio": 1.0,
+          "eligible": true,
+          "expected_sessions": 1734,
+          "first_available_bar": "2019-09-19",
+          "last_available_bar": "2026-09-04",
+          "max_gap_sessions": 0,
+          "observed_sessions": 1734,
+          "reasons": [],
+          "status": "eligible",
+          "ticker_fingerprint": "581760c87374cbe3f968015ece6e6e358c628422692200c01889dbd5536f08bb",
+          "vnindex_fingerprint": "9d1fafbacd4e26db5c173657d61a162a5f0b33b40ec9fc0faf665b9b0ef8b439"
+        },
+        "exploratory_candidate": {
+          "candidate_role": "baseline_control",
+          "preferred_variant": "no-background-theme",
+          "rulebook_id": "swing_rulebook_v5__adx__joint_trend__volume",
+          "selected_gates": [
+            "rulebook_adx_gate",
+            "rulebook_joint_trend_pass",
+            "rulebook_volume_gate"
+          ],
+          "treatments": {
+            "background-theme": {
+              "dsr_status": "available",
+              "test": {
+                "n": 20,
+                "p_value": null,
+                "p_value_status": "not_estimated_n_le_block_size",
+                "profit_pct": -13.775155850266508,
+                "sharpe": -0.13215681191981415,
+                "win_rate": 40.0
+              },
+              "theme_mode": "AND",
+              "theme_variant": "background-theme",
+              "training": {
+                "n": 27,
+                "p_value": 0.004995004995004995,
+                "p_value_status": "informational",
+                "profit_pct": 37.485871937816036,
+                "sharpe": 0.19868310095635386,
+                "win_rate": 48.148148148148145
+              },
+              "training_dsr": 0.8369347904300314
+            },
+            "no-background-theme": {
+              "dsr_status": "available",
+              "test": {
+                "n": 23,
+                "p_value": 0.2917082917082917,
+                "p_value_status": "informational",
+                "profit_pct": 4.9736559226188914,
+                "sharpe": 0.037667252651155815,
+                "win_rate": 43.47826086956522
+              },
+              "theme_mode": null,
+              "theme_variant": "no-background-theme",
+              "training": {
+                "n": 34,
+                "p_value": 0.000999000999000999,
+                "p_value_status": "informational",
+                "profit_pct": 56.790860687857254,
+                "sharpe": 0.22342698662615004,
+                "win_rate": 50.0
+              },
+              "training_dsr": 0.8950323325325675
+            }
+          }
+        },
+        "horizon": "swing",
+        "link_keys": [
+          "7980e776682e1ecec73119d8cc4b0f1b15423dedcd41cc0a2972f245f08c26aa"
+        ],
+        "preferred_variant": "no-background-theme",
+        "rulebook_id": "swing_rulebook_v5__adx__joint_trend__volume",
+        "schema_version": 5,
+        "ticker": "GEG"
+      },
+      "status": "open",
+      "ticker": "GEG"
+    }
+  ],
+  "schema_version": 1,
+  "ticker": "GEG"
+}

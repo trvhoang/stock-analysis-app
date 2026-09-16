@@ -1,0 +1,144 @@
+{
+  "error_text": null,
+  "job_id": "5f55cea8b4d043b6b7cd3c8d5c055ebe",
+  "output_paths": [
+    "backtest-result/ticker-signals/DBC/DBC_signals_swing.json",
+    "backtest-result/ticker-signals/HPA/HPA_signals_swing.json",
+    "backtest-result/ticker-signals/SBT/SBT_signals_swing.json",
+    "backtest-result/ticker-signals/SLS/SLS_signals_swing.json",
+    "backtest-result/ticker-signals/HAG/HAG_signals_swing.json",
+    "backtest-result/ticker-signals/HNG/HNG_signals_swing.json",
+    "backtest-result/ticker-signals/PAN/PAN_signals_swing.json",
+    "backtest-result/ticker-signals/LTG/LTG_signals_swing.json",
+    "backtest-result/ticker-signals/TAR/TAR_signals_swing.json",
+    "backtest-result/ticker-signals/BAF/BAF_signals_swing.json",
+    "backtest-result/ticker-signals/VHC/VHC_signals_swing.json",
+    "backtest-result/ticker-signals/ANV/ANV_signals_swing.json",
+    "backtest-result/ticker-signals/FCM/FCM_signals_swing.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DBC/DBC_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DBC"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/HPA/HPA_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "HPA"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/SBT/SBT_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "SBT"
+    },
+    {
+      "attempts": 2,
+      "error_texts": [
+        "ValueError: invalid backtest data: high contains non-positive prices",
+        "ValueError: invalid backtest data: high contains non-positive prices"
+      ],
+      "output_paths": [
+        "backtest-result/ticker-signals/SLS/SLS_signals_swing.json"
+      ],
+      "state": "failed",
+      "ticker": "SLS"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/HAG/HAG_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "HAG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/HNG/HNG_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "HNG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/PAN/PAN_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "PAN"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/LTG/LTG_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "LTG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/TAR/TAR_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "TAR"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/BAF/BAF_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "BAF"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VHC/VHC_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "VHC"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/ANV/ANV_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "ANV"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/FCM/FCM_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "FCM"
+    }
+  ]
+}

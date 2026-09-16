@@ -24,6 +24,7 @@ class BacktestRulebookConfigTests(unittest.TestCase):
         self.assertEqual((rule.rsi_period, rule.rsi_upcross), (9, 52))
         self.assertEqual(rule.alligator_periods, (8, 5, 3))
         self.assertEqual(rule.alligator_lags, (5, 3, 2))
+        self.assertEqual(rule.alligator_source, "HL2")
         self.assertEqual((rule.volume_window, rule.volume_multiplier), (10, 1.15))
         self.assertEqual((rule.adx_period, rule.adx_minimum), (14, 17))
         self.assertTrue(rule.joint_trend_required)
@@ -44,6 +45,7 @@ class BacktestRulebookConfigTests(unittest.TestCase):
         self.assertEqual((rule.rsi_period, rule.rsi_upcross), (14, 65))
         self.assertEqual(rule.alligator_periods, (13, 8, 5))
         self.assertEqual(rule.alligator_lags, (8, 5, 3))
+        self.assertEqual(rule.alligator_source, "HL2")
         self.assertEqual((rule.volume_window, rule.volume_multiplier), (8, 1.3))
         self.assertEqual(rule.adx_minimum, 20)
         self.assertEqual(

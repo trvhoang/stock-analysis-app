@@ -1,0 +1,170 @@
+{
+  "error_text": null,
+  "job_id": "1910c1e0c07f48dfadf1871411ed3828",
+  "output_paths": [
+    "backtest-result/ticker-signals/SGP/SGP_signals_midterm.json",
+    "backtest-result/ticker-signals/SHB/SHB_signals_midterm.json",
+    "backtest-result/ticker-signals/SHS/SHS_signals_midterm.json",
+    "backtest-result/ticker-signals/SIP/SIP_signals_midterm.json",
+    "backtest-result/ticker-signals/SLS/SLS_signals_midterm.json",
+    "backtest-result/ticker-signals/SNZ/SNZ_signals_midterm.json",
+    "backtest-result/ticker-signals/SSI/SSI_signals_midterm.json",
+    "backtest-result/ticker-signals/STB/STB_signals_midterm.json",
+    "backtest-result/ticker-signals/TAR/TAR_signals_midterm.json",
+    "backtest-result/ticker-signals/TCB/TCB_signals_midterm.json",
+    "backtest-result/ticker-signals/TCH/TCH_signals_midterm.json",
+    "backtest-result/ticker-signals/TCL/TCL_signals_midterm.json",
+    "backtest-result/ticker-signals/TCX/TCX_signals_midterm.json",
+    "backtest-result/ticker-signals/TDM/TDM_signals_midterm.json",
+    "backtest-result/ticker-signals/THG/THG_signals_midterm.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/SGP/SGP_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "SGP"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/SHB/SHB_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "SHB"
+    },
+    {
+      "attempts": 2,
+      "error_texts": [
+        "ValueError: invalid backtest data: high contains non-positive prices",
+        "ValueError: invalid backtest data: high contains non-positive prices"
+      ],
+      "output_paths": [
+        "backtest-result/ticker-signals/SHS/SHS_signals_midterm.json"
+      ],
+      "state": "failed",
+      "ticker": "SHS"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/SIP/SIP_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "SIP"
+    },
+    {
+      "attempts": 2,
+      "error_texts": [
+        "ValueError: invalid backtest data: high contains non-positive prices",
+        "ValueError: invalid backtest data: high contains non-positive prices"
+      ],
+      "output_paths": [
+        "backtest-result/ticker-signals/SLS/SLS_signals_midterm.json"
+      ],
+      "state": "failed",
+      "ticker": "SLS"
+    },
+    {
+      "attempts": 2,
+      "error_texts": [
+        "ValueError: invalid backtest data: open contains non-positive prices; high contains non-positive prices; low contains non-positive prices",
+        "ValueError: invalid backtest data: open contains non-positive prices; high contains non-positive prices; low contains non-positive prices"
+      ],
+      "output_paths": [
+        "backtest-result/ticker-signals/SNZ/SNZ_signals_midterm.json"
+      ],
+      "state": "failed",
+      "ticker": "SNZ"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/SSI/SSI_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "SSI"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/STB/STB_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "STB"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/TAR/TAR_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "TAR"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/TCB/TCB_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "TCB"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/TCH/TCH_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "TCH"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/TCL/TCL_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "TCL"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/TCX/TCX_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "TCX"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/TDM/TDM_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "TDM"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/THG/THG_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "THG"
+    }
+  ]
+}

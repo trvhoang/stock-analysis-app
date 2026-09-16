@@ -10,6 +10,8 @@ from typing import Sequence
 
 import pandas as pd
 
+from commons.trading_calendar import align_to_vnindex_calendar
+
 from .config import HORIZONS, THEME_VARIANTS, rulebook_for
 from .data_quality import audit_history, load_ticker_history, validate_ohlcv
 from .indicators import build_rulebook_frame
@@ -449,6 +451,13 @@ def collect_research_from_histories(
 
     _require_valid_history("VCB", vcb_raw)
     _require_valid_history("VNINDEX", vnindex_raw)
+    source_start, _ = _source_bounds(vcb_raw)
+    vcb_raw, _calendar, _outside = align_to_vnindex_calendar(
+        vcb_raw,
+        vnindex_raw,
+        start=source_start,
+        end=as_of,
+    )
     source_start, source_end = _source_bounds(vcb_raw)
     audit = audit_history("VCB", vcb_raw)
     common_as_of = latest_common_completed_bar(

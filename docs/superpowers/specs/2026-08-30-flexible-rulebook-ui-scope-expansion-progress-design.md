@@ -1,5 +1,7 @@
 # Flexible Rulebook UI Scope Expansion and Progress
 
+> **Superseded by 2026-09-15 user-authored redesign.** Historical record only; do not use for implementation.
+
 ## Goal
 
 **Implementation status (2026-08-30): complete and Docker-verified.**

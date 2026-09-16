@@ -7,10 +7,13 @@ from datetime import datetime
 import pandas as pd
 import pytz
 
+from commons.trading_calendar import VNIndexCalendarUnavailable, align_to_vnindex_calendar
+
 from .config import DEFAULT_SIGNAL_DIR, HORIZONS, _normalize_ticker, rulebook_for
 from .data_quality import audit_history, load_ticker_history, validate_ohlcv
 from .evidence import EvidenceEligibility, assess_evidence
 from .indicators import build_rulebook_frame
+from .listing_status import ListingStatus, load_listing_statuses
 from .models import RulebookExecution
 from .persistence import (
     load_rulebook_result,
@@ -19,6 +22,7 @@ from .persistence import (
 )
 from .result_store import ensure_result_root
 from .signal_combos import rulebook_entry_signal
+from .signal_state import assess_signal_state
 from .timeframes import latest_common_completed_bar
 
 
@@ -77,18 +81,42 @@ def validate_current_evidence(
 
     ticker = _normalize_ticker(document.get("ticker"))
     _, requested_end = _fresh_bounds()
-    common_as_of = latest_common_completed_bar(
-        {ticker: ticker_raw, "VNINDEX": vnindex_raw},
+    prepared_ticker, common_as_of = _calendar_replay_sources(
+        ticker_raw,
+        vnindex_raw,
         requested_end,
     )
-    audit = audit_history(ticker, ticker_raw)
+    audit = audit_history(ticker, prepared_ticker)
     return assess_evidence(
-        ticker_raw,
+        prepared_ticker,
         vnindex_raw,
         common_as_of,
         ticker=ticker,
         audit_eligible=audit.status == "clean",
     )
+
+
+def _calendar_replay_sources(
+    ticker_raw: pd.DataFrame,
+    vnindex_raw: pd.DataFrame,
+    requested_end: date,
+) -> tuple[pd.DataFrame, date]:
+    """Return fresh ticker history filtered before any replay indicator frame."""
+
+    dates = pd.to_datetime(ticker_raw.get("date"), errors="coerce")
+    if dates.empty or dates.isna().any():
+        raise ValueError("fresh ticker history has no usable dates")
+    prepared, _calendar, _outside = align_to_vnindex_calendar(
+        ticker_raw,
+        vnindex_raw,
+        start=dates.min().date(),
+        end=requested_end,
+    )
+    common_as_of = latest_common_completed_bar(
+        {"ticker": prepared, "VNINDEX": vnindex_raw},
+        requested_end,
+    )
+    return prepared, common_as_of
 
 
 def _evidence_matches_frozen(
@@ -139,13 +167,14 @@ def _current_rulebook_facts(
 ) -> dict[str, object]:
     rulebook = rulebook_for(horizon)
     ticker_raw = _load_raw(ticker, engine) if ticker_raw is None else ticker_raw
-    sources = {ticker: ticker_raw}
-    if preferred_variant == "background-theme":
-        vnindex_raw = _load_raw("VNINDEX", engine) if vnindex_raw is None else vnindex_raw
-        sources["VNINDEX"] = vnindex_raw
-    if common_as_of is None:
-        _, requested_end = _fresh_bounds()
-        common_as_of = latest_common_completed_bar(sources, requested_end)
+    vnindex_raw = _load_raw("VNINDEX", engine) if vnindex_raw is None else vnindex_raw
+    _, requested_end = _fresh_bounds()
+    ticker_raw, prepared_common_as_of = _calendar_replay_sources(
+        ticker_raw,
+        vnindex_raw,
+        requested_end,
+    )
+    common_as_of = prepared_common_as_of if common_as_of is None else common_as_of
     frame = build_rulebook_frame(
         ticker_raw,
         rulebook,
@@ -166,6 +195,14 @@ def _current_rulebook_facts(
         "AND" if preferred_variant == "background-theme" else None,
     )
     entries = rulebook_entry_signal(frame, execution, theme_eligible=theme_eligible)
+    signal_state = assess_signal_state(
+        frame,
+        entries,
+        selected_gates,
+        preferred_variant,
+        horizon,
+        theme_eligible=theme_eligible,
+    )
     last = frame.iloc[-1]
     gate_facts = {gate: bool(last.get(gate, False)) for gate in selected_gates}
     result = {
@@ -173,6 +210,8 @@ def _current_rulebook_facts(
         "latest_close": _number(last.get("close")),
         "latest_atr": _number(last.get("ATR_14")),
         "literal_entry": bool(entries.iloc[-1]),
+        "signal_date": signal_state["signal_date"],
+        "signal_state": signal_state,
         "missing_required_input": bool(last.get("rulebook_missing_required_input", True)),
         "gate_facts": gate_facts,
         # The corrected baseline owns no technical SELL or deterioration predicate.
@@ -206,17 +245,63 @@ def check_current_situation(
     rulebook_id: str,
     engine,
     output_dir: str | None = None,
+    listing_status: ListingStatus | None = None,
 ) -> dict[str, object]:
     """Replay one schema-5 Top-3 preferred treatment against fresh data."""
 
     normalized = _normalize_ticker(ticker)
+    try:
+        listing = listing_status or load_listing_statuses((normalized,), engine)[normalized]
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError) as error:
+        return {
+            "ticker": normalized,
+            "horizon": horizon,
+            "candidate": None,
+            "current": None,
+            "reason": "listing_status_unavailable",
+            "listing_error": str(error),
+        }
+    if listing.ticker != normalized:
+        raise ValueError("listing_status ticker must match ticker")
+    if not listing.is_listed:
+        return {
+            "ticker": normalized,
+            "horizon": horizon,
+            "candidate": None,
+            "current": None,
+            "reason": "ticker_delisted",
+            "listing_status": listing.to_dict(),
+        }
     document = load_current_rulebook_document(normalized, horizon, output_dir or DEFAULT_SIGNAL_DIR)
     if document is None or document["terminal_state"] != "success":
         return {"ticker": normalized, "horizon": horizon, "candidate": None, "current": None, "reason": "No current schema-5 exploratory rulebook exists."}
     start, end = _replay_bounds(document)
-    ticker_raw = _load_raw(normalized, engine, start=start, end=end)
-    vnindex_raw = _load_raw("VNINDEX", engine, start=start, end=end)
-    current_evidence = validate_current_evidence(document, ticker_raw, vnindex_raw)
+    try:
+        ticker_raw = _load_raw(normalized, engine, start=start, end=end)
+        vnindex_raw = _load_raw("VNINDEX", engine, start=start, end=end)
+        current_evidence = validate_current_evidence(document, ticker_raw, vnindex_raw)
+    except (VNIndexCalendarUnavailable, ValueError) as error:
+        # A replay may never calculate a fresh rulebook from a raw fallback.
+        # Replace the stale success document with the normal atomic marker.
+        path = signal_artifact_path(
+            normalized,
+            horizon,
+            str(ensure_result_root(output_dir or DEFAULT_SIGNAL_DIR)),
+        )
+        write_regeneration_marker(
+            path,
+            normalized,
+            horizon,
+            reason=str(error),
+        )
+        return {
+            "ticker": normalized,
+            "horizon": horizon,
+            "candidate": None,
+            "current": None,
+            "reason": "calendar_unavailable",
+            "calendar_error": str(error),
+        }
     if not _evidence_matches_frozen(
         document.get("evidence_eligibility"), current_evidence
     ):
@@ -266,6 +351,7 @@ def check_current_situation(
 
 __all__ = [
     "check_current_situation",
+    "_calendar_replay_sources",
     "load_current_rulebook_document",
     "validate_current_evidence",
 ]

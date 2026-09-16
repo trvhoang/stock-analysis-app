@@ -11,6 +11,7 @@ from backtest_engine.models import RulebookExecution
 from backtest_engine.signal_combos import (
     gate_subsets,
     generate_rulebook_executions,
+    rulebook_entry_events,
     rulebook_entry_signal,
 )
 
@@ -105,6 +106,14 @@ class RulebookEntryTests(unittest.TestCase):
                     bool(rulebook_entry_signal(frame, execution).iloc[-1]),
                     expected_entry,
                 )
+
+    def test_entry_event_requires_an_observed_false_predecessor(self):
+        events = rulebook_entry_events(
+            pd.Series([True, True, False, True, True]),
+            pd.Series([False, True, True, True, True]),
+        )
+
+        self.assertEqual([False, False, False, True, False], events.tolist())
 
 
 if __name__ == "__main__":

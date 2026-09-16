@@ -15,6 +15,15 @@ available while vectorized components prove trace parity.
 **Tech Stack:** Python 3.12, pandas, NumPy, Streamlit, PostgreSQL, SQLAlchemy,
 `unittest`, Docker.
 
+## Post-completion formula correction (2026-09-05)
+
+Alligator source is fixed to standard `HL2 = (high + low) / 2` before the
+existing SMA-seeded SMMA and causal shifts. Close-based Alligator values were
+superseded. All existing canonical and legacy signal artifacts and job
+sidecars were overwritten as `requires_regeneration`; position records and
+market data were not changed. A focused HL2 regression plus complete Backtest
+and shared Technical Analysis test gates must remain green.
+
 ## Global Constraints
 
 - Approved design:

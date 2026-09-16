@@ -1,42 +1,41 @@
 {
   "audit_eligibility": {
     "effective_date_range": [
-      null,
-      null
+      "2025-10-21",
+      "2026-09-15"
     ],
-    "eligible": false,
-    "reasons": [
-      "Regenerate under Backtest schema 5."
-    ],
-    "source": "unavailable",
-    "status": "unavailable",
-    "warnings": []
+    "eligible": true,
+    "reasons": [],
+    "source": "fresh_schema5_raw_history",
+    "status": "clean",
+    "warnings": [
+      "date gap of 10 calendar days before 2026-02-23",
+      "OHLC ordering mismatch 0.01% is within 1.00% derived-envelope tolerance"
+    ]
   },
   "candidates": [],
   "contract_version": "backtest_schema5_v1",
   "effective_data_range": {
-    "end": null,
-    "reason": "Regenerate under Backtest schema 5.",
-    "start": null
+    "end": "2026-09-15",
+    "reason": null,
+    "start": "2025-10-21"
   },
   "empty": true,
-  "evaluated_at": "2026-09-01T19:45:31.500547+07:00",
+  "evaluated_at": "2026-09-15T22:05:54.604074+07:00",
   "evaluation_label": "Exploratory \u2014 gross",
   "evidence_eligibility": {
-    "common_as_of": null,
-    "coverage_ratio": 0.0,
-    "eligible": false,
-    "expected_sessions": 0,
-    "first_available_bar": null,
-    "last_available_bar": null,
+    "common_as_of": "2026-09-15",
+    "coverage_ratio": 1.0,
+    "eligible": true,
+    "expected_sessions": 222,
+    "first_available_bar": "2025-10-21",
+    "last_available_bar": "2026-09-15",
     "max_gap_sessions": 0,
-    "observed_sessions": 0,
-    "reasons": [
-      "Regenerate under Backtest schema 5."
-    ],
-    "status": "unavailable",
-    "ticker_fingerprint": null,
-    "vnindex_fingerprint": null
+    "observed_sessions": 222,
+    "reasons": [],
+    "status": "eligible",
+    "ticker_fingerprint": "3ba126f92b6944d881576bac00c5adcca8f811907ea422f2dbeec81f566dcce3",
+    "vnindex_fingerprint": "ecf554affc5e79b4d7547289560dc23651abc3b6d25de0426145ccd9f0049580"
   },
   "failure_reason": null,
   "horizon": "midterm",
@@ -44,11 +43,11 @@
     "test": "historical test \u2014 previously observed",
     "training": "in-sample"
   },
-  "rejection_reason": "Regenerate under Backtest schema 5.",
+  "rejection_reason": "No rulebook has no-theme training n >= 5.",
   "requested_date_range": {
-    "end": null,
-    "reason": "Regenerate under Backtest schema 5.",
-    "start": null
+    "end": "2026-09-15",
+    "reason": null,
+    "start": "2010-08-17"
   },
   "rulebook": {
     "adx_minimum": 20,
@@ -63,6 +62,7 @@
       8,
       5
     ],
+    "alligator_source": "HL2",
     "atr_period": 14,
     "atr_sl_multiplier": 1.5,
     "atr_tp_multiplier": 2.5,
@@ -86,8 +86,18 @@
     "weekly_frequency": "W-FRI"
   },
   "schema_version": 5,
-  "split": null,
-  "terminal_state": "requires_regeneration",
+  "split": {
+    "method": "chronological_65_35",
+    "test": {
+      "end": "2026-09-11",
+      "start": "2026-05-22"
+    },
+    "train": {
+      "end": "2026-05-15",
+      "start": "2025-10-24"
+    }
+  },
+  "terminal_state": "empty",
   "ticker": "TCX",
   "top_rulebook_ids": []
 }

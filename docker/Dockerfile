@@ -33,17 +33,17 @@ RUN pip install --no-cache-dir \
 
 # Install pandas-ta separately with extended timeout and retry
 # This URL is often slow, so we give it extra resilience
-RUN pip install --no-cache-dir \
-    --default-timeout=300 \
-    --retries=15 \
-    --no-compile \
-    https://www.pandas-ta.dev/assets/zip/pandas_ta-0.4.71b0.tar.gz || \
-    (echo "pandas-ta download failed, retrying..." && sleep 5 && \
-     pip install --no-cache-dir \
-     --default-timeout=300 \
-     --retries=15 \
-     --no-compile \
-     https://www.pandas-ta.dev/assets/zip/pandas_ta-0.4.71b0.tar.gz)
+# RUN pip install --no-cache-dir \
+#     --default-timeout=300 \
+#     --retries=15 \
+#     --no-compile \
+#     https://www.pandas-ta.dev/assets/zip/pandas_ta-0.4.71b0.tar.gz || \
+#     (echo "pandas-ta download failed, retrying..." && sleep 5 && \
+#      pip install --no-cache-dir \
+#      --default-timeout=300 \
+#      --retries=15 \
+#      --no-compile \
+#      https://www.pandas-ta.dev/assets/zip/pandas_ta-0.4.71b0.tar.gz)
 
 # Purge pip cache to reduce final image size
 RUN pip cache purge
@@ -86,4 +86,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 EXPOSE 3501
 
 # Run Streamlit app
-CMD ["streamlit", "run", "main.py", "--server.port=3501", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "main.py", "--server.port=3501", "--server.address=0.0.0.0", "--browser.gatherUsageStats=false"]

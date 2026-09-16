@@ -1,0 +1,36 @@
+{
+  "config": {
+    "end_date": null,
+    "group_name": "N/A",
+    "horizon": "swing",
+    "output_dir": "backtest-result/ticker-signals",
+    "permutation_block_size": 20,
+    "permutation_count": 1000,
+    "permutation_seed": 42,
+    "request_type": "backtest_batch_v5",
+    "start_date": null,
+    "tickers": [
+      "DIG",
+      "DMC",
+      "DMX",
+      "DPM",
+      "DPR",
+      "DTP",
+      "DVN",
+      "DVP",
+      "DXG",
+      "DXS",
+      "EIB",
+      "FCM",
+      "FRT",
+      "FTS",
+      "GAS"
+    ],
+    "use_lifetime_range": true,
+    "worker_count": 6
+  },
+  "factory_ref": "backtest_engine.pipeline:run_backtest_batch_from_env",
+  "job_id": "20df260b981d4d909774b5a1456d9250",
+  "schema_version": 5,
+  "status_dir": "backtest-status"
+}

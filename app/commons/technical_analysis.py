@@ -2,10 +2,19 @@
 # Centralized handler for technical indicators and trend classification.
 
 import pandas as pd
+
+from commons.trading_calendar import load_calendar_aligned_history
 from sqlalchemy import text
 import pandas_ta as ta
 import numpy as np
 
+from commons.causal_indicators import adx_dmi as causal_adx_dmi
+from commons.causal_indicators import atr as causal_atr
+from commons.causal_indicators import bollinger as causal_bollinger
+from commons.causal_indicators import obv as causal_obv
+from commons.causal_indicators import rsi as causal_rsi
+from commons.causal_indicators import stochastic as causal_stochastic
+from commons.causal_indicators import true_range as causal_true_range
 from commons.price_utils import PRICE_OUTPUT_UI, prepare_price_for_output
 
 # Shared by the Technical Analyze page and offline backtest adapters so the
@@ -206,6 +215,60 @@ def calculate_trend_correlation(trend_frame):
     scored = trend_frame.apply(lambda series: series.map(_TREND_KEY_SCORES))
     return scored.corr()
 
+def fetch_raw_technical_history(ticker, limit, engine):
+    """Return unscaled daily OHLCV history for a Technical Analysis consumer.
+
+    The helper deliberately stops before resampling, limiting, or display
+    conversion.  Horizon-native consumers can therefore reuse the exact raw
+    BIGINT inputs that the Backtest indicator frame expects.
+    """
+    if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
+        raise ValueError("limit must be a positive integer")
+
+    normalized_ticker = str(ticker or "").strip().upper()
+    if not normalized_ticker:
+        raise ValueError("ticker must be non-empty")
+
+    # The statement remains a SQLAlchemy text object as required by the
+    # project SQL convention; its raw DBAPI form retains psycopg parameters.
+    statement = text(
+        """
+        SELECT date, open, high, low, close, volume
+        FROM trading_data
+        WHERE ticker = %(ticker)s
+        ORDER BY date DESC
+        LIMIT %(limit)s
+        """
+    )
+    connection = engine.raw_connection()
+    try:
+        return pd.read_sql(
+            statement.text,
+            connection,
+            params={"ticker": normalized_ticker, "limit": limit},
+        )
+    finally:
+        connection.close()
+
+
+def fetch_calendar_technical_history(ticker, limit, engine):
+    """Return bounded raw OHLCV restricted to VN-Index trading sessions."""
+
+    raw = fetch_raw_technical_history(ticker, limit, engine)
+    if raw.empty:
+        return raw
+    dates = pd.to_datetime(raw["date"], errors="coerce")
+    if dates.isna().any():
+        raise ValueError("technical history contains invalid dates")
+    filtered, _calendar, _outside = load_calendar_aligned_history(
+        engine,
+        ticker,
+        start=dates.min().date(),
+        end=dates.max().date(),
+    )
+    return filtered
+
+
 def fetch_data(ticker, timeframe, limit, engine):
     """
     Fetches historical stock data for the given ticker.
@@ -228,24 +291,7 @@ def fetch_data(ticker, timeframe, limit, engine):
     elif timeframe == 'Month':
         db_limit = limit * 32
 
-    # Use raw DBAPI query syntax (%(name)s) instead of SQLAlchemy syntax (:name)
-    # This allows us to use the raw connection and bypass pandas' SQLAlchemy detection issues
-    query = """
-        SELECT date, open, high, low, close, volume
-        FROM trading_data
-        WHERE ticker = %(ticker)s
-        ORDER BY date DESC
-        LIMIT %(limit)s
-    """
-    
-    # Fetch daily data
-    # Use a raw connection to bypass pandas/sqlalchemy detection issues
-    # engine.raw_connection() returns a raw psycopg2 connection which has .cursor()
-    conn = engine.raw_connection()
-    try:
-        df = pd.read_sql(query, conn, params={"ticker": ticker, "limit": db_limit})
-    finally:
-        conn.close()
+    df = fetch_calendar_technical_history(ticker, db_limit, engine)
 
     if df.empty:
         return pd.DataFrame()
@@ -287,18 +333,11 @@ def calculate_stochastic(df):
 
     Returns:
         pd.DataFrame: DataFrame with added '%K' and '%D' columns.
-    """
+   """
    try:
-       # Calculate %K
-       lowest_low = df['low'].rolling(window=10).min()
-       highest_high = df['high'].rolling(window=10).max()
-       df['%K'] = 100 * ((df['close'] - lowest_low) / (highest_high - lowest_low))
-
-       # Smooth %K to get the smoothed %K value
-       df['%K'] = df['%K'].rolling(window=3).mean()
-
-       # Calculate %D (Simple Moving Average of %K)
-       df['%D'] = df['%K'].rolling(window=3).mean()
+       values = causal_stochastic(df, k_period=10, k_smoothing=3, d_period=3)
+       df['%K'] = values['k']
+       df['%D'] = values['d']
 
        trend = calculate_stochastic_trend(df, k_col='%K', d_col='%D')
        return df, trend
@@ -410,11 +449,9 @@ def calculate_rsi(df, length=14):
     Returns:
         tuple: (pd.DataFrame, str) -> (DataFrame with RSI col, Trend Status)
     """
-    # Explicitly calculate RSI on the 'close' price and assign it to a new column.
     rsi_col = f"RSI_{length}"
-    rsi_series = ta.rsi(df['close'], length=length)
-    if rsi_series is not None:
-        df[rsi_col] = rsi_series
+    if 'close' in df.columns:
+        df[rsi_col] = causal_rsi(df['close'], length)
     else:
         df[rsi_col] = pd.Series(float('nan'), index=df.index)
     
@@ -561,21 +598,7 @@ def _true_range(df):
     if not {'high', 'low', 'close'}.issubset(df.columns):
         return None
 
-    high = pd.to_numeric(df['high'], errors='coerce')
-    low = pd.to_numeric(df['low'], errors='coerce')
-    close = pd.to_numeric(df['close'], errors='coerce')
-    prev_close = close.shift(1)
-
-    range_hl = high - low
-    range_hc = (high - prev_close).abs()
-    range_lc = (low - prev_close).abs()
-
-    tr = pd.concat([range_hl, range_hc, range_lc], axis=1).max(axis=1)
-    # No previous close on the first bar: fall back to high-low only.
-    if len(tr) > 0:
-        tr.iloc[0] = range_hl.iloc[0]
-
-    return tr
+    return causal_true_range(df)
 
 
 def calculate_atr(df, period=14):
@@ -586,7 +609,7 @@ def calculate_atr(df, period=14):
     - Output: pd.Series named 'ATR_{period}', aligned to df.index.
     - True Range: max(high-low, |high-prev_close|, |low-prev_close|);
       first bar uses high-low only (no previous close).
-    - Smoothing: ewm(alpha=1/period, adjust=False, min_periods=period).
+    - Smoothing: exact SMA-seeded Wilder recurrence.
     - Missing required columns or empty input: all-NaN Series aligned
       to df.index (empty Series for empty input). Never raises.
     - Does not mutate the input DataFrame.
@@ -603,13 +626,9 @@ def calculate_atr(df, period=14):
     if df.empty:
         return pd.Series(dtype=float, index=df.index, name=col_name)
 
-    tr = _true_range(df)
-    if tr is None:
-        return pd.Series(float('nan'), index=df.index, name=col_name)
-
-    atr = tr.ewm(alpha=1 / period, adjust=False, min_periods=period).mean()
-    atr.name = col_name
-    return atr
+    result = causal_atr(df, period)
+    result.name = col_name
+    return result
 
 
 def calculate_bollinger(df, period=20, std_mult=2):
@@ -649,20 +668,14 @@ def calculate_bollinger(df, period=20, std_mult=2):
     if 'close' not in df.columns:
         return pd.DataFrame({c: pd.Series(float('nan'), index=df.index) for c in cols})
 
-    close = pd.to_numeric(df['close'], errors='coerce')
-    middle = close.rolling(window=period, min_periods=period).mean()
-    std = close.rolling(window=period, min_periods=period).std()
-    upper = middle + std_mult * std
-    lower = middle - std_mult * std
-    bandwidth = (upper - lower) / middle * 100
-    percent_b = (close - lower) / (upper - lower)
+    values = causal_bollinger(df['close'], period, std_mult)
 
     result = pd.DataFrame(index=df.index)
-    result[cols[0]] = middle
-    result[cols[1]] = upper
-    result[cols[2]] = lower
-    result[cols[3]] = bandwidth
-    result[cols[4]] = percent_b
+    result[cols[0]] = values['middle']
+    result[cols[1]] = values['upper']
+    result[cols[2]] = values['lower']
+    result[cols[3]] = values['bandwidth']
+    result[cols[4]] = values['percent_b']
     return result
 
 
@@ -693,13 +706,9 @@ def calculate_obv(df):
     if not {'close', 'volume'}.issubset(df.columns):
         return pd.Series(float('nan'), index=df.index, name='OBV')
 
-    close = pd.to_numeric(df['close'], errors='coerce')
-    volume = pd.to_numeric(df['volume'], errors='coerce')
-
-    direction = np.sign(close.diff()).fillna(0)
-    obv = (direction * volume).cumsum()
-    obv.name = 'OBV'
-    return obv
+    result = causal_obv(df['close'], df['volume'])
+    result.name = 'OBV'
+    return result
 
 
 def calculate_adx(df, period=14):
@@ -712,9 +721,7 @@ def calculate_adx(df, period=14):
       'ADX_{period}', 'DMP_{period}' (+DI), 'DMN_{period}' (-DI).
     - +DM/-DM from high/low differences (standard Wilder definition);
       True Range as in calculate_atr. Each is smoothed with
-      ewm(alpha=1/period, adjust=False, min_periods=period), matching
-      the ATR smoothing choice (an approximation of Wilder's original
-      hand-seeded recursion, not an exact reproduction of it).
+      exact SMA-seeded Wilder smoothing, matching the Backtest calculation.
     - DI = 100 * smoothed_DM / smoothed_TR; DX = 100 * |DIP-DIN| / (DIP+DIN);
       ADX = Wilder-smoothed DX (same ewm). Because ADX is a smoothed
       average of DX, it only becomes non-NaN roughly one additional
@@ -738,38 +745,12 @@ def calculate_adx(df, period=14):
     if not {'high', 'low', 'close'}.issubset(df.columns):
         return pd.DataFrame({c: pd.Series(float('nan'), index=df.index) for c in cols})
 
-    high = pd.to_numeric(df['high'], errors='coerce')
-    low = pd.to_numeric(df['low'], errors='coerce')
-
-    tr = _true_range(df)
-
-    up_move = high.diff()
-    down_move = -low.diff()
-
-    plus_dm = pd.Series(
-        np.where((up_move > down_move) & (up_move > 0), up_move, 0.0),
-        index=df.index,
-    )
-    minus_dm = pd.Series(
-        np.where((down_move > up_move) & (down_move > 0), down_move, 0.0),
-        index=df.index,
-    )
-
-    smoothing = dict(alpha=1 / period, adjust=False, min_periods=period)
-    smoothed_tr = tr.ewm(**smoothing).mean()
-    smoothed_plus_dm = plus_dm.ewm(**smoothing).mean()
-    smoothed_minus_dm = minus_dm.ewm(**smoothing).mean()
-
-    dip = 100 * smoothed_plus_dm / smoothed_tr
-    din = 100 * smoothed_minus_dm / smoothed_tr
-
-    dx = 100 * (dip - din).abs() / (dip + din)
-    adx = dx.ewm(**smoothing).mean()
+    values = causal_adx_dmi(df, period)
 
     result = pd.DataFrame(index=df.index)
-    result[cols[0]] = adx
-    result[cols[1]] = dip
-    result[cols[2]] = din
+    result[cols[0]] = values['adx']
+    result[cols[1]] = values['plus_di']
+    result[cols[2]] = values['minus_di']
     return result
 
 

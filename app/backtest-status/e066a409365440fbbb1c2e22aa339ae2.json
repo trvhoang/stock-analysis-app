@@ -1,0 +1,94 @@
+{
+  "error_text": null,
+  "job_id": "e066a409365440fbbb1c2e22aa339ae2",
+  "output_paths": [
+    "backtest-result/ticker-signals/GMD/GMD_signals_swing.json",
+    "backtest-result/ticker-signals/HAH/HAH_signals_swing.json",
+    "backtest-result/ticker-signals/VSC/VSC_signals_swing.json",
+    "backtest-result/ticker-signals/PHP/PHP_signals_swing.json",
+    "backtest-result/ticker-signals/DVP/DVP_signals_swing.json",
+    "backtest-result/ticker-signals/CDN/CDN_signals_swing.json",
+    "backtest-result/ticker-signals/SGP/SGP_signals_swing.json",
+    "backtest-result/ticker-signals/TCL/TCL_signals_swing.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/GMD/GMD_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "GMD"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/HAH/HAH_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "HAH"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VSC/VSC_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "VSC"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/PHP/PHP_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "PHP"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DVP/DVP_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DVP"
+    },
+    {
+      "attempts": 2,
+      "error_texts": [
+        "ValueError: invalid backtest data: high contains non-positive prices",
+        "ValueError: invalid backtest data: high contains non-positive prices"
+      ],
+      "output_paths": [
+        "backtest-result/ticker-signals/CDN/CDN_signals_swing.json"
+      ],
+      "state": "failed",
+      "ticker": "CDN"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/SGP/SGP_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "SGP"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/TCL/TCL_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "TCL"
+    }
+  ]
+}

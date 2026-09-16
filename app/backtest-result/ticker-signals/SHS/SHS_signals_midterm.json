@@ -6,7 +6,7 @@
     ],
     "eligible": false,
     "reasons": [
-      "Regenerate under Backtest schema 5."
+      "ValueError: invalid backtest data: high contains non-positive prices"
     ],
     "source": "unavailable",
     "status": "unavailable",
@@ -16,11 +16,11 @@
   "contract_version": "backtest_schema5_v1",
   "effective_data_range": {
     "end": null,
-    "reason": "Regenerate under Backtest schema 5.",
+    "reason": "ValueError: invalid backtest data: high contains non-positive prices",
     "start": null
   },
   "empty": true,
-  "evaluated_at": "2026-09-01T19:45:31.395286+07:00",
+  "evaluated_at": "2026-09-15T22:05:45.808306+07:00",
   "evaluation_label": "Exploratory \u2014 gross",
   "evidence_eligibility": {
     "common_as_of": null,
@@ -32,23 +32,23 @@
     "max_gap_sessions": 0,
     "observed_sessions": 0,
     "reasons": [
-      "Regenerate under Backtest schema 5."
+      "ValueError: invalid backtest data: high contains non-positive prices"
     ],
     "status": "unavailable",
     "ticker_fingerprint": null,
     "vnindex_fingerprint": null
   },
-  "failure_reason": null,
+  "failure_reason": "ValueError: invalid backtest data: high contains non-positive prices",
   "horizon": "midterm",
   "partition_labels": {
     "test": "historical test \u2014 previously observed",
     "training": "in-sample"
   },
-  "rejection_reason": "Regenerate under Backtest schema 5.",
+  "rejection_reason": null,
   "requested_date_range": {
-    "end": null,
-    "reason": "Regenerate under Backtest schema 5.",
-    "start": null
+    "end": "2026-09-15",
+    "reason": null,
+    "start": "2010-08-17"
   },
   "rulebook": {
     "adx_minimum": 20,
@@ -63,6 +63,7 @@
       8,
       5
     ],
+    "alligator_source": "HL2",
     "atr_period": 14,
     "atr_sl_multiplier": 1.5,
     "atr_tp_multiplier": 2.5,
@@ -87,7 +88,7 @@
   },
   "schema_version": 5,
   "split": null,
-  "terminal_state": "requires_regeneration",
+  "terminal_state": "failed",
   "ticker": "SHS",
   "top_rulebook_ids": []
 }

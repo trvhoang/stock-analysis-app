@@ -1,0 +1,26 @@
+{
+  "group_id": "86a82da4-3014-4a19-9d7d-8013687c23a4",
+  "group_name": "B\u0110S",
+  "metadata": {},
+  "schema_version": 1,
+  "tickers": [
+    "BCM",
+    "CEO",
+    "CII",
+    "DIG",
+    "DXG",
+    "DXS",
+    "HDG",
+    "IDC",
+    "KBC",
+    "KDH",
+    "LDG",
+    "NLG",
+    "NVL",
+    "SIP",
+    "SNZ",
+    "TCH",
+    "THG"
+  ],
+  "updated_at": "2026-09-05T12:41:54.128780+07:00"
+}

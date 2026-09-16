@@ -21,6 +21,24 @@ def _risk_snapshot():
     return {"atr": 1200, "stop_loss": 48500, "take_profit": 53300, "max_hold_bars": 22}
 
 
+def _flexible_reference():
+    return {
+        "schema_version": 6,
+        "contract_version": "flexible_rulebook_signal_v1",
+        "origin": "flexible",
+        "ticker": "FPT",
+        "horizon": "swing",
+        "rulebook_id": "frb2_" + "a" * 64,
+        "semantic_digest": "a" * 64,
+        "evaluation_id": "frev2_" + "b" * 64,
+        "evaluation_label": "Exploratory — gross",
+        "metrics": {
+            "training": {"n": 12, "win_rate": 60.0, "profit_pct": 14.0, "sharpe": 1.0},
+            "test": {"n": 7, "win_rate": 55.0, "profit_pct": 9.0, "sharpe": 0.5},
+        },
+    }
+
+
 class ManualPositionStoreTests(unittest.TestCase):
     def test_creates_open_and_closed_pnl_only_records(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -36,6 +54,34 @@ class ManualPositionStoreTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "already has an OPEN position"):
                 create_manual_position("FPT", 50400, "2026-08-08", signal_reference=reference, entry_context=_entry_context(), risk_snapshot=_risk_snapshot(), positions_dir=directory)
         self.assertEqual(record["signal_reference"]["schema_version"], 5)
+
+    def test_flexible_open_reference_preserves_full_immutable_ids_and_blocks_overlap(self):
+        reference = _flexible_reference()
+        with tempfile.TemporaryDirectory() as directory:
+            record = create_manual_position(
+                "FPT", 50300, "2026-08-07", signal_reference=reference,
+                entry_context=_entry_context(), risk_snapshot=_risk_snapshot(), positions_dir=directory,
+            )
+            with self.assertRaisesRegex(ValueError, "already has an OPEN position"):
+                create_manual_position(
+                    "FPT", 50400, "2026-08-08", signal_reference=reference,
+                    entry_context=_entry_context(), risk_snapshot=_risk_snapshot(), positions_dir=directory,
+                )
+        self.assertEqual(6, record["signal_reference"]["schema_version"])
+        self.assertEqual("flexible", record["signal_reference"]["origin"])
+        self.assertEqual(reference["rulebook_id"], record["signal_reference"]["rulebook_id"])
+
+    def test_flexible_reference_can_preserve_pnl_without_a_baseline_risk_snapshot(self):
+        """Flexible rules must not inherit unrelated baseline exit settings."""
+
+        with tempfile.TemporaryDirectory() as directory:
+            record = create_manual_position(
+                "FPT", 50300, "2026-08-07", signal_reference=_flexible_reference(),
+                entry_context=_entry_context(), risk_snapshot=None, positions_dir=directory,
+            )
+
+        self.assertEqual(6, record["signal_reference"]["schema_version"])
+        self.assertIsNone(record["risk_snapshot"])
 
     def test_update_recalculates_risk_and_close_writes_same_record(self):
         with tempfile.TemporaryDirectory() as directory:

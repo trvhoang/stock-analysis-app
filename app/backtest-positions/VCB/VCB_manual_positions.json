@@ -1,5 +1,25 @@
 {
-  "history": [],
+  "history": [
+    {
+      "actual_buy_price": 59100,
+      "actual_sell_price": null,
+      "buy_date": "2026-08-21",
+      "certified_signal": null,
+      "closed_at": null,
+      "entry_context": null,
+      "id": "bcb220a63f2b47429a6f37c91b389172",
+      "opened_at": "2026-09-06T15:19:45.379395+07:00",
+      "origin": "current_positions",
+      "quantity": null,
+      "risk_snapshot": null,
+      "risk_suggestion_text": "Swing: 100.0% - very\nMid-term: 100.0% - very",
+      "sell_date": null,
+      "sell_reason": null,
+      "signal_reference": null,
+      "status": "open",
+      "ticker": "VCB"
+    }
+  ],
   "schema_version": 1,
   "ticker": "VCB"
 }

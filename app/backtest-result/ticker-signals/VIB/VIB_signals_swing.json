@@ -1,42 +1,762 @@
 {
   "audit_eligibility": {
     "effective_date_range": [
-      null,
-      null
+      "2020-11-10",
+      "2026-09-15"
     ],
-    "eligible": false,
-    "reasons": [
-      "Regenerate under Backtest schema 5."
-    ],
-    "source": "unavailable",
-    "status": "unavailable",
-    "warnings": []
+    "eligible": true,
+    "reasons": [],
+    "source": "fresh_schema5_raw_history",
+    "status": "clean",
+    "warnings": [
+      "date gap of 8 calendar days before 2021-02-17",
+      "date gap of 10 calendar days before 2022-02-07",
+      "date gap of 8 calendar days before 2023-01-27",
+      "date gap of 8 calendar days before 2024-02-15",
+      "date gap of 11 calendar days before 2025-02-04",
+      "date gap of 10 calendar days before 2026-02-23",
+      "close move exceeds 7% on 2026-09-10: 8.67%",
+      "OHLC ordering mismatch 0.03% is within 1.00% derived-envelope tolerance"
+    ]
   },
-  "candidates": [],
+  "candidates": [
+    {
+      "candidate_role": "baseline_control",
+      "preferred_variant": "background-theme",
+      "rulebook_id": "swing_rulebook_v5__adx",
+      "selected_gates": [
+        "rulebook_adx_gate"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 32,
+            "p_value": 0.938061938061938,
+            "p_value_status": "informational",
+            "profit_pct": -26.734017916333148,
+            "sharpe": -0.20669053378416938,
+            "win_rate": 34.375
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 72,
+            "p_value": 0.3876123876123876,
+            "p_value_status": "informational",
+            "profit_pct": 11.429273454705983,
+            "sharpe": 0.026054093624237322,
+            "win_rate": 43.05555555555556
+          },
+          "training_dsr": 0.5723426867445855
+        },
+        "no-background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 41,
+            "p_value": 0.7662337662337663,
+            "p_value_status": "informational",
+            "profit_pct": -16.941429099933114,
+            "sharpe": -0.09590113767015583,
+            "win_rate": 43.90243902439025
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 93,
+            "p_value": 0.4205794205794206,
+            "p_value_status": "informational",
+            "profit_pct": 9.051939913547509,
+            "sharpe": 0.01375839593320155,
+            "win_rate": 40.86021505376344
+          },
+          "training_dsr": 0.5354403037034922
+        }
+      }
+    },
+    {
+      "candidate_role": "baseline_control",
+      "preferred_variant": "no-background-theme",
+      "rulebook_id": "swing_rulebook_v5__joint_trend",
+      "selected_gates": [
+        "rulebook_joint_trend_pass"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 26,
+            "p_value": 0.8371628371628371,
+            "p_value_status": "informational",
+            "profit_pct": -18.136234040440552,
+            "sharpe": -0.1667506559792112,
+            "win_rate": 38.46153846153847
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 53,
+            "p_value": 0.5794205794205795,
+            "p_value_status": "informational",
+            "profit_pct": -7.880182599883025,
+            "sharpe": -0.02559118892498955,
+            "win_rate": 41.509433962264154
+          },
+          "training_dsr": 0.4011907732146034
+        },
+        "no-background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 26,
+            "p_value": 0.6973026973026973,
+            "p_value_status": "informational",
+            "profit_pct": -7.88057971878579,
+            "sharpe": -0.06914655796161552,
+            "win_rate": 42.30769230769231
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 58,
+            "p_value": 0.4915084915084915,
+            "p_value_status": "informational",
+            "profit_pct": -0.1359140395720726,
+            "sharpe": -0.00039067009077550774,
+            "win_rate": 43.103448275862064
+          },
+          "training_dsr": 0.4709547672226594
+        }
+      }
+    },
+    {
+      "candidate_role": "baseline_control",
+      "preferred_variant": "no-background-theme",
+      "rulebook_id": "swing_rulebook_v5__rsi_upcross",
+      "selected_gates": [
+        "rulebook_rsi_upcross"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 13,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -24.90519150910154,
+            "sharpe": -0.5581919794403634,
+            "win_rate": 23.076923076923077
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 28,
+            "p_value": 0.000999000999000999,
+            "p_value_status": "informational",
+            "profit_pct": 41.193809357050625,
+            "sharpe": 0.24678227891501436,
+            "win_rate": 60.71428571428571
+          },
+          "training_dsr": 0.8747805051421698
+        },
+        "no-background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 18,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -28.17242067266232,
+            "sharpe": -0.4341786201544282,
+            "win_rate": 27.77777777777778
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 34,
+            "p_value": 0.000999000999000999,
+            "p_value_status": "informational",
+            "profit_pct": 64.79015858358365,
+            "sharpe": 0.2987227953354738,
+            "win_rate": 61.76470588235294
+          },
+          "training_dsr": 0.9428315375389429
+        }
+      }
+    },
+    {
+      "candidate_role": "baseline_control",
+      "preferred_variant": "background-theme",
+      "rulebook_id": "swing_rulebook_v5__volume",
+      "selected_gates": [
+        "rulebook_volume_gate"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 31,
+            "p_value": 0.987012987012987,
+            "p_value_status": "informational",
+            "profit_pct": -36.269653072913904,
+            "sharpe": -0.2979228753367085,
+            "win_rate": 32.25806451612903
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 57,
+            "p_value": 0.4005994005994006,
+            "p_value_status": "informational",
+            "profit_pct": 11.191723117303356,
+            "sharpe": 0.03464198816331572,
+            "win_rate": 43.859649122807014
+          },
+          "training_dsr": 0.5230222985624315
+        },
+        "no-background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 38,
+            "p_value": 0.7862137862137862,
+            "p_value_status": "informational",
+            "profit_pct": -13.011395317241686,
+            "sharpe": -0.08172798298959758,
+            "win_rate": 44.73684210526316
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 80,
+            "p_value": 0.6063936063936064,
+            "p_value_status": "informational",
+            "profit_pct": -20.213575188324977,
+            "sharpe": -0.03870396638523872,
+            "win_rate": 41.25
+          },
+          "training_dsr": 0.2816345836007432
+        }
+      }
+    },
+    {
+      "candidate_role": "baseline_control",
+      "preferred_variant": "no-background-theme",
+      "rulebook_id": "swing_rulebook_v5__adx__joint_trend",
+      "selected_gates": [
+        "rulebook_adx_gate",
+        "rulebook_joint_trend_pass"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 22,
+            "p_value": 0.5294705294705294,
+            "p_value_status": "informational",
+            "profit_pct": -0.33756010243619605,
+            "sharpe": -0.003516140448050039,
+            "win_rate": 45.45454545454545
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 49,
+            "p_value": 0.5454545454545454,
+            "p_value_status": "informational",
+            "profit_pct": -2.423845475199197,
+            "sharpe": -0.00867374066123893,
+            "win_rate": 40.816326530612244
+          },
+          "training_dsr": 0.4515849076271253
+        },
+        "no-background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 22,
+            "p_value": 0.14785214785214784,
+            "p_value_status": "informational",
+            "profit_pct": 9.918094219218565,
+            "sharpe": 0.09985431455371112,
+            "win_rate": 50.0
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 54,
+            "p_value": 0.43656343656343655,
+            "p_value_status": "informational",
+            "profit_pct": 4.983822544547649,
+            "sharpe": 0.015586793834754047,
+            "win_rate": 42.592592592592595
+          },
+          "training_dsr": 0.5194177108964578
+        }
+      }
+    },
+    {
+      "candidate_role": "baseline_control",
+      "preferred_variant": "no-background-theme",
+      "rulebook_id": "swing_rulebook_v5__adx__rsi_upcross",
+      "selected_gates": [
+        "rulebook_adx_gate",
+        "rulebook_rsi_upcross"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 6,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -14.453095459003501,
+            "sharpe": -0.6272245858606188,
+            "win_rate": 16.666666666666664
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 21,
+            "p_value": 0.000999000999000999,
+            "p_value_status": "informational",
+            "profit_pct": 19.917279027354645,
+            "sharpe": 0.15118920584547998,
+            "win_rate": 57.14285714285714
+          },
+          "training_dsr": 0.7073898359582345
+        },
+        "no-background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 11,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -17.439877479143057,
+            "sharpe": -0.4051459816159828,
+            "win_rate": 27.27272727272727
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 26,
+            "p_value": 0.001998001998001998,
+            "p_value_status": "informational",
+            "profit_pct": 40.69030787183913,
+            "sharpe": 0.22696212563540763,
+            "win_rate": 57.692307692307686
+          },
+          "training_dsr": 0.8400125821214024
+        }
+      }
+    },
+    {
+      "candidate_role": "baseline_control",
+      "preferred_variant": "background-theme",
+      "rulebook_id": "swing_rulebook_v5__adx__volume",
+      "selected_gates": [
+        "rulebook_adx_gate",
+        "rulebook_volume_gate"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 26,
+            "p_value": 0.996003996003996,
+            "p_value_status": "informational",
+            "profit_pct": -37.729587788486455,
+            "sharpe": -0.3666435395687577,
+            "win_rate": 30.76923076923077
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 49,
+            "p_value": 0.3696303696303696,
+            "p_value_status": "informational",
+            "profit_pct": 13.218670982592336,
+            "sharpe": 0.046977562767399665,
+            "win_rate": 42.857142857142854
+          },
+          "training_dsr": 0.5597931674091141
+        },
+        "no-background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 31,
+            "p_value": 0.981018981018981,
+            "p_value_status": "informational",
+            "profit_pct": -25.75200670361051,
+            "sharpe": -0.2006202214407819,
+            "win_rate": 41.935483870967744
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 68,
+            "p_value": 0.5624375624375625,
+            "p_value_status": "informational",
+            "profit_pct": -10.106713555597617,
+            "sharpe": -0.02216708236957618,
+            "win_rate": 39.705882352941174
+          },
+          "training_dsr": 0.3493230856101678
+        }
+      }
+    },
+    {
+      "candidate_role": "baseline_control",
+      "preferred_variant": "background-theme",
+      "rulebook_id": "swing_rulebook_v5__joint_trend__rsi_upcross",
+      "selected_gates": [
+        "rulebook_joint_trend_pass",
+        "rulebook_rsi_upcross"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 4,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -11.291178019707758,
+            "sharpe": -0.5377511394044866,
+            "win_rate": 25.0
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 12,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 5.6790346039552,
+            "sharpe": 0.07078278878839386,
+            "win_rate": 50.0
+          },
+          "training_dsr": 0.565876484813054
+        },
+        "no-background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 5,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -4.3202726861712435,
+            "sharpe": -0.16252184317603238,
+            "win_rate": 40.0
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 13,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 1.279548412561494,
+            "sharpe": 0.015044331667694486,
+            "win_rate": 46.15384615384615
+          },
+          "training_dsr": 0.49248161761559284
+        }
+      }
+    },
+    {
+      "candidate_role": "baseline_control",
+      "preferred_variant": "no-background-theme",
+      "rulebook_id": "swing_rulebook_v5__joint_trend__volume",
+      "selected_gates": [
+        "rulebook_joint_trend_pass",
+        "rulebook_volume_gate"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 18,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -11.912182282070562,
+            "sharpe": -0.17143044817702668,
+            "win_rate": 38.88888888888889
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 45,
+            "p_value": 0.4755244755244755,
+            "p_value_status": "informational",
+            "profit_pct": 2.5302030316665185,
+            "sharpe": 0.009606000610636904,
+            "win_rate": 42.22222222222222
+          },
+          "training_dsr": 0.5186435299578505
+        },
+        "no-background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 19,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -13.202473806191396,
+            "sharpe": -0.18287207096436156,
+            "win_rate": 36.84210526315789
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 48,
+            "p_value": 0.41358641358641357,
+            "p_value_status": "informational",
+            "profit_pct": 4.653272397411511,
+            "sharpe": 0.01659303695615579,
+            "win_rate": 41.66666666666667
+          },
+          "training_dsr": 0.5383969580169315
+        }
+      }
+    },
+    {
+      "candidate_role": "baseline_control",
+      "preferred_variant": "no-background-theme",
+      "rulebook_id": "swing_rulebook_v5__rsi_upcross__volume",
+      "selected_gates": [
+        "rulebook_rsi_upcross",
+        "rulebook_volume_gate"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 9,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -25.328228507108985,
+            "sharpe": -0.902101583260535,
+            "win_rate": 11.11111111111111
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 14,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 15.364218799515093,
+            "sharpe": 0.19031551412156644,
+            "win_rate": 57.14285714285714
+          },
+          "training_dsr": 0.7443169147580323
+        },
+        "no-background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 14,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -35.57560681840897,
+            "sharpe": -0.8172981338139168,
+            "win_rate": 14.285714285714285
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 18,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 19.43469520058931,
+            "sharpe": 0.17583393659374755,
+            "win_rate": 55.55555555555556
+          },
+          "training_dsr": 0.7599226861637631
+        }
+      }
+    },
+    {
+      "candidate_role": "baseline_control",
+      "preferred_variant": "no-background-theme",
+      "rulebook_id": "swing_rulebook_v5__adx__joint_trend__rsi_upcross",
+      "selected_gates": [
+        "rulebook_adx_gate",
+        "rulebook_joint_trend_pass",
+        "rulebook_rsi_upcross"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 2,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -11.8839280901759,
+            "sharpe": -1.5585103075672895,
+            "win_rate": 0.0
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 8,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 5.64317630681492,
+            "sharpe": 0.10866586556496266,
+            "win_rate": 50.0
+          },
+          "training_dsr": 0.6131781906019349
+        },
+        "no-background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 3,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -8.069384333015247,
+            "sharpe": -0.43072432996477866,
+            "win_rate": 33.33333333333333
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 8,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 5.64317630681492,
+            "sharpe": 0.10866586556496266,
+            "win_rate": 50.0
+          },
+          "training_dsr": 0.6131781906019349
+        }
+      }
+    },
+    {
+      "candidate_role": "baseline_control",
+      "preferred_variant": "no-background-theme",
+      "rulebook_id": "swing_rulebook_v5__adx__joint_trend__volume",
+      "selected_gates": [
+        "rulebook_adx_gate",
+        "rulebook_joint_trend_pass",
+        "rulebook_volume_gate"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 15,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -8.866999915808744,
+            "sharpe": -0.15137535906786923,
+            "win_rate": 40.0
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 39,
+            "p_value": 0.29270729270729273,
+            "p_value_status": "informational",
+            "profit_pct": 14.586199777177974,
+            "sharpe": 0.06426114088966767,
+            "win_rate": 43.58974358974359
+          },
+          "training_dsr": 0.651825621801231
+        },
+        "no-background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 15,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -7.233517441157921,
+            "sharpe": -0.12318974635851516,
+            "win_rate": 40.0
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 42,
+            "p_value": 0.1998001998001998,
+            "p_value_status": "informational",
+            "profit_pct": 16.709269142922967,
+            "sharpe": 0.06849727618727547,
+            "win_rate": 42.857142857142854
+          },
+          "training_dsr": 0.6676384705575904
+        }
+      }
+    },
+    {
+      "candidate_role": "baseline_control",
+      "preferred_variant": "no-background-theme",
+      "rulebook_id": "swing_rulebook_v5__adx__rsi_upcross__volume",
+      "selected_gates": [
+        "rulebook_adx_gate",
+        "rulebook_rsi_upcross",
+        "rulebook_volume_gate"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 5,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -11.251801251960945,
+            "sharpe": -0.5295855617459897,
+            "win_rate": 20.0
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 9,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -4.573163732255353,
+            "sharpe": -0.08796744482230404,
+            "win_rate": 44.44444444444444
+          },
+          "training_dsr": 0.3678270718758378
+        },
+        "no-background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 9,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -18.233225869694557,
+            "sharpe": -0.5300370964722482,
+            "win_rate": 22.22222222222222
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 11,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -0.09355053355423859,
+            "sharpe": -0.001238014551831275,
+            "win_rate": 45.45454545454545
+          },
+          "training_dsr": 0.4583106218824769
+        }
+      }
+    }
+  ],
   "contract_version": "backtest_schema5_v1",
   "effective_data_range": {
-    "end": null,
-    "reason": "Regenerate under Backtest schema 5.",
-    "start": null
+    "end": "2026-09-15",
+    "reason": null,
+    "start": "2020-11-10"
   },
-  "empty": true,
-  "evaluated_at": "2026-09-01T19:45:31.615458+07:00",
+  "empty": false,
+  "evaluated_at": "2026-09-15T22:03:34.705512+07:00",
   "evaluation_label": "Exploratory \u2014 gross",
   "evidence_eligibility": {
-    "common_as_of": null,
-    "coverage_ratio": 0.0,
-    "eligible": false,
-    "expected_sessions": 0,
-    "first_available_bar": null,
-    "last_available_bar": null,
-    "max_gap_sessions": 0,
-    "observed_sessions": 0,
-    "reasons": [
-      "Regenerate under Backtest schema 5."
-    ],
-    "status": "unavailable",
-    "ticker_fingerprint": null,
-    "vnindex_fingerprint": null
+    "common_as_of": "2026-09-15",
+    "coverage_ratio": 0.9993117687543015,
+    "eligible": true,
+    "expected_sessions": 1453,
+    "first_available_bar": "2020-11-10",
+    "last_available_bar": "2026-09-15",
+    "max_gap_sessions": 1,
+    "observed_sessions": 1452,
+    "reasons": [],
+    "status": "eligible",
+    "ticker_fingerprint": "011806dc731a13584cdef3d6e718462c3d5c52a6f493d461034a5b1fc8878597",
+    "vnindex_fingerprint": "ecf554affc5e79b4d7547289560dc23651abc3b6d25de0426145ccd9f0049580"
   },
   "failure_reason": null,
   "horizon": "swing",
@@ -44,11 +764,11 @@
     "test": "historical test \u2014 previously observed",
     "training": "in-sample"
   },
-  "rejection_reason": "Regenerate under Backtest schema 5.",
+  "rejection_reason": null,
   "requested_date_range": {
-    "end": null,
-    "reason": "Regenerate under Backtest schema 5.",
-    "start": null
+    "end": "2026-09-15",
+    "reason": null,
+    "start": "2010-08-17"
   },
   "rulebook": {
     "adx_minimum": 17,
@@ -63,6 +783,7 @@
       5,
       3
     ],
+    "alligator_source": "HL2",
     "atr_period": 14,
     "atr_sl_multiplier": 1.5,
     "atr_tp_multiplier": 2.5,
@@ -86,8 +807,22 @@
     "weekly_frequency": null
   },
   "schema_version": 5,
-  "split": null,
-  "terminal_state": "requires_regeneration",
+  "split": {
+    "method": "chronological_65_35",
+    "test": {
+      "end": "2026-09-15",
+      "start": "2024-08-29"
+    },
+    "train": {
+      "end": "2024-08-28",
+      "start": "2020-11-10"
+    }
+  },
+  "terminal_state": "success",
   "ticker": "VIB",
-  "top_rulebook_ids": []
+  "top_rulebook_ids": [
+    "swing_rulebook_v5__rsi_upcross",
+    "swing_rulebook_v5__adx__rsi_upcross",
+    "swing_rulebook_v5__rsi_upcross__volume"
+  ]
 }

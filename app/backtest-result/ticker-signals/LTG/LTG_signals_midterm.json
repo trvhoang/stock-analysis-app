@@ -1,0 +1,619 @@
+{
+  "audit_eligibility": {
+    "effective_date_range": [
+      "2017-07-24",
+      "2026-06-19"
+    ],
+    "eligible": false,
+    "reasons": [],
+    "source": "fresh_schema5_raw_history",
+    "status": "indeterminate",
+    "warnings": [
+      "date gap of 8 calendar days before 2018-02-21",
+      "date gap of 10 calendar days before 2019-02-11",
+      "date gap of 8 calendar days before 2020-01-30",
+      "date gap of 12 calendar days before 2021-02-17",
+      "date gap of 10 calendar days before 2022-02-07",
+      "date gap of 8 calendar days before 2023-01-27",
+      "date gap of 8 calendar days before 2024-02-15",
+      "date gap of 14 calendar days before 2024-12-13",
+      "date gap of 14 calendar days before 2025-02-07",
+      "date gap of 14 calendar days before 2025-05-09",
+      "date gap of 14 calendar days before 2026-01-09",
+      "date gap of 14 calendar days before 2026-02-27",
+      "date gap of 14 calendar days before 2026-05-08",
+      "close move exceeds 7% on 2017-07-25: 7.69%",
+      "close move exceeds 7% on 2017-07-26: 9.26%",
+      "close move exceeds 7% on 2017-07-27: 8.47%",
+      "close move exceeds 7% on 2018-03-08: 7.50%",
+      "close move exceeds 7% on 2018-06-21: 12.68%",
+      "close move exceeds 7% on 2018-12-27: 12.03%",
+      "close move exceeds 7% on 2020-02-03: 7.69%",
+      "close move exceeds 7% on 2020-03-09: 7.66%",
+      "close move exceeds 7% on 2020-03-30: 7.86%",
+      "close move exceeds 7% on 2020-04-06: 9.53%",
+      "close move exceeds 7% on 2020-04-07: 11.80%",
+      "close move exceeds 7% on 2020-04-13: 7.02%",
+      "close move exceeds 7% on 2020-04-16: 12.09%",
+      "close move exceeds 7% on 2020-04-21: 10.90%",
+      "close move exceeds 7% on 2020-04-29: 9.36%",
+      "close move exceeds 7% on 2020-05-25: 13.44%",
+      "close move exceeds 7% on 2020-05-26: 9.01%",
+      "close move exceeds 7% on 2020-05-27: 8.70%",
+      "close move exceeds 7% on 2020-07-24: 7.14%",
+      "close move exceeds 7% on 2020-07-27: 9.34%",
+      "close move exceeds 7% on 2020-07-28: 10.30%",
+      "close move exceeds 7% on 2021-01-28: 12.65%",
+      "close move exceeds 7% on 2021-01-29: 10.41%",
+      "close move exceeds 7% on 2021-02-17: 8.21%",
+      "close move exceeds 7% on 2021-05-04: 15.61%",
+      "close move exceeds 7% on 2021-06-11: 7.08%",
+      "close move exceeds 7% on 2022-03-07: 8.00%",
+      "close move exceeds 7% on 2022-03-29: 7.25%",
+      "close move exceeds 7% on 2022-04-25: 8.19%",
+      "close move exceeds 7% on 2022-05-09: 10.00%",
+      "close move exceeds 7% on 2022-05-13: 7.45%",
+      "close move exceeds 7% on 2022-05-17: 8.43%",
+      "close move exceeds 7% on 2022-06-14: 7.31%",
+      "close move exceeds 7% on 2022-06-23: 8.76%",
+      "close move exceeds 7% on 2022-10-21: 9.12%",
+      "close move exceeds 7% on 2022-11-10: 12.50%",
+      "close move exceeds 7% on 2022-11-15: 15.71%",
+      "close move exceeds 7% on 2022-11-16: 16.95%",
+      "close move exceeds 7% on 2023-02-20: 7.60%",
+      "close move exceeds 7% on 2023-05-04: 8.67%",
+      "close move exceeds 7% on 2023-06-13: 25.00%",
+      "close move exceeds 7% on 2023-06-14: 19.73%",
+      "close move exceeds 7% on 2023-10-31: 13.33%",
+      "close move exceeds 7% on 2023-11-01: 11.54%",
+      "close move exceeds 7% on 2023-11-02: 10.63%",
+      "close move exceeds 7% on 2024-04-25: 7.49%",
+      "close move exceeds 7% on 2024-07-29: 11.96%",
+      "close move exceeds 7% on 2024-08-19: 7.84%",
+      "close move exceeds 7% on 2024-10-08: 11.03%",
+      "close move exceeds 7% on 2024-10-10: 13.91%",
+      "close move exceeds 7% on 2024-10-22: 13.83%",
+      "close move exceeds 7% on 2024-10-25: 8.54%",
+      "close move exceeds 7% on 2025-04-04: 13.04%",
+      "close move exceeds 7% on 2025-05-30: 13.85%",
+      "close move exceeds 7% on 2025-06-06: 12.16%",
+      "close move exceeds 7% on 2025-06-20: 9.52%",
+      "close move exceeds 7% on 2025-07-11: 13.70%",
+      "close move exceeds 7% on 2025-08-01: 8.14%",
+      "close move exceeds 7% on 2025-10-17: 7.25%",
+      "close move exceeds 7% on 2026-05-22: 10.00%",
+      "OHLC ordering mismatch 0.86% is within 1.00% derived-envelope tolerance"
+    ]
+  },
+  "candidates": [
+    {
+      "candidate_role": "baseline_control",
+      "preferred_variant": "no-background-theme",
+      "rulebook_id": "midterm_rulebook_v5__adx",
+      "selected_gates": [
+        "rulebook_adx_gate"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 14,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -67.31838959482725,
+            "sharpe": -0.26513200495231704,
+            "win_rate": 35.714285714285715
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 17,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 18.80211788939094,
+            "sharpe": 0.06476073027083092,
+            "win_rate": 41.17647058823529
+          },
+          "training_dsr": 0.5692966040122343
+        },
+        "no-background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 14,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -37.31740046404527,
+            "sharpe": -0.14300155883234877,
+            "win_rate": 42.857142857142854
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 25,
+            "p_value": 0.16783216783216784,
+            "p_value_status": "informational",
+            "profit_pct": 52.76353804197751,
+            "sharpe": 0.12447524998741837,
+            "win_rate": 44.0
+          },
+          "training_dsr": 0.698754377100911
+        }
+      }
+    },
+    {
+      "candidate_role": "baseline_control",
+      "preferred_variant": "background-theme",
+      "rulebook_id": "midterm_rulebook_v5__joint_trend",
+      "selected_gates": [
+        "rulebook_joint_trend_pass"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 5,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 39.52387217647836,
+            "sharpe": 0.4839555908066382,
+            "win_rate": 60.0
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 10,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 46.32369839930899,
+            "sharpe": 0.23671248480259172,
+            "win_rate": 50.0
+          },
+          "training_dsr": 0.7179863650811448
+        },
+        "no-background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 7,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 42.77981302662363,
+            "sharpe": 0.38533105023613684,
+            "win_rate": 57.14285714285714
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 13,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 25.33379447188712,
+            "sharpe": 0.10462443832171861,
+            "win_rate": 46.15384615384615
+          },
+          "training_dsr": 0.5786435133603899
+        }
+      }
+    },
+    {
+      "candidate_role": "baseline_control",
+      "preferred_variant": "no-background-theme",
+      "rulebook_id": "midterm_rulebook_v5__rsi_upcross",
+      "selected_gates": [
+        "rulebook_rsi_upcross"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 1,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 17.87307444913945,
+            "sharpe": null,
+            "win_rate": 100.0
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 6,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -50.60826148716406,
+            "sharpe": -0.7306985002021437,
+            "win_rate": 16.666666666666664
+          },
+          "training_dsr": 0.16017674003313165
+        },
+        "no-background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 1,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 17.87307444913945,
+            "sharpe": null,
+            "win_rate": 100.0
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 6,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -50.60826148716406,
+            "sharpe": -0.7306985002021437,
+            "win_rate": 16.666666666666664
+          },
+          "training_dsr": 0.16017674003313165
+        }
+      }
+    },
+    {
+      "candidate_role": "baseline_control",
+      "preferred_variant": "no-background-theme",
+      "rulebook_id": "midterm_rulebook_v5__volume",
+      "selected_gates": [
+        "rulebook_volume_gate"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 12,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -118.33313156944602,
+            "sharpe": -0.6078695135756573,
+            "win_rate": 16.666666666666664
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 12,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -2.804007197984063,
+            "sharpe": -0.015088056246483794,
+            "win_rate": 41.66666666666667
+          },
+          "training_dsr": 0.4537058850232591
+        },
+        "no-background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 13,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -76.73253808629498,
+            "sharpe": -0.31522145985670547,
+            "win_rate": 23.076923076923077
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 19,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 12.296835842985093,
+            "sharpe": 0.039663960952406624,
+            "win_rate": 36.84210526315789
+          },
+          "training_dsr": 0.5335393870447914
+        }
+      }
+    },
+    {
+      "candidate_role": "baseline_control",
+      "preferred_variant": "background-theme",
+      "rulebook_id": "midterm_rulebook_v5__adx__joint_trend",
+      "selected_gates": [
+        "rulebook_adx_gate",
+        "rulebook_joint_trend_pass"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 2,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 9.503764927502912,
+            "sharpe": 0.2106211478408678,
+            "win_rate": 50.0
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 10,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 46.32369839930899,
+            "sharpe": 0.23671248480259172,
+            "win_rate": 50.0
+          },
+          "training_dsr": 0.7179863650811448
+        },
+        "no-background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 3,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 25.021006306813256,
+            "sharpe": 0.48713402697871,
+            "win_rate": 66.66666666666666
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 13,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 25.33379447188712,
+            "sharpe": 0.10462443832171861,
+            "win_rate": 46.15384615384615
+          },
+          "training_dsr": 0.5786435133603899
+        }
+      }
+    },
+    {
+      "candidate_role": "baseline_control",
+      "preferred_variant": "no-background-theme",
+      "rulebook_id": "midterm_rulebook_v5__adx__rsi_upcross",
+      "selected_gates": [
+        "rulebook_adx_gate",
+        "rulebook_rsi_upcross"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 1,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 17.87307444913945,
+            "sharpe": null,
+            "win_rate": 100.0
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 5,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -38.224000978729215,
+            "sharpe": -0.6008519413631084,
+            "win_rate": 20.0
+          },
+          "training_dsr": 0.20265873118375438
+        },
+        "no-background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 1,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 17.87307444913945,
+            "sharpe": null,
+            "win_rate": 100.0
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 5,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -38.224000978729215,
+            "sharpe": -0.6008519413631084,
+            "win_rate": 20.0
+          },
+          "training_dsr": 0.20265873118375438
+        }
+      }
+    },
+    {
+      "candidate_role": "baseline_control",
+      "preferred_variant": "no-background-theme",
+      "rulebook_id": "midterm_rulebook_v5__adx__volume",
+      "selected_gates": [
+        "rulebook_adx_gate",
+        "rulebook_volume_gate"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 10,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -97.53456893367631,
+            "sharpe": -0.5439325355272833,
+            "win_rate": 20.0
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 10,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 11.656779618495856,
+            "sharpe": 0.07096039434359036,
+            "win_rate": 50.0
+          },
+          "training_dsr": 0.5526618166156116
+        },
+        "no-background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 11,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -58.12259487760504,
+            "sharpe": -0.2584394209257537,
+            "win_rate": 27.27272727272727
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 16,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 39.61201013827395,
+            "sharpe": 0.14547298223664365,
+            "win_rate": 43.75
+          },
+          "training_dsr": 0.6829652458118106
+        }
+      }
+    },
+    {
+      "candidate_role": "baseline_control",
+      "preferred_variant": "no-background-theme",
+      "rulebook_id": "midterm_rulebook_v5__joint_trend__rsi_upcross",
+      "selected_gates": [
+        "rulebook_joint_trend_pass",
+        "rulebook_rsi_upcross"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 1,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 17.87307444913945,
+            "sharpe": null,
+            "win_rate": 100.0
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 5,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -65.37186929052913,
+            "sharpe": -10.538011215389748,
+            "win_rate": 0.0
+          },
+          "training_dsr": 4.382643788936047e-06
+        },
+        "no-background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 1,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 17.87307444913945,
+            "sharpe": null,
+            "win_rate": 100.0
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 5,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -65.37186929052913,
+            "sharpe": -10.538011215389748,
+            "win_rate": 0.0
+          },
+          "training_dsr": 4.382643788936047e-06
+        }
+      }
+    }
+  ],
+  "contract_version": "backtest_schema5_v1",
+  "effective_data_range": {
+    "end": "2026-06-19",
+    "reason": null,
+    "start": "2017-07-24"
+  },
+  "empty": false,
+  "evaluated_at": "2026-09-08T21:27:59.012464+07:00",
+  "evaluation_label": "Exploratory \u2014 gross",
+  "evidence_eligibility": {
+    "common_as_of": "2026-06-19",
+    "coverage_ratio": 0.8464655560558307,
+    "eligible": false,
+    "expected_sessions": 2221,
+    "first_available_bar": "2017-07-24",
+    "last_available_bar": "2026-06-19",
+    "max_gap_sessions": 9,
+    "observed_sessions": 1880,
+    "reasons": [
+      "coverage_ratio_below_0.95",
+      "raw_audit_not_clean"
+    ],
+    "status": "ineligible",
+    "ticker_fingerprint": "481a256b1857be05b44877b92dc966431d666e5a4cb35bb0f539a4e43e1461f4",
+    "vnindex_fingerprint": "7603b341ee596f90ca646e56d81e601506680a7ba255d14fa0cd489d73a1ff00"
+  },
+  "failure_reason": null,
+  "horizon": "midterm",
+  "partition_labels": {
+    "test": "historical test \u2014 previously observed",
+    "training": "in-sample"
+  },
+  "rejection_reason": null,
+  "requested_date_range": {
+    "end": "2026-09-08",
+    "reason": null,
+    "start": "2010-08-17"
+  },
+  "rulebook": {
+    "adx_minimum": 20,
+    "adx_period": 14,
+    "alligator_lags": [
+      8,
+      5,
+      3
+    ],
+    "alligator_periods": [
+      13,
+      8,
+      5
+    ],
+    "alligator_source": "HL2",
+    "atr_period": 14,
+    "atr_sl_multiplier": 1.5,
+    "atr_tp_multiplier": 2.5,
+    "horizon": "midterm",
+    "joint_trend_required": true,
+    "ma_kind": "SMA",
+    "ma_pair": [
+      8,
+      21
+    ],
+    "max_hold_bars": 16,
+    "min_exit_offset_bars": 1,
+    "min_n": 5,
+    "native_timeframe": "weekly",
+    "rsi_period": 14,
+    "rsi_upcross_level": 65,
+    "rule_id": "midterm_rulebook_v5",
+    "theme_sma_window": 20,
+    "volume_multiplier": 1.3,
+    "volume_window": 8,
+    "weekly_frequency": "W-FRI"
+  },
+  "schema_version": 5,
+  "split": {
+    "method": "chronological_65_35",
+    "test": {
+      "end": "2026-06-19",
+      "start": "2023-05-12"
+    },
+    "train": {
+      "end": "2023-05-05",
+      "start": "2017-07-28"
+    }
+  },
+  "terminal_state": "success",
+  "ticker": "LTG",
+  "top_rulebook_ids": [
+    "midterm_rulebook_v5__adx__joint_trend",
+    "midterm_rulebook_v5__joint_trend",
+    "midterm_rulebook_v5__adx"
+  ]
+}

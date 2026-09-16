@@ -1,0 +1,17 @@
+{
+  "group_id": "4ad9f25a-fa1c-4313-98d1-db733e18e639",
+  "group_name": "LOGISTIC",
+  "metadata": {},
+  "schema_version": 1,
+  "tickers": [
+    "CDN",
+    "DVP",
+    "GMD",
+    "HAH",
+    "PHP",
+    "SGP",
+    "TCL",
+    "VSC"
+  ],
+  "updated_at": "2026-09-05T12:22:13.505817+07:00"
+}

@@ -379,6 +379,7 @@ class ResearchRunnerTests(unittest.TestCase):
 
     def test_in_memory_collection_builds_independent_horizon_frames_and_theme(self):
         raw = _raw_history()
+        vnindex = raw.drop(index=[10]).reset_index(drop=True)
         confirmation = pd.Series(
             [True] * len(raw),
             index=pd.DatetimeIndex(raw["date"]),
@@ -413,7 +414,7 @@ class ResearchRunnerTests(unittest.TestCase):
             "backtest_engine.research_optimizer.evaluate_horizon",
             return_value=(),
         ) as evaluate:
-            run = collect_research_from_histories(raw, raw, date(2026, 8, 21))
+            run = collect_research_from_histories(raw, vnindex, date(2026, 8, 21))
 
         self.assertEqual(validate.call_count, 2)
         self.assertEqual(build_frame.call_count, 2)
@@ -427,8 +428,9 @@ class ResearchRunnerTests(unittest.TestCase):
             tuple(call.args[1] for call in evaluate.call_args_list),
             ("swing", "midterm"),
         )
-        self.assertEqual(run.vcb_rows, len(raw))
-        self.assertEqual(run.vnindex_rows, len(raw))
+        self.assertEqual(run.vcb_rows, len(raw) - 1)
+        self.assertEqual(run.vnindex_rows, len(raw) - 1)
+        self.assertNotIn(raw["date"].iloc[10], set(build_frame.call_args_list[0].args[0]["date"]))
         self.assertIs(run.vcb_audit, audit)
 
     def test_markdown_exposes_in_sample_contract_metrics_and_candidate_audit(self):

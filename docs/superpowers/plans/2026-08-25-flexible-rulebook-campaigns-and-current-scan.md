@@ -1,5 +1,7 @@
 # Flexible Rulebook Campaigns and Current-Scan Implementation Plan
 
+> **Superseded by 2026-09-15 user-authored redesign.** Historical record only; do not use for implementation.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans task-by-task. Steps use checkbox syntax for tracking. Do not commit, stage, inspect, or run Git commands.
 
 **Goal:** Add durable Flexible Rulebook campaigns, isolated bounded workers, cross-ticker qualification, truthful current Group BUY Scan, and standalone Streamlit page after the Flexible Rulebook core plan passes.

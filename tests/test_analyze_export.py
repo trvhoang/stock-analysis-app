@@ -1,12 +1,12 @@
+import inspect
 import unittest
 from datetime import date
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
 
+from pages import analyze_visualization
 from pages.analyze_visualization import (
-    EXPORT_FORM_LABEL,
-    get_export_form_container,
     build_export_filename,
     fetch_export_history,
     format_export_dataframe,
@@ -15,11 +15,23 @@ from pages.analyze_visualization import (
 
 
 class TestAnalyzeExport(unittest.TestCase):
-    @patch("pages.analyze_visualization.st.expander")
-    def test_export_form_uses_native_collapsible_container(self, mock_expander):
-        get_export_form_container()
+    def test_export_and_analysis_actions_use_approved_native_presentation(self):
+        source = inspect.getsource(analyze_visualization.analyze_page)
 
-        mock_expander.assert_called_once_with(EXPORT_FORM_LABEL, expanded=True)
+        self.assertIn(
+            'st.popover("Export", icon=":material/download:")',
+            source,
+        )
+        self.assertIn(
+            'st.button("Analyze", icon=":material/query_stats:")',
+            source,
+        )
+        self.assertIn(
+            'st.button("Analyze Portfolio", icon=":material/account_balance:")',
+            source,
+        )
+        self.assertNotIn("EXPORT_VISIBLE_KEY", source)
+        self.assertNotIn("get_export_form_container", source)
 
     def test_validate_export_inputs_normalizes_ticker_and_unit(self):
         values, error = validate_export_inputs(" fpt ", 2, "MONTHS")

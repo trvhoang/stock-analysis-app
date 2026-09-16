@@ -1,0 +1,36 @@
+{
+  "config": {
+    "end_date": null,
+    "group_name": "N/A",
+    "horizon": "midterm",
+    "output_dir": "backtest-result/ticker-signals",
+    "permutation_block_size": 20,
+    "permutation_count": 1000,
+    "permutation_seed": 42,
+    "request_type": "backtest_batch_v5",
+    "start_date": null,
+    "tickers": [
+      "THG",
+      "TRA",
+      "TTD",
+      "VCB",
+      "VCI",
+      "VGC",
+      "VGI",
+      "VHC",
+      "VHM",
+      "VIB",
+      "VIC",
+      "VIX",
+      "VJC",
+      "VND",
+      "VPL"
+    ],
+    "use_lifetime_range": true,
+    "worker_count": 6
+  },
+  "factory_ref": "backtest_engine.pipeline:run_backtest_batch_from_env",
+  "job_id": "320c797b1e0c4a819cd8ce87a83475e1",
+  "schema_version": 5,
+  "status_dir": "backtest-status"
+}

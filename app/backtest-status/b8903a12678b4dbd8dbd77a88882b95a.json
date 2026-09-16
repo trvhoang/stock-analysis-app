@@ -1,0 +1,46 @@
+{
+  "error_text": null,
+  "job_id": "b8903a12678b4dbd8dbd77a88882b95a",
+  "output_paths": [],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "VRE"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "VSC"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "VTK"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "VTP"
+    }
+  ]
+}

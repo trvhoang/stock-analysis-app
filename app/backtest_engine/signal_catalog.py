@@ -1,8 +1,13 @@
-"""Read only current schema-5 exploratory rulebook aggregates."""
+"""Read-only unified projection of Standard and Flexible current signals."""
 
 from collections.abc import Mapping, Sequence
 
 from .config import DEFAULT_SIGNAL_DIR, HORIZONS, _normalize_ticker
+from .flexible_adapter import (
+    flexible_signal_artifact_path,
+    flexible_signal_artifact_root,
+    load_flexible_signal_artifact,
+)
 from .persistence import load_rulebook_result, signal_artifact_path
 from .result_store import ensure_result_root, list_groups
 from .signal_removal import recover_pending_signal_removal
@@ -49,7 +54,71 @@ def _catalog_success_row(result: Mapping[str, object], candidate: Mapping[str, o
         "Test profit %": test["profit_pct"],
         "Test Sharpe": test["sharpe"],
         "Treatments": dict(candidate["treatments"]),
+        "_origin": "standard",
+        "_rulebook_id": candidate["rulebook_id"],
+        "_evaluation_id": None,
+        "_signal_date": None,
     }
+
+
+def _flexible_metric(metrics: Mapping[str, object], partition: str, field: str) -> object:
+    value = metrics.get(partition)
+    if not isinstance(value, Mapping) or field not in value:
+        raise ValueError(f"Flexible {partition} metrics are incomplete")
+    return value[field]
+
+
+def _catalog_flexible_rows(
+    artifacts: Sequence[Mapping[str, object]],
+    groups_by_ticker: Mapping[str, tuple[str, ...]],
+) -> list[dict[str, object]]:
+    """Project distinct Flexible artifacts without coercing them to schema-5."""
+
+    from flexible_rulebook.v2.contracts import collision_safe_short_ids
+
+    short_ids = collision_safe_short_ids(
+        str(artifact["rulebook_id"]) for artifact in artifacts
+    )
+    rows: list[dict[str, object]] = []
+    for artifact in artifacts:
+        evaluation = artifact["evaluation"]
+        if not isinstance(evaluation, Mapping):
+            raise ValueError("Flexible evaluation is invalid")
+        metrics = evaluation.get("metrics")
+        if not isinstance(metrics, Mapping):
+            raise ValueError("Flexible metrics are invalid")
+        events = artifact["current_signal_events"]
+        if not isinstance(events, list):
+            raise ValueError("Flexible current signals are invalid")
+        dates = [event.get("signal_date") for event in events if isinstance(event, Mapping)]
+        if any(not isinstance(item, str) for item in dates):
+            raise ValueError("Flexible current signal dates are invalid")
+        rulebook_id = str(artifact["rulebook_id"])
+        ticker = str(artifact["ticker"])
+        rows.append({
+            "Ticker": ticker,
+            "Horizon": _HORIZON_LABELS[str(artifact["horizon"])],
+            "Rulebook": f"Flexible · {short_ids[rulebook_id]}",
+            "Selected gates": [],
+            "Preferred treatment": "flexible",
+            "Evaluation": artifact["evaluation_label"],
+            "Evidence": "available",
+            "Training n": _flexible_metric(metrics, "training", "n"),
+            "Training win rate %": _flexible_metric(metrics, "training", "win_rate"),
+            "Training profit %": _flexible_metric(metrics, "training", "total_return_pct"),
+            "Training Sharpe": _flexible_metric(metrics, "training", "sharpe"),
+            "Test n": _flexible_metric(metrics, "test", "n"),
+            "Test win rate %": _flexible_metric(metrics, "test", "win_rate"),
+            "Test profit %": _flexible_metric(metrics, "test", "total_return_pct"),
+            "Test Sharpe": _flexible_metric(metrics, "test", "sharpe"),
+            "Treatments": {},
+            "_origin": "flexible",
+            "_rulebook_id": rulebook_id,
+            "_evaluation_id": artifact["evaluation_reference"]["evaluation_id"],
+            "_signal_date": max(dates, default=None),
+            "_groups": groups_by_ticker.get(ticker, ()),
+        })
+    return rows
 
 
 def _terminal_row(result: Mapping[str, object]) -> dict[str, object]:
@@ -116,6 +185,51 @@ def list_current_signal_set_rows(signal_dir: str = DEFAULT_SIGNAL_DIR) -> dict[s
                 row = _terminal_row(result)
                 row["_groups"] = groups_by_ticker.get(ticker, ())
                 terminal.append(row)
+    flexible_root = flexible_signal_artifact_root(root)
+    if flexible_root.is_dir():
+        flexible_artifacts: list[dict[str, object]] = []
+        for ticker_dir in sorted(flexible_root.iterdir(), key=lambda item: item.name):
+            if not ticker_dir.is_dir():
+                continue
+            try:
+                ticker = _normalize_ticker(ticker_dir.name)
+            except ValueError:
+                continue
+            for horizon in HORIZONS:
+                for path in sorted(ticker_dir.glob(f"{ticker}_flexible_signals_{horizon}__*.json")):
+                    try:
+                        artifact = load_flexible_signal_artifact(path)
+                        expected_path = flexible_signal_artifact_path(
+                            ticker, horizon, str(artifact["rulebook_id"]), root,
+                        )
+                        if path != expected_path:
+                            raise ValueError("Flexible document identity differs from its path")
+                        if artifact["ticker"] != ticker or artifact["horizon"] != horizon:
+                            raise ValueError("Flexible document identity differs from its path")
+                        if artifact["terminal_state"] == "success":
+                            flexible_artifacts.append(artifact)
+                        else:
+                            terminal.append({
+                                "ticker": ticker,
+                                "horizon": horizon,
+                                "terminal_state": "empty",
+                                "reason": artifact["removal_reason"],
+                                "evaluation_label": artifact["evaluation_label"],
+                                "origin": "flexible",
+                                "_groups": groups_by_ticker.get(ticker, ()),
+                            })
+                    except (OSError, TypeError, ValueError) as error:
+                        invalid.append({
+                            "Ticker": ticker,
+                            "Horizon": _HORIZON_LABELS[horizon],
+                            "_source": str(path),
+                            "_issue": f"Invalid Flexible signal artifact: {error}",
+                            "_groups": groups_by_ticker.get(ticker, ()),
+                        })
+        try:
+            valid.extend(_catalog_flexible_rows(flexible_artifacts, groups_by_ticker))
+        except (TypeError, ValueError) as error:
+            warnings.append(f"Flexible signal catalog is unavailable: {error}")
     return {"valid": valid, "invalid": invalid, "terminal": terminal, "warnings": warnings}
 
 

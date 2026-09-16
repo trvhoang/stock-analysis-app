@@ -2,16 +2,20 @@
 
 import os
 import time
+from dataclasses import replace
 from datetime import datetime
 
 import pandas as pd
 import pytz
 from sqlalchemy.engine import make_url
 
+from commons.trading_calendar import align_to_vnindex_calendar
+
 from .config import BacktestBatchConfig, BacktestConfig, rulebook_for
 from .data_quality import (
     audit_history,
     fresh_schema5_audit_eligibility,
+    load_lifetime_date_bounds,
     load_ticker_history,
     unavailable_schema5_audit_eligibility,
     validate_ohlcv,
@@ -19,6 +23,7 @@ from .data_quality import (
 from .evidence import EvidenceEligibility, assess_evidence, unavailable_evidence
 from .exploratory import ExploratoryEvaluation, evaluate_exploratory_candidates
 from .indicators import build_rulebook_frame
+from .listing_status import load_listing_statuses
 from .models import BatchTickerStatus
 from .persistence import save_rulebook_result
 from .result_store import assign_tickers_group
@@ -49,6 +54,23 @@ def _requested_dates(config: BacktestConfig | BacktestBatchConfig) -> tuple[obje
         pd.Timestamp(end_date) - pd.DateOffset(years=15)
     ).date()
     return start_date, end_date
+
+
+def _resolve_lifetime_range(
+    config: BacktestBatchConfig,
+    engine,
+) -> BacktestBatchConfig:
+    """Freeze one queued Lifetime request to its current valid database bounds."""
+
+    if not config.use_lifetime_range:
+        return config
+    start_date, end_date = load_lifetime_date_bounds(config.tickers, engine)
+    return replace(
+        config,
+        start_date=start_date,
+        end_date=end_date,
+        use_lifetime_range=False,
+    )
 
 
 def _build_confirmation_frame(
@@ -112,6 +134,24 @@ def _prepare_ticker(
         audit,
         evidence_history,
     )
+
+
+def _calendar_prepare_ticker_history(
+    ticker_history: pd.DataFrame,
+    vnindex_history: pd.DataFrame,
+    *,
+    start,
+    end,
+) -> tuple[pd.DataFrame, tuple[object, ...]]:
+    """Remove non-session ticker rows before any Backtest indicator exists."""
+
+    filtered, _calendar, outside = align_to_vnindex_calendar(
+        ticker_history,
+        vnindex_history,
+        start=start,
+        end=end,
+    )
+    return filtered, outside
 
 
 def _load_validated_history(
@@ -326,6 +366,20 @@ def run_backtest_pipeline(config: BacktestConfig, report_progress, engine) -> li
     """Evaluate and atomically persist one schema-5 ticker/horizon aggregate."""
 
     try:
+        listing = load_listing_statuses((config.ticker,), engine)[config.ticker]
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+        # A single-run caller has no batch status document in which to surface
+        # a preflight failure.  Do not replace valid historical evidence with
+        # an unrelated listing-status failure.
+        _report(report_progress, 1.0)
+        return []
+    if not listing.is_listed:
+        # Delisted is a live eligibility state, not an artifact state.  The
+        # ticker remains eligible automatically once its latest bar catches up.
+        _report(report_progress, 1.0)
+        return []
+
+    try:
         raw_history = _load_validated_history(config.ticker, config, engine)
         audit = audit_history(config.ticker, raw_history)
     except Exception as error:
@@ -340,6 +394,24 @@ def run_backtest_pipeline(config: BacktestConfig, report_progress, engine) -> li
             engine,
             ticker_history=raw_history,
         )
+        requested_start, requested_end = _requested_dates(config)
+        raw_history, _outside_calendar = _calendar_prepare_ticker_history(
+            raw_history,
+            vnindex_history,
+            start=requested_start,
+            end=requested_end,
+        )
+        calendar_common_as_of = latest_common_completed_bar(
+            {config.ticker: raw_history, "VNINDEX": vnindex_history},
+            requested_end,
+        )
+        if calendar_common_as_of != common_as_of:
+            common_as_of = calendar_common_as_of
+            confirmation = _build_confirmation_frame(
+                vnindex_history,
+                config.horizon,
+                common_as_of=common_as_of,
+            )
         frame, audit, raw_history = _prepare_ticker(
             config.ticker,
             config,
@@ -381,15 +453,25 @@ def _shared_confirmation(
     engine,
     *,
     ticker_sources: dict[str, pd.DataFrame],
-) -> tuple[pd.DataFrame, object, pd.DataFrame]:
+) -> tuple[pd.DataFrame, object, pd.DataFrame, dict[str, pd.DataFrame]]:
     """Build one shared VN-Index confirmation, retrying its preflight once."""
 
     _, requested_end = _requested_dates(config)
     for attempt in range(2):
         try:
             vnindex = _load_validated_history("VNINDEX", config, engine)
+            requested_start, _ = _requested_dates(config)
+            calendar_sources = {
+                ticker: _calendar_prepare_ticker_history(
+                    history,
+                    vnindex,
+                    start=requested_start,
+                    end=requested_end,
+                )[0]
+                for ticker, history in ticker_sources.items()
+            }
             common_as_of = latest_common_completed_bar(
-                {**ticker_sources, "VNINDEX": vnindex},
+                {**calendar_sources, "VNINDEX": vnindex},
                 requested_end,
             )
             return (
@@ -400,6 +482,7 @@ def _shared_confirmation(
                 ),
                 common_as_of,
                 vnindex,
+                calendar_sources,
             )
         except Exception as error:
             if attempt == 0:
@@ -416,18 +499,57 @@ def run_backtest_batch_pipeline(
 ) -> dict[str, object]:
     """Evaluate each ticker against the compulsory shared-treatment rulebook family."""
 
+    requested_tickers = config.tickers
     statuses = [
         BatchTickerStatus(ticker, attempts=0, state="queued")
-        for ticker in config.tickers
+        for ticker in requested_tickers
     ]
-    assign_tickers_group(config.tickers, config.group_name, config.output_dir)
+    assign_tickers_group(requested_tickers, config.group_name, config.output_dir)
+    status_indexes = {ticker: index for index, ticker in enumerate(requested_tickers)}
 
     def report(value: float) -> None:
         _report(report_progress, value, tuple(statuses))
 
     report(0.0)
+    try:
+        listing_statuses = load_listing_statuses(requested_tickers, engine)
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError) as error:
+        reason = f"Listed/Delisted preflight unavailable: {_error_text(error)}"
+        for index, ticker in enumerate(requested_tickers):
+            statuses[index] = BatchTickerStatus(
+                ticker, attempts=1, state="failed", error_texts=(reason,)
+            )
+        report(1.0)
+        return {
+            "output_paths": [],
+            "ticker_results": [status.to_dict() for status in statuses],
+        }
+
+    active_tickers = []
+    for ticker in requested_tickers:
+        listing = listing_statuses[ticker]
+        if listing.is_listed:
+            active_tickers.append(ticker)
+            continue
+        statuses[status_indexes[ticker]] = BatchTickerStatus(
+            ticker,
+            attempts=0,
+            state="skipped",
+            error_texts=(listing.reason,),
+        )
+    if not active_tickers:
+        report(1.0)
+        return {
+            "output_paths": [],
+            "ticker_results": [status.to_dict() for status in statuses],
+        }
+
+    config = _resolve_lifetime_range(
+        replace(config, tickers=tuple(active_tickers)), engine
+    )
     ticker_sources: dict[str, pd.DataFrame] = {}
-    for index, ticker in enumerate(config.tickers):
+    for ticker in config.tickers:
+        index = status_indexes[ticker]
         errors: list[str] = []
         for attempt in range(1, 3):
             try:
@@ -456,16 +578,17 @@ def run_backtest_batch_pipeline(
         }
 
     try:
-        confirmation, common_as_of, vnindex_history = _shared_confirmation(
+        confirmation, common_as_of, vnindex_history, ticker_sources = _shared_confirmation(
             config,
             engine,
             ticker_sources=ticker_sources,
         )
     except Exception as error:
         reason = _error_text(error)
-        for index, ticker in enumerate(config.tickers):
+        for ticker in config.tickers:
             if ticker not in ticker_sources:
                 continue
+            index = status_indexes[ticker]
             paths = _persist_failure(ticker, config.for_ticker(ticker), reason)
             statuses[index] = BatchTickerStatus(
                 ticker, attempts=1, state="failed", output_paths=tuple(paths), error_texts=(reason,)
@@ -478,8 +601,8 @@ def run_backtest_batch_pipeline(
 
     report(0.05)
 
-    def run_ticker(index: int, attempts: int) -> None:
-        ticker = config.tickers[index]
+    def run_ticker(ticker: str, attempts: int) -> None:
+        index = status_indexes[ticker]
         ticker_config = config.for_ticker(ticker)
         prior = statuses[index]
         statuses[index] = BatchTickerStatus(
@@ -535,21 +658,20 @@ def run_backtest_batch_pipeline(
                 ticker, attempts=attempts, state="done", output_paths=tuple(paths)
             )
 
-    run_indexes = [
-        index for index, ticker in enumerate(config.tickers)
-        if ticker in ticker_sources
+    run_tickers = [
+        ticker for ticker in config.tickers if ticker in ticker_sources
     ]
-    for position, index in enumerate(run_indexes, start=1):
-        run_ticker(index, 1)
-        report(0.05 + 0.65 * position / len(run_indexes))
+    for position, ticker in enumerate(run_tickers, start=1):
+        run_ticker(ticker, 1)
+        report(0.05 + 0.65 * position / len(run_tickers))
 
-    retry_indexes = [
-        index for index, status in enumerate(statuses)
-        if status.state == "failed" and config.tickers[index] in ticker_sources
+    retry_tickers = [
+        ticker for ticker in config.tickers
+        if statuses[status_indexes[ticker]].state == "failed" and ticker in ticker_sources
     ]
-    for retry_number, index in enumerate(retry_indexes, start=1):
-        run_ticker(index, 2)
-        report(0.70 + 0.30 * retry_number / len(retry_indexes))
+    for retry_number, ticker in enumerate(retry_tickers, start=1):
+        run_ticker(ticker, 2)
+        report(0.70 + 0.30 * retry_number / len(retry_tickers))
 
     report(1.0)
     return {

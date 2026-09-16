@@ -5,6 +5,14 @@ from datetime import date
 import numpy as np
 import pandas as pd
 
+from commons.causal_indicators import adx_dmi as causal_adx_dmi
+from commons.causal_indicators import atr as causal_atr
+from commons.causal_indicators import ema as causal_ema
+from commons.causal_indicators import rsi as causal_rsi
+from commons.causal_indicators import sma as causal_sma
+from commons.causal_indicators import smma as causal_smma
+from commons.causal_indicators import wilder_average as causal_wilder_average
+
 from .config import HORIZONS, RulebookSpec, rulebook_for
 from .data_quality import normalize_ohlc_for_backtest, validate_ohlcv
 from .timeframes import to_weekly_ohlcv
@@ -29,22 +37,9 @@ def _smma_reference(values: pd.Series, period: int) -> pd.Series:
 
 
 def _smma(values: pd.Series, period: int) -> pd.Series:
-    """Return causal SMMA using an indexed array and the reference seed."""
+    """Compatibility wrapper for the authoritative causal SMMA primitive."""
 
-    numeric = pd.to_numeric(values, errors="coerce").astype(float)
-    result = np.full(len(numeric), np.nan, dtype=float)
-    if len(numeric) < period:
-        return pd.Series(result, index=numeric.index, dtype=float)
-
-    source = numeric.to_numpy(dtype=float)
-    result[period - 1] = numeric.iloc[:period].mean()
-    for position in range(period, len(source)):
-        prior = result[position - 1]
-        value = source[position]
-        if not np.isfinite(prior) or not np.isfinite(value):
-            continue
-        result[position] = (prior * (period - 1) + value) / period
-    return pd.Series(result, index=numeric.index, dtype=float)
+    return causal_smma(values, period)
 
 
 def _wilder_average_reference(
@@ -79,27 +74,9 @@ def _wilder_average(
     *,
     seed_start: int,
 ) -> pd.Series:
-    """Return an exact SMA-seeded Wilder average over an indexed array."""
+    """Compatibility wrapper for the authoritative Wilder primitive."""
 
-    numeric = pd.to_numeric(values, errors="coerce").astype(float)
-    result = np.full(len(numeric), np.nan, dtype=float)
-    seed_end = seed_start + period
-    if period < 1 or seed_start < 0 or len(numeric) < seed_end:
-        return pd.Series(result, index=numeric.index, dtype=float)
-
-    source = numeric.to_numpy(dtype=float)
-    seed = source[seed_start:seed_end]
-    if not np.isfinite(seed).all():
-        return pd.Series(result, index=numeric.index, dtype=float)
-    # Use pandas' seed reduction so the optimized recurrence starts bit-exactly.
-    result[seed_end - 1] = float(numeric.iloc[seed_start:seed_end].mean())
-    for position in range(seed_end, len(source)):
-        prior = result[position - 1]
-        current = source[position]
-        if not np.isfinite(prior) or not np.isfinite(current):
-            continue
-        result[position] = (prior * (period - 1) + current) / period
-    return pd.Series(result, index=numeric.index, dtype=float)
+    return causal_wilder_average(values, period, seed_start=seed_start)
 
 
 def rsi_upcross(values: pd.Series, level: float) -> pd.Series:
@@ -136,62 +113,25 @@ def joint_trend_pass(ma_point, alligator_point):
 
 
 def _rsi(close: pd.Series, period: int) -> pd.Series:
-    """Calculate causal Wilder RSI without importing any Analyze helper."""
+    """Compatibility wrapper for the authoritative causal Wilder RSI."""
 
-    values = pd.to_numeric(close, errors="coerce").astype(float)
-    delta = values.diff()
-    gains = delta.clip(lower=0.0)
-    losses = -delta.clip(upper=0.0)
-    average_gain = _wilder_average(gains, period, seed_start=1)
-    average_loss = _wilder_average(losses, period, seed_start=1)
-    relative_strength = average_gain / average_loss
-    result = 100.0 - 100.0 / (1.0 + relative_strength)
-    result = result.where(average_loss.ne(0.0), 100.0)
-    return result.where(average_gain.notna() & average_loss.notna())
+    return causal_rsi(close, period)
 
 
 def _atr(working: pd.DataFrame, period: int) -> pd.Series:
-    """Calculate causal raw-price Wilder ATR from OHLCV bars."""
+    """Compatibility wrapper for the authoritative causal Wilder ATR."""
 
-    high = pd.to_numeric(working["high"], errors="coerce").astype(float)
-    low = pd.to_numeric(working["low"], errors="coerce").astype(float)
-    close = pd.to_numeric(working["close"], errors="coerce").astype(float)
-    previous_close = close.shift(1)
-    true_range = pd.concat(
-        (high - low, (high - previous_close).abs(), (low - previous_close).abs()),
-        axis=1,
-    ).max(axis=1)
-    return _wilder_average(true_range, period, seed_start=0)
+    return causal_atr(working, period)
 
 
 def _adx_components(
     working: pd.DataFrame,
     period: int,
 ) -> tuple[pd.Series, pd.Series, pd.Series]:
-    """Calculate exact SMA-seeded Wilder +DI, -DI, and ADX."""
+    """Compatibility wrapper for the authoritative +DI, -DI, and ADX."""
 
-    high = pd.to_numeric(working["high"], errors="coerce").astype(float)
-    low = pd.to_numeric(working["low"], errors="coerce").astype(float)
-    close = pd.to_numeric(working["close"], errors="coerce").astype(float)
-    previous_high = high.shift(1)
-    previous_low = low.shift(1)
-    previous_close = close.shift(1)
-    upward_move = high - previous_high
-    downward_move = previous_low - low
-    plus_dm = upward_move.where((upward_move > downward_move) & (upward_move > 0), 0.0)
-    minus_dm = downward_move.where((downward_move > upward_move) & (downward_move > 0), 0.0)
-    true_range = pd.concat(
-        (high - low, (high - previous_close).abs(), (low - previous_close).abs()),
-        axis=1,
-    ).max(axis=1)
-    average_true_range = _wilder_average(true_range, period, seed_start=0)
-    average_plus_dm = _wilder_average(plus_dm, period, seed_start=0)
-    average_minus_dm = _wilder_average(minus_dm, period, seed_start=0)
-    plus_di = 100.0 * average_plus_dm / average_true_range
-    minus_di = 100.0 * average_minus_dm / average_true_range
-    directional_index = 100.0 * (plus_di - minus_di).abs() / (plus_di + minus_di)
-    adx = _wilder_average(directional_index, period, seed_start=period - 1)
-    return plus_di, minus_di, adx
+    values = causal_adx_dmi(working, period)
+    return values["plus_di"], values["minus_di"], values["adx"]
 
 
 def _adx(working: pd.DataFrame, period: int) -> pd.Series:
@@ -205,12 +145,12 @@ def _moving_average(close: pd.Series, rulebook: RulebookSpec) -> tuple[pd.Series
     values = pd.to_numeric(close, errors="coerce").astype(float)
     if rulebook.ma_kind == "EMA":
         return (
-            values.ewm(span=fast_period, adjust=False, min_periods=fast_period).mean(),
-            values.ewm(span=slow_period, adjust=False, min_periods=slow_period).mean(),
+            causal_ema(values, fast_period),
+            causal_ema(values, slow_period),
         )
     return (
-        values.rolling(fast_period, min_periods=fast_period).mean(),
-        values.rolling(slow_period, min_periods=slow_period).mean(),
+        causal_sma(values, fast_period),
+        causal_sma(values, slow_period),
     )
 
 
@@ -268,9 +208,13 @@ def build_rulebook_frame(
     jaw_period, teeth_period, lips_period = rulebook.alligator_periods
     jaw_lag, teeth_lag, lips_lag = rulebook.alligator_lags
     close = pd.to_numeric(working["close"], errors="coerce")
-    alligator_jaw = _smma(close, jaw_period).shift(jaw_lag)
-    alligator_teeth = _smma(close, teeth_period).shift(teeth_lag)
-    alligator_lips = _smma(close, lips_period).shift(lips_lag)
+    alligator_input = (
+        pd.to_numeric(working["high"], errors="coerce")
+        + pd.to_numeric(working["low"], errors="coerce")
+    ) / 2.0
+    alligator_jaw = _smma(alligator_input, jaw_period).shift(jaw_lag)
+    alligator_teeth = _smma(alligator_input, teeth_period).shift(teeth_lag)
+    alligator_lips = _smma(alligator_input, lips_period).shift(lips_lag)
     ma_point = _trend_point(fast_ma, slow_ma)
     alligator_point = _alligator_point(
         alligator_lips,

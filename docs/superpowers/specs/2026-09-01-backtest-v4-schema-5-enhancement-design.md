@@ -209,8 +209,9 @@ averages are seeded at bar 13. `+DI`, `-DI`, and DX begin from that seed. ADX
 is seeded at bar 26 with the simple average of the first 14 valid DX values and
 then recursively smoothed.
 
-The existing EMA definition remains unchanged. Alligator already uses an
-SMA-seeded recursive SMMA and retains its approved periods and lags.
+The existing EMA definition remains unchanged. Alligator uses the standard
+median-price input `HL2 = (high + low) / 2`, then an SMA-seeded recursive SMMA
+with its approved periods and lags. It never uses close as the Alligator input.
 
 ## Completed weekly clock
 

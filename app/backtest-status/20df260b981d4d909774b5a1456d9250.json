@@ -1,0 +1,161 @@
+{
+  "error_text": null,
+  "job_id": "20df260b981d4d909774b5a1456d9250",
+  "output_paths": [
+    "backtest-result/ticker-signals/DIG/DIG_signals_swing.json",
+    "backtest-result/ticker-signals/DMC/DMC_signals_swing.json",
+    "backtest-result/ticker-signals/DMX/DMX_signals_swing.json",
+    "backtest-result/ticker-signals/DPM/DPM_signals_swing.json",
+    "backtest-result/ticker-signals/DPR/DPR_signals_swing.json",
+    "backtest-result/ticker-signals/DTP/DTP_signals_swing.json",
+    "backtest-result/ticker-signals/DVN/DVN_signals_swing.json",
+    "backtest-result/ticker-signals/DVP/DVP_signals_swing.json",
+    "backtest-result/ticker-signals/DXG/DXG_signals_swing.json",
+    "backtest-result/ticker-signals/DXS/DXS_signals_swing.json",
+    "backtest-result/ticker-signals/EIB/EIB_signals_swing.json",
+    "backtest-result/ticker-signals/FCM/FCM_signals_swing.json",
+    "backtest-result/ticker-signals/FRT/FRT_signals_swing.json",
+    "backtest-result/ticker-signals/FTS/FTS_signals_swing.json",
+    "backtest-result/ticker-signals/GAS/GAS_signals_swing.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DIG/DIG_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DIG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DMC/DMC_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DMC"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DMX/DMX_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DMX"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DPM/DPM_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DPM"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DPR/DPR_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DPR"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DTP/DTP_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DTP"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DVN/DVN_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DVN"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DVP/DVP_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DVP"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DXG/DXG_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DXG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DXS/DXS_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DXS"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/EIB/EIB_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "EIB"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/FCM/FCM_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "FCM"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/FRT/FRT_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "FRT"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/FTS/FTS_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "FTS"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/GAS/GAS_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "GAS"
+    }
+  ]
+}

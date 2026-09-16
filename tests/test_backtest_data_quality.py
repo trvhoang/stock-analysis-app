@@ -1,8 +1,10 @@
 import unittest
+from datetime import date
 from unittest.mock import patch
 
 import pandas as pd
 
+import backtest_engine.data_quality as data_quality
 from backtest_engine.data_quality import (
     audit_history,
     history_coverage_years,
@@ -178,6 +180,35 @@ class DataQualityTests(unittest.TestCase):
         self.assertEqual(params["end_date"], "2025-01-31")
         self.assertTrue(connection.closed)
         pd.testing.assert_frame_equal(result, returned)
+
+    def test_lifetime_bounds_use_only_vnindex_available_sessions_and_close_connection(self):
+        class FakeConnection:
+            def __init__(self):
+                self.closed = False
+
+            def close(self):
+                self.closed = True
+
+        class FakeEngine:
+            def __init__(self, connection):
+                self.connection = connection
+
+            def raw_connection(self):
+                return self.connection
+
+        connection = FakeConnection()
+        returned = pd.DataFrame(
+            [{"start_date": pd.Timestamp("2011-01-04"), "end_date": pd.Timestamp("2026-09-04")}]
+        )
+        with patch("backtest_engine.data_quality.pd.read_sql", return_value=returned) as read_sql:
+            bounds = data_quality.load_lifetime_date_bounds(("FPT", "VCB"), FakeEngine(connection))
+
+        query = read_sql.call_args.args[0]
+        self.assertIn("ANY(%(tickers)s)", query)
+        self.assertIn("vnindex.ticker = 'VNINDEX'", query)
+        self.assertEqual(["FPT", "VCB"], read_sql.call_args.kwargs["params"]["tickers"])
+        self.assertEqual((date(2011, 1, 4), date(2026, 9, 4)), bounds)
+        self.assertTrue(connection.closed)
 
 
 if __name__ == "__main__":

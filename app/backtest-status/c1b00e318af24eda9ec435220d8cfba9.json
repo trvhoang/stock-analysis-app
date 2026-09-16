@@ -1,0 +1,164 @@
+{
+  "error_text": null,
+  "job_id": "c1b00e318af24eda9ec435220d8cfba9",
+  "output_paths": [
+    "backtest-result/ticker-signals/NLG/NLG_signals_midterm.json",
+    "backtest-result/ticker-signals/NT2/NT2_signals_midterm.json",
+    "backtest-result/ticker-signals/NVL/NVL_signals_midterm.json",
+    "backtest-result/ticker-signals/PAN/PAN_signals_midterm.json",
+    "backtest-result/ticker-signals/PAT/PAT_signals_midterm.json",
+    "backtest-result/ticker-signals/PHP/PHP_signals_midterm.json",
+    "backtest-result/ticker-signals/PHR/PHR_signals_midterm.json",
+    "backtest-result/ticker-signals/PLX/PLX_signals_midterm.json",
+    "backtest-result/ticker-signals/PNJ/PNJ_signals_midterm.json",
+    "backtest-result/ticker-signals/POW/POW_signals_midterm.json",
+    "backtest-result/ticker-signals/PTB/PTB_signals_midterm.json",
+    "backtest-result/ticker-signals/PVD/PVD_signals_midterm.json",
+    "backtest-result/ticker-signals/PVS/PVS_signals_midterm.json",
+    "backtest-result/ticker-signals/PVT/PVT_signals_midterm.json",
+    "backtest-result/ticker-signals/REE/REE_signals_midterm.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/NLG/NLG_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "NLG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/NT2/NT2_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "NT2"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/NVL/NVL_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "NVL"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/PAN/PAN_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "PAN"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/PAT/PAT_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "PAT"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/PHP/PHP_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "PHP"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/PHR/PHR_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "PHR"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/PLX/PLX_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "PLX"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/PNJ/PNJ_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "PNJ"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/POW/POW_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "POW"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/PTB/PTB_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "PTB"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/PVD/PVD_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "PVD"
+    },
+    {
+      "attempts": 2,
+      "error_texts": [
+        "ValueError: invalid backtest data: high contains non-positive prices",
+        "ValueError: invalid backtest data: high contains non-positive prices"
+      ],
+      "output_paths": [
+        "backtest-result/ticker-signals/PVS/PVS_signals_midterm.json"
+      ],
+      "state": "failed",
+      "ticker": "PVS"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/PVT/PVT_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "PVT"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/REE/REE_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "REE"
+    }
+  ]
+}

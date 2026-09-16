@@ -3,6 +3,10 @@ import unittest
 import numpy as np
 import pandas as pd
 
+from commons.causal_indicators import adx_dmi as causal_adx_dmi
+from commons.causal_indicators import atr as causal_atr
+from commons.causal_indicators import rsi as causal_rsi
+from commons.causal_indicators import stochastic as causal_stochastic
 from commons.technical_analysis import (
     calculate_atr,
     calculate_atr_trend,
@@ -12,6 +16,8 @@ from commons.technical_analysis import (
     calculate_obv_trend,
     calculate_adx,
     calculate_adx_trend,
+    calculate_rsi,
+    calculate_stochastic,
 )
 
 
@@ -48,11 +54,7 @@ class TestCalculateATR(unittest.TestCase):
         self.assertEqual(result.name, "ATR_14")
 
     def test_matches_hand_computed_true_range_and_wilder_smoothing(self):
-        expected = (
-            pd.Series(self.expected_tr())
-            .ewm(alpha=1 / 14, adjust=False, min_periods=14)
-            .mean()
-        )
+        expected = causal_atr(self.df, 14)
         result = calculate_atr(self.df, period=14)
         pd.testing.assert_series_equal(
             result.reset_index(drop=True), expected, check_names=False
@@ -85,6 +87,21 @@ class TestCalculateATR(unittest.TestCase):
         original_cols = list(self.df.columns)
         calculate_atr(self.df, period=14)
         self.assertEqual(list(self.df.columns), original_cols)
+
+    def test_technical_rsi_and_stochastic_share_the_causal_primitives(self):
+        working, _ = calculate_rsi(self.df.copy(), length=14)
+        expected_rsi = causal_rsi(self.df["close"], 14)
+        pd.testing.assert_series_equal(working["RSI_14"], expected_rsi, check_names=False)
+
+        working, _ = calculate_stochastic(self.df.copy())
+        expected_stochastic = causal_stochastic(
+            self.df,
+            k_period=10,
+            k_smoothing=3,
+            d_period=3,
+        )
+        pd.testing.assert_series_equal(working["%K"], expected_stochastic["k"], check_names=False)
+        pd.testing.assert_series_equal(working["%D"], expected_stochastic["d"], check_names=False)
 
 
 class TestCalculateBollinger(unittest.TestCase):
@@ -233,6 +250,13 @@ class TestCalculateADX(unittest.TestCase):
         original_cols = list(self.df.columns)
         calculate_adx(self.df, period=14)
         self.assertEqual(list(self.df.columns), original_cols)
+
+    def test_technical_adx_matches_the_shared_sma_seeded_wilder_components(self):
+        result = calculate_adx(self.df, period=14)
+        expected = causal_adx_dmi(self.df, 14)
+        pd.testing.assert_series_equal(result["ADX_14"], expected["adx"], check_names=False)
+        pd.testing.assert_series_equal(result["DMP_14"], expected["plus_di"], check_names=False)
+        pd.testing.assert_series_equal(result["DMN_14"], expected["minus_di"], check_names=False)
 
 
 class TestADXTrend(unittest.TestCase):

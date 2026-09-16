@@ -1,42 +1,166 @@
 {
   "audit_eligibility": {
     "effective_date_range": [
-      null,
-      null
+      "2017-12-15",
+      "2026-09-15"
     ],
     "eligible": false,
-    "reasons": [
-      "Regenerate under Backtest schema 5."
-    ],
-    "source": "unavailable",
-    "status": "unavailable",
-    "warnings": []
+    "reasons": [],
+    "source": "fresh_schema5_raw_history",
+    "status": "indeterminate",
+    "warnings": [
+      "date gap of 18 calendar days before 2018-01-02",
+      "date gap of 10 calendar days before 2018-01-12",
+      "date gap of 21 calendar days before 2018-02-05",
+      "date gap of 1079 calendar days before 2021-01-21",
+      "date gap of 228 calendar days before 2021-09-06",
+      "date gap of 10 calendar days before 2022-02-07",
+      "date gap of 8 calendar days before 2023-01-27",
+      "date gap of 8 calendar days before 2024-02-15",
+      "date gap of 11 calendar days before 2025-02-04",
+      "date gap of 10 calendar days before 2026-02-23",
+      "close move exceeds 7% on 2018-01-02: 21.37%",
+      "close move exceeds 7% on 2021-01-21: 47.94%",
+      "close move exceeds 7% on 2021-09-06: 183.24%",
+      "OHLC ordering mismatch 0.05% is within 1.00% derived-envelope tolerance"
+    ]
   },
-  "candidates": [],
+  "candidates": [
+    {
+      "candidate_role": "baseline_control",
+      "preferred_variant": "background-theme",
+      "rulebook_id": "midterm_rulebook_v5__adx",
+      "selected_gates": [
+        "rulebook_adx_gate"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 14,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 5.518181224213252,
+            "sharpe": 0.03099780810458669,
+            "win_rate": 42.857142857142854
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 4,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 21.642233911202037,
+            "sharpe": 0.19109640859890267,
+            "win_rate": 50.0
+          },
+          "training_dsr": 0.580704425705235
+        },
+        "no-background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 18,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 30.820456758368696,
+            "sharpe": 0.11938358854383266,
+            "win_rate": 44.44444444444444
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 8,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -2.4391115325889174,
+            "sharpe": -0.010061987143352307,
+            "win_rate": 25.0
+          },
+          "training_dsr": 0.41263165364395965
+        }
+      }
+    },
+    {
+      "candidate_role": "baseline_control",
+      "preferred_variant": "background-theme",
+      "rulebook_id": "midterm_rulebook_v5__joint_trend",
+      "selected_gates": [
+        "rulebook_joint_trend_pass"
+      ],
+      "treatments": {
+        "background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 10,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -30.11316022704817,
+            "sharpe": -0.22909113316154106,
+            "win_rate": 30.0
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 2,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 47.809257337793355,
+            "sharpe": 9.778470048767874,
+            "win_rate": 100.0
+          },
+          "training_dsr": 0.9999999997019712
+        },
+        "no-background-theme": {
+          "dsr_status": "available",
+          "test": {
+            "n": 13,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 6.020479637486355,
+            "sharpe": 0.029785542507428472,
+            "win_rate": 38.46153846153847
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 5,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 2.0033353516101116,
+            "sharpe": 0.018523436261678107,
+            "win_rate": 40.0
+          },
+          "training_dsr": 3.9745984281580604e-13
+        }
+      }
+    }
+  ],
   "contract_version": "backtest_schema5_v1",
   "effective_data_range": {
-    "end": null,
-    "reason": "Regenerate under Backtest schema 5.",
-    "start": null
+    "end": "2026-09-15",
+    "reason": null,
+    "start": "2017-12-15"
   },
-  "empty": true,
-  "evaluated_at": "2026-09-01T19:45:31.667146+07:00",
+  "empty": false,
+  "evaluated_at": "2026-09-15T22:06:13.373746+07:00",
   "evaluation_label": "Exploratory \u2014 gross",
   "evidence_eligibility": {
-    "common_as_of": null,
-    "coverage_ratio": 0.0,
+    "common_as_of": "2026-09-15",
+    "coverage_ratio": 0.5772058823529411,
     "eligible": false,
-    "expected_sessions": 0,
-    "first_available_bar": null,
-    "last_available_bar": null,
-    "max_gap_sessions": 0,
-    "observed_sessions": 0,
+    "expected_sessions": 2176,
+    "first_available_bar": "2017-12-15",
+    "last_available_bar": "2026-09-15",
+    "max_gap_sessions": 738,
+    "observed_sessions": 1256,
     "reasons": [
-      "Regenerate under Backtest schema 5."
+      "coverage_ratio_below_0.95",
+      "max_gap_sessions_exceeds_20",
+      "raw_audit_not_clean"
     ],
-    "status": "unavailable",
-    "ticker_fingerprint": null,
-    "vnindex_fingerprint": null
+    "status": "ineligible",
+    "ticker_fingerprint": "49a0c10c593af0f9b4511a44b548588d0f537e37e8bc65c2aad35a9be825ac76",
+    "vnindex_fingerprint": "ecf554affc5e79b4d7547289560dc23651abc3b6d25de0426145ccd9f0049580"
   },
   "failure_reason": null,
   "horizon": "midterm",
@@ -44,11 +168,11 @@
     "test": "historical test \u2014 previously observed",
     "training": "in-sample"
   },
-  "rejection_reason": "Regenerate under Backtest schema 5.",
+  "rejection_reason": null,
   "requested_date_range": {
-    "end": null,
-    "reason": "Regenerate under Backtest schema 5.",
-    "start": null
+    "end": "2026-09-15",
+    "reason": null,
+    "start": "2010-08-17"
   },
   "rulebook": {
     "adx_minimum": 20,
@@ -63,6 +187,7 @@
       8,
       5
     ],
+    "alligator_source": "HL2",
     "atr_period": 14,
     "atr_sl_multiplier": 1.5,
     "atr_tp_multiplier": 2.5,
@@ -86,8 +211,21 @@
     "weekly_frequency": "W-FRI"
   },
   "schema_version": 5,
-  "split": null,
-  "terminal_state": "requires_regeneration",
+  "split": {
+    "method": "chronological_65_35",
+    "test": {
+      "end": "2026-09-11",
+      "start": "2023-08-25"
+    },
+    "train": {
+      "end": "2023-08-18",
+      "start": "2017-12-15"
+    }
+  },
+  "terminal_state": "success",
   "ticker": "VND",
-  "top_rulebook_ids": []
+  "top_rulebook_ids": [
+    "midterm_rulebook_v5__joint_trend",
+    "midterm_rulebook_v5__adx"
+  ]
 }

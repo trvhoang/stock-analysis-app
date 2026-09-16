@@ -1,5 +1,7 @@
 # Flexible Rulebook Design
 
+> **Superseded by 2026-09-15 user-authored redesign.** Historical record only; do not use for implementation.
+
 **Date:** 2026-08-25  
 **Status:** Approved design, amended 2026-08-26 and 2026-08-28; core and campaign
 implementation verified through Campaign Task 6 (2026-08-28).  

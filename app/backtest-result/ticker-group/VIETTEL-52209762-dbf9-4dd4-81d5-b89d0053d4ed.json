@@ -1,0 +1,13 @@
+{
+  "group_id": "52209762-dbf9-4dd4-81d5-b89d0053d4ed",
+  "group_name": "VIETTEL",
+  "metadata": {},
+  "schema_version": 1,
+  "tickers": [
+    "CTR",
+    "VGI",
+    "VTK",
+    "VTP"
+  ],
+  "updated_at": "2026-09-09T06:24:04.140589+07:00"
+}

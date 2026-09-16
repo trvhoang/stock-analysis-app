@@ -1,5 +1,7 @@
 # Flexible Rulebook Discovery Activation Design
 
+> **Superseded by 2026-09-15 user-authored redesign.** Historical record only; do not use for implementation.
+
 ## Purpose
 
 Turn the existing Flexible Rulebook research engine into a usable, bounded

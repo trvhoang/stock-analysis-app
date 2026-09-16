@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import json
 import uuid
 from collections.abc import Mapping
@@ -65,6 +66,19 @@ def _reference_signal_and_horizon(
         if not isinstance(signal, dict) or not isinstance(horizon, str):
             raise ValueError("V3 signal_reference is incomplete")
         return copy.deepcopy(signal), horizon
+    if reference.get("schema_version") == 6:
+        horizon = reference.get("horizon")
+        metrics = reference.get("metrics")
+        if not isinstance(horizon, str) or not isinstance(metrics, Mapping):
+            raise ValueError("V6 signal_reference is incomplete")
+        return {
+            "origin": "flexible",
+            "rulebook_id": reference["rulebook_id"],
+            "evaluation_id": reference["evaluation_id"],
+            "treatment": copy.deepcopy(dict(metrics)),
+            "evaluation_label": "Exploratory — gross",
+            "horizon": horizon,
+        }, horizon
     metrics = reference["metrics"]
     signals = reference["certified_signals"]
     return copy.deepcopy(signals[metrics[0]]), str(signals[metrics[0]]["combo"]["horizon"])
@@ -76,7 +90,7 @@ def build_v5_risk_snapshot(
     """Build frozen V5 exit levels from one rulebook and raw entry facts."""
 
     rulebook = rulebook_for(horizon)
-    raw_atr = _positive_raw_int(atr, "risk_snapshot atr")
+    raw_atr = _rounded_positive_raw_atr(atr)
     raw_buy_price = _positive_raw_int(actual_buy_price, "actual_buy_price")
     return _risk_for_buy_price(
         {
@@ -88,6 +102,23 @@ def build_v5_risk_snapshot(
         raw_buy_price,
         horizon,
     )
+
+
+def _rounded_positive_raw_atr(value: object) -> int:
+    """Freeze a fractional Wilder ATR at its nearest raw-price unit."""
+
+    if isinstance(value, bool):
+        raise ValueError("risk_snapshot atr must be a positive raw number")
+    try:
+        atr = Decimal(str(value))
+    except (InvalidOperation, ValueError):
+        raise ValueError("risk_snapshot atr must be a positive raw number") from None
+    if not atr.is_finite() or atr <= 0:
+        raise ValueError("risk_snapshot atr must be a positive raw number")
+    normalized = int(atr.to_integral_value(rounding=ROUND_HALF_UP))
+    if normalized <= 0:
+        raise ValueError("risk_snapshot atr must be a positive raw number")
+    return normalized
 
 
 def _manual_path(ticker: str, positions_dir: str) -> tuple[str, Path]:
@@ -138,9 +169,17 @@ def _validated_manual_position(value: object, ticker: str) -> dict[str, object]:
         position["signal_reference"] = normalized_reference
         position["certified_signal"] = copy.deepcopy(representative)
         position["entry_context"] = _validated_entry_context(position.get("entry_context"))
-        position["risk_snapshot"] = _validated_risk_snapshot(
-            position.get("risk_snapshot"), horizon
-        )
+        # A Flexible definition may deliberately have no fixed protective stop.
+        # Do not replace that fact with unrelated Standard/V5 exit settings.
+        if (
+            normalized_reference.get("schema_version") == 6
+            and position.get("risk_snapshot") is None
+        ):
+            position["risk_snapshot"] = None
+        else:
+            position["risk_snapshot"] = _validated_risk_snapshot(
+                position.get("risk_snapshot"), horizon
+            )
 
     sell_fields = ("actual_sell_price", "sell_date", "closed_at", "sell_reason")
     if position["status"] == "open":
@@ -235,16 +274,23 @@ def _new_position(
         if entry_context is not None or risk_snapshot is not None:
             raise ValueError("P&L-only position cannot include saved signal context")
     else:
-        if not isinstance(signal_reference, Mapping) or signal_reference.get("schema_version") != 5:
-            raise ValueError("new signal-backed positions require a schema_version 5 reference")
+        if not isinstance(signal_reference, Mapping) or signal_reference.get("schema_version") not in {5, 6}:
+            raise ValueError("new signal-backed positions require a schema_version 5 or 6 reference")
         normalized_reference = normalize_signal_reference(signal_reference)
-        if not normalized_reference["evidence_eligibility"]["eligible"]:
+        if (
+            normalized_reference["schema_version"] == 5
+            and not normalized_reference["evidence_eligibility"]["eligible"]
+        ):
             raise ValueError("evidence-ineligible exploratory rulebook cannot create a BUY position")
         certified_signal, horizon = _reference_signal_and_horizon(normalized_reference)
         normalized_context = _validated_entry_context(entry_context)
-        normalized_risk = _validated_risk_snapshot(
-            risk_snapshot, horizon
-        )
+        if normalized_reference["schema_version"] == 6 and risk_snapshot is None:
+            # Risk advice remains explicitly unavailable until a Flexible
+            # definition-owned risk contract is supplied.  P&L and immutable
+            # signal identity remain valid manual-position data.
+            normalized_risk = None
+        else:
+            normalized_risk = _validated_risk_snapshot(risk_snapshot, horizon)
     position = {
         "id": uuid.uuid4().hex,
         "ticker": ticker,

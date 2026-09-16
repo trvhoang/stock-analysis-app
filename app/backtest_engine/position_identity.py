@@ -8,6 +8,7 @@ import json
 from collections.abc import Mapping
 from datetime import date
 from numbers import Real
+import re
 
 from .config import ENTRY_GATE_NAMES, HORIZONS, THEME_VARIANTS, _normalize_ticker, rulebook_for
 from .models import RulebookExecution
@@ -20,6 +21,9 @@ _GATE_SUFFIXES = {
     "rulebook_rsi_upcross": "rsi_upcross",
     "rulebook_volume_gate": "volume",
 }
+_FLEXIBLE_RULEBOOK_ID = re.compile(r"^frb2_[0-9a-f]{64}$")
+_FLEXIBLE_EVALUATION_ID = re.compile(r"^frev2_[0-9a-f]{64}$")
+_DIGEST = re.compile(r"^[0-9a-f]{64}$")
 
 
 def _hash(payload: Mapping[str, object]) -> str:
@@ -266,6 +270,72 @@ def validate_v3_position_snapshot(value: object) -> dict[str, object]:
     }
 
 
+def validate_v6_position_snapshot(value: object) -> dict[str, object]:
+    """Validate one immutable Flexible v2 reference without schema-5 coercion."""
+
+    if not isinstance(value, Mapping):
+        raise ValueError("V6 signal_reference must be an object")
+    required = {
+        "schema_version", "contract_version", "origin", "ticker", "horizon",
+        "rulebook_id", "semantic_digest", "evaluation_id", "evaluation_label", "metrics",
+    }
+    if set(value) not in (required, required | {"link_keys"}) or value.get("schema_version") != 6:
+        raise ValueError("V6 signal_reference schema_version must be 6")
+    ticker = _normalize_ticker(value.get("ticker"))
+    horizon = value.get("horizon")
+    rulebook_id = value.get("rulebook_id")
+    semantic_digest = value.get("semantic_digest")
+    evaluation_id = value.get("evaluation_id")
+    if (
+        value.get("contract_version") != "flexible_rulebook_signal_v1"
+        or value.get("origin") != "flexible"
+        or ticker != value.get("ticker")
+        or horizon not in HORIZONS
+        or not isinstance(rulebook_id, str)
+        or not _FLEXIBLE_RULEBOOK_ID.fullmatch(rulebook_id)
+        or not isinstance(semantic_digest, str)
+        or not _DIGEST.fullmatch(semantic_digest)
+        or rulebook_id.removeprefix("frb2_") != semantic_digest
+        or not isinstance(evaluation_id, str)
+        or not _FLEXIBLE_EVALUATION_ID.fullmatch(evaluation_id)
+        or value.get("evaluation_label") != "Exploratory — gross"
+    ):
+        raise ValueError("V6 signal_reference identity is invalid")
+    metrics = value.get("metrics")
+    if not isinstance(metrics, Mapping) or set(metrics) != {"training", "test"}:
+        raise ValueError("V6 signal_reference metrics are invalid")
+    normalized_metrics: dict[str, dict[str, object]] = {}
+    for partition in ("training", "test"):
+        values = metrics[partition]
+        if not isinstance(values, Mapping) or set(values) != {"n", "win_rate", "profit_pct", "sharpe"}:
+            raise ValueError("V6 signal_reference metrics are invalid")
+        count = values.get("n")
+        if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+            raise ValueError("V6 signal_reference metrics are invalid")
+        normalized_metrics[partition] = copy.deepcopy(dict(values))
+    link_key = _hash({
+        "schema_version": 6,
+        "origin": "flexible",
+        "ticker": ticker,
+        "horizon": horizon,
+        "rulebook_id": rulebook_id,
+        "evaluation_id": evaluation_id,
+    })
+    return {
+        "schema_version": 6,
+        "contract_version": "flexible_rulebook_signal_v1",
+        "origin": "flexible",
+        "ticker": ticker,
+        "horizon": horizon,
+        "rulebook_id": rulebook_id,
+        "semantic_digest": semantic_digest,
+        "evaluation_id": evaluation_id,
+        "evaluation_label": "Exploratory — gross",
+        "metrics": normalized_metrics,
+        "link_keys": [link_key],
+    }
+
+
 def _legacy_signal_link_key(theme_variant: str, metric: str, certified_signal: Mapping[str, object]) -> str:
     if theme_variant not in THEME_VARIANTS or metric not in _LEGACY_CERTIFICATION_METRICS:
         raise ValueError("legacy signal reference identity is invalid")
@@ -304,6 +374,8 @@ def validate_position_snapshot(value: object) -> dict[str, object]:
         return validate_v4_position_snapshot(value)
     if value.get("schema_version") == 3:
         return validate_v3_position_snapshot(value)
+    if value.get("schema_version") == 6:
+        return validate_v6_position_snapshot(value)
     if value.get("schema_version") in (None, 2):
         return _normalize_legacy_reference(value)
     raise ValueError("signal_reference schema_version is unsupported")
@@ -320,7 +392,7 @@ def position_signal_link_keys(position: Mapping[str, object]) -> set[str]:
 
 def reference_metric_pairs(reference: Mapping[str, object]) -> tuple[tuple[str, str], ...]:
     normalized = validate_position_snapshot(reference)
-    if normalized.get("schema_version") in (3, 4, 5):
+    if normalized.get("schema_version") in (3, 4, 5, 6):
         return ()
     return tuple((str(normalized["theme_variant"]), metric) for metric in normalized["metrics"])
 
@@ -334,5 +406,5 @@ def signal_link_key(theme_variant: str, metric: str, certified_signal: Mapping[s
 __all__ = [
     "normalize_signal_reference", "position_signal_link_keys", "reference_metric_pairs",
     "signal_link_key", "validate_position_snapshot", "validate_v3_position_snapshot",
-    "validate_v4_position_snapshot", "validate_v5_position_snapshot",
+    "validate_v4_position_snapshot", "validate_v5_position_snapshot", "validate_v6_position_snapshot",
 ]

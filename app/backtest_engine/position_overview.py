@@ -196,11 +196,13 @@ def load_completed_trading_sessions(
     return sessions
 
 
-def _profit_values(
+def position_profit_values(
     buy_price: object,
     reference_price: object,
     quantity: object,
 ) -> tuple[int | None, float | None]:
+    """Return the shared raw P&L and percentage projection for one position."""
+
     try:
         buy = Decimal(int(buy_price))
         reference = Decimal(int(reference_price))
@@ -221,6 +223,16 @@ def _profit_values(
             return None, None
         multiplier = Decimal(numeric_quantity)
     return int(difference * multiplier), round(float(difference / buy * 100), 2)
+
+
+def _profit_values(
+    buy_price: object,
+    reference_price: object,
+    quantity: object,
+) -> tuple[int | None, float | None]:
+    """Retain the private compatibility alias for older overview callers."""
+
+    return position_profit_values(buy_price, reference_price, quantity)
 
 
 def _signal_set(position: Mapping[str, object]) -> str:
@@ -326,7 +338,7 @@ def summarize_positions(
                 buy_date < session_date <= reference_date
                 for session_date in sessions_by_ticker.get(ticker, ())
             )
-        profit_raw, profit_pct = _profit_values(
+        profit_raw, profit_pct = position_profit_values(
             position.get("actual_buy_price"), reference_price, position.get("quantity")
         )
         rows.append(
@@ -362,5 +374,6 @@ __all__ = [
     "load_all_positions",
     "load_completed_trading_sessions",
     "load_latest_close_prices",
+    "position_profit_values",
     "summarize_positions",
 ]

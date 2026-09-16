@@ -15,12 +15,12 @@ from commons.technical_analysis import (
     calculate_dimension_technical_score, calculate_adx, get_latest_adx_value,
 )
 from commons.price_utils import PRICE_OUTPUT_EXPORT, prepare_price_for_output
+from commons.trading_calendar import load_calendar_aligned_history
+from commons.ui_controls import read_only_dataframe_kwargs
 
 EXPORT_RANGE_UNITS = ("days", "months", "years")
-EXPORT_VISIBLE_KEY = "analyze_export_visible"
 EXPORT_CSV_KEY = "analyze_export_csv"
 EXPORT_FILENAME_KEY = "analyze_export_filename"
-EXPORT_FORM_LABEL = "Export form"
 
 
 def build_historical_context_query():
@@ -32,6 +32,29 @@ def build_historical_context_query():
         ORDER BY date ASC
     """)
     return str(query).replace(":ticker", "%(ticker)s")
+
+
+def load_historical_technical_context(ticker: str, engine) -> pd.DataFrame:
+    """Load full history, then remove non-VN-Index-session rows before scores."""
+
+    query = build_historical_context_query()
+    connection = engine.raw_connection()
+    try:
+        raw = pd.read_sql(query, connection, params={"ticker": ticker.upper()})
+    finally:
+        connection.close()
+    if raw.empty:
+        return raw
+    dates = pd.to_datetime(raw["date"], errors="coerce")
+    if dates.isna().any():
+        raise ValueError("historical technical context contains invalid dates")
+    filtered, _calendar, _outside = load_calendar_aligned_history(
+        engine,
+        ticker,
+        start=dates.min().date(),
+        end=dates.max().date(),
+    )
+    return filtered
 
 
 def build_historical_technical_score_table(df_full, short_ma, long_ma):
@@ -230,11 +253,6 @@ def format_export_dataframe(df, include_percentage_change, include_ohlc_volume=F
 def build_export_filename(ticker, range_value, range_unit):
     """Return deterministic CSV name for one export request."""
     return f"{ticker}_{range_value}_{range_unit}_price_history.csv"
-
-
-def get_export_form_container():
-    """Use Streamlit's native expander for accessible form collapse/expand."""
-    return st.expander(EXPORT_FORM_LABEL, expanded=True)
 
 
 # Function to analyze price movements
@@ -482,28 +500,21 @@ def analyze_page(engine):
         with col3:
             result_days = st.number_input("Result Day Range", min_value=1, value=10, step=1)
 
-        st.session_state.setdefault(EXPORT_VISIBLE_KEY, False)
         st.session_state.setdefault(EXPORT_CSV_KEY, None)
         st.session_state.setdefault(EXPORT_FILENAME_KEY, None)
 
-        if st.button("Export", key="analyze_export_button"):
-            st.session_state[EXPORT_VISIBLE_KEY] = True
-            st.session_state[EXPORT_CSV_KEY] = None
-            st.session_state[EXPORT_FILENAME_KEY] = None
-
-        if st.session_state[EXPORT_VISIBLE_KEY]:
-            with get_export_form_container():
-                with st.form("analyze_export_form"):
-                    export_ticker = st.text_input("Export Ticker Code", value=ticker)
-                    export_range = st.number_input(
-                        "Export Time Range", min_value=1, value=30, step=1
-                    )
-                    export_unit = st.selectbox("Export Time Unit", EXPORT_RANGE_UNITS)
-                    include_percentage_change = st.checkbox("Include Percentage Change")
-                    include_ohlc_volume = st.checkbox(
-                        "Include OHLC Prices and Trading Volume"
-                    )
-                    export_submitted = st.form_submit_button("Prepare CSV")
+        with st.popover("Export", icon=":material/download:"):
+            with st.form("analyze_export_form"):
+                export_ticker = st.text_input("Export Ticker Code", value=ticker)
+                export_range = st.number_input(
+                    "Export Time Range", min_value=1, value=30, step=1
+                )
+                export_unit = st.selectbox("Export Time Unit", EXPORT_RANGE_UNITS)
+                include_percentage_change = st.checkbox("Include Percentage Change")
+                include_ohlc_volume = st.checkbox(
+                    "Include OHLC Prices and Trading Volume"
+                )
+                export_submitted = st.form_submit_button("Prepare CSV")
 
             if export_submitted:
                 st.session_state[EXPORT_CSV_KEY] = None
@@ -551,7 +562,7 @@ def analyze_page(engine):
                     key="analyze_export_download",
                 )
         
-        if st.button("Analyze"):
+        if st.button("Analyze", icon=":material/query_stats:"):
             ticker = ticker.upper()
             
             # 1. Get summary stats, current delta, and date range from the common function
@@ -614,7 +625,7 @@ def analyze_page(engine):
                     })
                 
                 df_stats_display = pd.DataFrame(stats_data)
-                st.dataframe(df_stats_display, use_container_width=True)
+                st.dataframe(df_stats_display, **read_only_dataframe_kwargs())
             else:
                 st.write("No statistical data available.")
 
@@ -633,12 +644,7 @@ def analyze_page(engine):
                 
                 # Fetch full data for technical context in one go for efficiency
                 with st.spinner("Calculating historical technical scores..."):
-                    query_all = build_historical_context_query()
-                    conn = engine.raw_connection()
-                    try:
-                        df_full = pd.read_sql(query_all, conn, params={"ticker": ticker.upper()})
-                    finally:
-                        conn.close()
+                    df_full = load_historical_technical_context(ticker, engine)
                     
                     if not df_full.empty:
                         df_full['date'] = pd.to_datetime(df_full['date'])
@@ -706,7 +712,10 @@ def analyze_page(engine):
                 if not df_block.empty:
                     # Show Technical score and reorder columns for clarity
                     display_cols = ["no. events", "exact_delta", "Technical score", "result", "result_delta", "signal_date_range"]
-                    st.dataframe(df_block[display_cols], use_container_width=True, hide_index=True)
+                    st.dataframe(
+                        df_block[display_cols],
+                        **read_only_dataframe_kwargs(),
+                    )
                 else:
                     st.write("No events found matching the criteria.")
             
@@ -733,8 +742,7 @@ def analyze_page(engine):
                 ]
                 st.dataframe(
                     pd.DataFrame(report_rows),
-                    use_container_width=True,
-                    hide_index=True,
+                    **read_only_dataframe_kwargs(),
                 )
 
                 if adx_value is None:
@@ -777,7 +785,7 @@ def analyze_page(engine):
         with col2:
             p_result_days = st.number_input("Result Day Range", min_value=1, value=10, step=1, key="p_res")
             
-        if st.button("Analyze Portfolio"):
+        if st.button("Analyze Portfolio", icon=":material/account_balance:"):
             tickers = [t.strip().upper() for t in portfolio_input.split(",") if t.strip()]
             
             if not tickers:
@@ -819,6 +827,6 @@ def analyze_page(engine):
 
                     # Columns requested
                     cols = ["No", "ticker", "statistical trend", "possibility", "delta", "technical trend", "score", "final advice"]
-                    st.dataframe(df_results[cols], use_container_width=True, hide_index=True)
+                    st.dataframe(df_results[cols], **read_only_dataframe_kwargs())
                 else:
                     st.write("No valid results found for the given tickers.")

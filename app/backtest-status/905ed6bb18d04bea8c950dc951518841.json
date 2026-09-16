@@ -1,0 +1,51 @@
+{
+  "error_text": null,
+  "job_id": "905ed6bb18d04bea8c950dc951518841",
+  "output_paths": [
+    "backtest-result/ticker-signals/CTR/CTR_signals_midterm.json",
+    "backtest-result/ticker-signals/VGI/VGI_signals_midterm.json",
+    "backtest-result/ticker-signals/VTK/VTK_signals_midterm.json",
+    "backtest-result/ticker-signals/VTP/VTP_signals_midterm.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/CTR/CTR_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "CTR"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VGI/VGI_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "VGI"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VTK/VTK_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "VTK"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VTP/VTP_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "VTP"
+    }
+  ]
+}
