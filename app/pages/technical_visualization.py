@@ -5,15 +5,20 @@ from plotly.subplots import make_subplots
 
 from commons.technical_analysis import (
     MA_PAIRS_BY_TIMEFRAME,
-    build_technical_snapshot,
-    fetch_data,
 )
+from commons.technical_horizon import (
+    TECHNICAL_NATIVE_BAR_LIMIT,
+    build_horizon_technical_snapshot,
+    fetch_horizon_source,
+)
+from commons.ui_controls import read_only_dataframe_kwargs, utility_icon_button
 
 
 TECHNICAL_INDICATOR_TABS = (
     "Overview",
     "MA",
     "MA Cross",
+    "Alligator",
     "RSI",
     "Stochastic",
     "ADX",
@@ -22,6 +27,15 @@ TECHNICAL_INDICATOR_TABS = (
     "Bollinger Bands",
 )
 TECHNICAL_CHART_OPTIONS = TECHNICAL_INDICATOR_TABS[1:]
+TECHNICAL_RAW_HISTORY_KEY = "tech_raw_history"
+TECHNICAL_SESSION_KEYS = (
+    "tech_df",
+    "tech_ticker",
+    "tech_snapshot",
+    "tech_snapshot_params",
+    TECHNICAL_RAW_HISTORY_KEY,
+    "tech_result_indicator",
+)
 
 _INDICATOR_REPORT_NAMES = {
     "MA Cross": "MA cross",
@@ -31,6 +45,7 @@ _INDICATOR_REPORT_NAMES = {
 _INDICATOR_RULES = {
     "MA": "Sideways when the MA spread is below 2% of price.",
     "MA Cross": "Golden and Death cross events are evaluated separately from MA spread.",
+    "Alligator": "Causal shifted Lips, Teeth, and Jaw show the rulebook trend alignment.",
     "RSI": "RSI 70 is overbought and RSI 30 is oversold.",
     "Stochastic": "80/20 lines identify overbought and oversold zones.",
     "ADX": "ADX is a gate only; it is never a voting indicator.",
@@ -40,22 +55,32 @@ _INDICATOR_RULES = {
 }
 
 
-def get_indicator_chart_spec(indicator, short_ma, long_ma):
+def clear_technical_session_state(state) -> None:
+    """Remove only session values owned by the Technical Analysis page."""
+    for key in TECHNICAL_SESSION_KEYS:
+        state.pop(key, None)
+
+
+def get_indicator_chart_spec(indicator, short_ma, long_ma, ma_kind="SMA", rsi_period=14):
     """Return the single chart layer specification for one indicator."""
     specs = {
         "MA": {
             "kind": "overlay",
-            "columns": [f"SMA_{short_ma}", f"SMA_{long_ma}"],
+            "columns": [f"{ma_kind}_{short_ma}", f"{ma_kind}_{long_ma}"],
         },
         "MA Cross": {
             "kind": "overlay",
             "columns": [
-                f"SMA_{short_ma}",
-                f"SMA_{long_ma}",
+                f"{ma_kind}_{short_ma}",
+                f"{ma_kind}_{long_ma}",
                 f"cross_{short_ma}_{long_ma}",
             ],
         },
-        "RSI": {"kind": "panel", "columns": ["RSI_14"]},
+        "Alligator": {
+            "kind": "overlay",
+            "columns": ["ALLIGATOR_LIPS", "ALLIGATOR_TEETH", "ALLIGATOR_JAW"],
+        },
+        "RSI": {"kind": "panel", "columns": [f"RSI_{rsi_period}"]},
         "Stochastic": {"kind": "panel", "columns": ["%K", "%D"]},
         "ADX": {"kind": "panel", "columns": ["ADX_14", "DMP_14", "DMN_14"]},
         "OBV": {"kind": "panel", "columns": ["OBV"]},
@@ -126,7 +151,16 @@ def build_price_candlestick(df):
     )
 
 
-def _add_selected_indicator(fig, df, indicator, spec, row, short_ma, long_ma):
+def _add_selected_indicator(
+    fig,
+    df,
+    indicator,
+    spec,
+    row,
+    short_ma,
+    long_ma,
+    ma_kind="SMA",
+):
     """Add exactly one selected indicator layer to the existing base chart."""
     if spec is None:
         return
@@ -137,14 +171,14 @@ def _add_selected_indicator(fig, df, indicator, spec, row, short_ma, long_ma):
 
     x_values = df["date"]
     if indicator in ("MA", "MA Cross"):
-        short_col = f"SMA_{short_ma}"
-        long_col = f"SMA_{long_ma}"
+        short_col = f"{ma_kind}_{short_ma}"
+        long_col = f"{ma_kind}_{long_ma}"
         fig.add_trace(
             go.Scatter(
                 x=x_values,
                 y=df[short_col],
                 mode="lines",
-                name=f"SMA {short_ma}",
+                name=f"{ma_kind} {short_ma}",
                 line=dict(color="orange", width=1),
             ),
             row=1,
@@ -155,7 +189,7 @@ def _add_selected_indicator(fig, df, indicator, spec, row, short_ma, long_ma):
                 x=x_values,
                 y=df[long_col],
                 mode="lines",
-                name=f"SMA {long_ma}",
+                name=f"{ma_kind} {long_ma}",
                 line=dict(color="blue", width=1),
             ),
             row=1,
@@ -192,8 +226,28 @@ def _add_selected_indicator(fig, df, indicator, spec, row, short_ma, long_ma):
                 )
         return
 
+    if indicator == "Alligator":
+        for column, name, color in (
+            ("ALLIGATOR_LIPS", "Alligator Lips", "green"),
+            ("ALLIGATOR_TEETH", "Alligator Teeth", "red"),
+            ("ALLIGATOR_JAW", "Alligator Jaw", "blue"),
+        ):
+            fig.add_trace(
+                go.Scatter(
+                    x=x_values,
+                    y=df[column],
+                    mode="lines",
+                    name=name,
+                    line=dict(color=color, width=1),
+                ),
+                row=1,
+                col=1,
+            )
+        return
+
     line_styles = {
         "RSI_14": ("RSI 14", "purple"),
+        "RSI_9": ("RSI 9", "purple"),
         "%K": ("%K", "purple"),
         "%D": ("%D", "red"),
         "ADX_14": ("ADX 14", "black"),
@@ -236,73 +290,82 @@ def _add_selected_indicator(fig, df, indicator, spec, row, short_ma, long_ma):
 def technical_analysis_page(engine):
     st.header("Technical Analysis")
 
-    tech_df_key = "tech_df"
-    tech_ticker_key = "tech_ticker"
-    tech_snapshot_key = "tech_snapshot"
-    tech_snapshot_params_key = "tech_snapshot_params"
+    tech_df_key, tech_ticker_key, tech_snapshot_key, tech_snapshot_params_key = (
+        TECHNICAL_SESSION_KEYS[:4]
+    )
 
-    if tech_df_key not in st.session_state:
-        st.session_state[tech_df_key] = None
-    if tech_ticker_key not in st.session_state:
-        st.session_state[tech_ticker_key] = ""
-    if tech_snapshot_key not in st.session_state:
-        st.session_state[tech_snapshot_key] = None
-    if tech_snapshot_params_key not in st.session_state:
-        st.session_state[tech_snapshot_params_key] = None
+    st.session_state.setdefault(tech_df_key, None)
+    st.session_state.setdefault(tech_ticker_key, "")
+    st.session_state.setdefault(tech_snapshot_key, None)
+    st.session_state.setdefault(tech_snapshot_params_key, None)
+    raw_history = st.session_state.setdefault(TECHNICAL_RAW_HISTORY_KEY, {})
+    if not isinstance(raw_history, dict):
+        raw_history = {}
+        st.session_state[TECHNICAL_RAW_HISTORY_KEY] = raw_history
 
     def clear_cache():
+        clear_technical_session_state(st.session_state)
         st.session_state[tech_df_key] = None
         st.session_state[tech_ticker_key] = ""
         st.session_state[tech_snapshot_key] = None
         st.session_state[tech_snapshot_params_key] = None
+        st.session_state[TECHNICAL_RAW_HISTORY_KEY] = {}
 
-    if st.sidebar.button("Clear Cache", key="clear_cache_sidebar"):
+    ticker_column, horizon_column, analyze_column, clear_column = st.columns((3, 2, 1, 1))
+    with ticker_column:
+        ticker = st.text_input("Ticker", value="FPT").strip().upper()
+    with horizon_column:
+        horizon_label = st.selectbox("Horizon", ("Swing", "Mid-term"))
+    with analyze_column:
+        analyze = st.button("Analyze", icon=":material/query_stats:")
+    with clear_column:
+        clear = utility_icon_button(
+            "clear_cache",
+            help="Clear Technical Analyze cached data",
+            key="technical_clear_cache",
+        )
+
+    if clear:
         clear_cache()
 
-    with st.sidebar:
-        st.header("Input Options")
-        ticker = st.text_input("Ticker Code", value="FPT").upper()
-        timeframe = st.selectbox("Timeframe", ["Day", "Week", "Month"], index=0)
-        limit = st.number_input("Max Time (Lookback)", min_value=10, value=100, step=10)
+    current_params = (ticker, horizon_label, TECHNICAL_NATIVE_BAR_LIMIT)
 
-        st.subheader("Chart Indicator")
-        chart_indicator = st.selectbox(
-            "Show one indicator",
-            options=TECHNICAL_CHART_OPTIONS,
-            index=0,
-        )
-
-        pair_options = get_ma_pair_options(timeframe)
-        selected_pair_label = st.selectbox(
-            "MA Cross Pair",
-            options=pair_options,
-            index=0,
-            disabled=not pair_options,
-        )
-        if st.button("Clear Cache", key="clear_cache_input"):
+    if analyze:
+        if not ticker:
             clear_cache()
-
-    selected_pair = parse_ma_pair(selected_pair_label)
-    short_ma, long_ma = selected_pair if selected_pair else (0, 0)
-    current_params = (ticker, timeframe, int(limit), short_ma, long_ma)
-
-    if st.button("Analyze"):
-        data_key = f"{ticker}_{timeframe}_{limit}"
-        if st.session_state.get(data_key) is None:
-            with st.spinner("Fetching data..."):
-                raw_df = fetch_data(ticker, timeframe, limit, engine)
-                st.session_state[data_key] = raw_df
-        else:
-            raw_df = st.session_state[data_key]
-
-        st.session_state[tech_ticker_key] = ticker
-        if raw_df.empty:
-            st.session_state[tech_df_key] = None
-            st.session_state[tech_snapshot_key] = None
-            st.warning(f"No data found for {ticker} with timeframe {timeframe}.")
+            st.warning("Enter a ticker before analyzing.")
             return
 
-        snapshot = build_technical_snapshot(raw_df, short_ma, long_ma)
+        raw_history = st.session_state[TECHNICAL_RAW_HISTORY_KEY]
+        raw_df = raw_history.get(current_params)
+        try:
+            if raw_df is None:
+                with st.spinner("Fetching horizon-native data..."):
+                    raw_df = fetch_horizon_source(ticker, horizon_label, engine)
+                    raw_history[current_params] = raw_df
+            if raw_df.empty:
+                clear_cache()
+                st.warning(f"No data found for {ticker}.")
+                return
+            with st.spinner("Calculating technical indicators..."):
+                snapshot = build_horizon_technical_snapshot(raw_df, horizon_label)
+        except (KeyError, OSError, ValueError) as error:
+            clear_cache()
+            st.warning(f"Technical analysis is unavailable: {error}")
+            return
+        except Exception:
+            # Raw DBAPI drivers can raise vendor-specific errors that are not
+            # shared by SQLAlchemy. Keep this interactive analysis page safe
+            # and avoid displaying implementation details to the user.
+            clear_cache()
+            st.warning("Technical analysis is unavailable. Check ticker data and try again.")
+            return
+
+        if snapshot["data"].empty:
+            clear_cache()
+            st.warning(f"No completed {horizon_label} bars are available for {ticker}.")
+            return
+        st.session_state[tech_ticker_key] = ticker
         st.session_state[tech_snapshot_key] = snapshot
         st.session_state[tech_snapshot_params_key] = current_params
         st.session_state[tech_df_key] = snapshot["data"]
@@ -313,13 +376,30 @@ def technical_analysis_page(engine):
 
     df = snapshot["data"]
     report_by_name = {record["indicator"]: record for record in snapshot["report"]}
-    st.subheader(f"Data for {ticker} ({timeframe})")
+    profile = snapshot["profile"]
+    short_ma = profile["short_ma"]
+    long_ma = profile["long_ma"]
+    ma_kind = profile["ma_kind"]
+    rsi_period = profile["rsi_period"]
+    st.subheader(f"Data for {ticker} ({horizon_label})")
 
     with st.expander("View Raw Data"):
         st.caption("Price values shown in k VND; volume remains raw shares.")
-        st.dataframe(df, use_container_width=True)
+        st.dataframe(df, **read_only_dataframe_kwargs())
 
-    spec = get_indicator_chart_spec(chart_indicator, short_ma, long_ma)
+    chart_indicator = st.selectbox(
+        "Show one indicator",
+        options=TECHNICAL_CHART_OPTIONS,
+        index=0,
+        key="tech_result_indicator",
+    )
+    spec = get_indicator_chart_spec(
+        chart_indicator,
+        short_ma,
+        long_ma,
+        ma_kind=ma_kind,
+        rsi_period=rsi_period,
+    )
     panel_selected = spec is not None and spec["kind"] == "panel"
     rows = 3 if panel_selected else 2
     row_heights = [0.55, 0.2, 0.25] if panel_selected else [0.7, 0.3]
@@ -354,9 +434,10 @@ def technical_analysis_page(engine):
         3,
         short_ma,
         long_ma,
+        ma_kind=ma_kind,
     )
 
-    if timeframe == "Day" and not df.empty:
+    if profile["horizon"] == "swing" and not df.empty:
         all_dates = pd.date_range(start=df["date"].iloc[0], end=df["date"].iloc[-1])
         observed_dates = {date.strftime("%Y-%m-%d") for date in df["date"]}
         missing_dates = [
@@ -370,7 +451,7 @@ def technical_analysis_page(engine):
     fig.update_layout(xaxis_rangeslider_visible=False, height=chart_height, showlegend=True)
     fig.update_yaxes(title_text="Price (k VND)", row=1, col=1)
     st.subheader(f"Price, Volume & {chart_indicator}")
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     st.subheader("Technical Indicators Details")
     tabs = st.tabs(TECHNICAL_INDICATOR_TABS)
@@ -386,7 +467,7 @@ def technical_analysis_page(engine):
             }
             for record in snapshot["report"]
         ]
-        st.dataframe(pd.DataFrame(overview_rows), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(overview_rows), **read_only_dataframe_kwargs())
         adx_value = snapshot["adx_value"]
         if adx_value is None:
             st.info("ADX gate not applied because ADX is unavailable.")
@@ -415,7 +496,13 @@ def technical_analysis_page(engine):
                 else:
                     st.info("Gate not reducing trend-direction contribution.")
 
-            detail_spec = get_indicator_chart_spec(indicator, short_ma, long_ma)
+            detail_spec = get_indicator_chart_spec(
+                indicator,
+                short_ma,
+                long_ma,
+                ma_kind=ma_kind,
+                rsi_period=rsi_period,
+            )
             display_columns = ["date"] + [
                 column for column in detail_spec["columns"] if column in df.columns
             ]
@@ -424,6 +511,5 @@ def technical_analysis_page(engine):
             else:
                 st.dataframe(
                     df[display_columns].tail(20).sort_values("date", ascending=False),
-                    use_container_width=True,
-                    hide_index=True,
+                    **read_only_dataframe_kwargs(),
                 )

@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import date, datetime
+from collections.abc import Sequence
 from typing import Optional
 
 import pandas as pd
@@ -401,3 +402,40 @@ def load_ticker_history(
         )
     finally:
         connection.close()
+
+
+def load_lifetime_date_bounds(
+    tickers: Sequence[str],
+    engine,
+) -> tuple[date, date]:
+    """Return the available bounds for selected tickers on VN-Index sessions."""
+
+    if isinstance(tickers, (str, bytes)):
+        raise ValueError("tickers must be a sequence")
+    normalized = tuple(dict.fromkeys(str(ticker).strip().upper() for ticker in tickers))
+    if not normalized or any(not ticker for ticker in normalized):
+        raise ValueError("tickers must contain at least one non-empty value")
+    query = text(
+        """
+        SELECT MIN(source.date) AS start_date, MAX(source.date) AS end_date
+        FROM trading_data AS source
+        WHERE source.ticker = ANY(%(tickers)s)
+          AND EXISTS (
+              SELECT 1
+              FROM trading_data AS vnindex
+              WHERE vnindex.ticker = 'VNINDEX'
+                AND vnindex.date = source.date
+          )
+        """
+    )
+    connection = engine.raw_connection()
+    try:
+        result = pd.read_sql(query.text, connection, params={"tickers": list(normalized)})
+    finally:
+        connection.close()
+    if result.empty or result.iloc[0][["start_date", "end_date"]].isna().any():
+        raise ValueError("Lifetime range has no ticker history on VN-Index trading sessions.")
+    return (
+        pd.Timestamp(result.iloc[0]["start_date"]).date(),
+        pd.Timestamp(result.iloc[0]["end_date"]).date(),
+    )

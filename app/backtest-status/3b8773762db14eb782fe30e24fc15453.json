@@ -1,0 +1,167 @@
+{
+  "error_text": null,
+  "job_id": "3b8773762db14eb782fe30e24fc15453",
+  "output_paths": [
+    "backtest-result/ticker-signals/HSG/HSG_signals_midterm.json",
+    "backtest-result/ticker-signals/HT1/HT1_signals_midterm.json",
+    "backtest-result/ticker-signals/IDC/IDC_signals_midterm.json",
+    "backtest-result/ticker-signals/IMP/IMP_signals_midterm.json",
+    "backtest-result/ticker-signals/KBC/KBC_signals_midterm.json",
+    "backtest-result/ticker-signals/KDH/KDH_signals_midterm.json",
+    "backtest-result/ticker-signals/LDG/LDG_signals_midterm.json",
+    "backtest-result/ticker-signals/LTG/LTG_signals_midterm.json",
+    "backtest-result/ticker-signals/MBB/MBB_signals_midterm.json",
+    "backtest-result/ticker-signals/MBS/MBS_signals_midterm.json",
+    "backtest-result/ticker-signals/MCH/MCH_signals_midterm.json",
+    "backtest-result/ticker-signals/MML/MML_signals_midterm.json",
+    "backtest-result/ticker-signals/MSN/MSN_signals_midterm.json",
+    "backtest-result/ticker-signals/MSR/MSR_signals_midterm.json",
+    "backtest-result/ticker-signals/MWG/MWG_signals_midterm.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/HSG/HSG_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "HSG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/HT1/HT1_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "HT1"
+    },
+    {
+      "attempts": 2,
+      "error_texts": [
+        "ValueError: invalid backtest data: high contains non-positive prices",
+        "ValueError: invalid backtest data: high contains non-positive prices"
+      ],
+      "output_paths": [
+        "backtest-result/ticker-signals/IDC/IDC_signals_midterm.json"
+      ],
+      "state": "failed",
+      "ticker": "IDC"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/IMP/IMP_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "IMP"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/KBC/KBC_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "KBC"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/KDH/KDH_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "KDH"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/LDG/LDG_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "LDG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/LTG/LTG_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "LTG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/MBB/MBB_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "MBB"
+    },
+    {
+      "attempts": 2,
+      "error_texts": [
+        "ValueError: invalid backtest data: high contains non-positive prices",
+        "ValueError: invalid backtest data: high contains non-positive prices"
+      ],
+      "output_paths": [
+        "backtest-result/ticker-signals/MBS/MBS_signals_midterm.json"
+      ],
+      "state": "failed",
+      "ticker": "MBS"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/MCH/MCH_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "MCH"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/MML/MML_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "MML"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/MSN/MSN_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "MSN"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/MSR/MSR_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "MSR"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/MWG/MWG_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "MWG"
+    }
+  ]
+}

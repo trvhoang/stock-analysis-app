@@ -1,0 +1,25 @@
+{
+  "history": [
+    {
+      "actual_buy_price": 72000,
+      "actual_sell_price": null,
+      "buy_date": "2026-08-21",
+      "certified_signal": null,
+      "closed_at": null,
+      "entry_context": null,
+      "id": "a12e4071b9e84c10a37861ce31701aea",
+      "opened_at": "2026-09-06T15:19:03.458491+07:00",
+      "origin": "current_positions",
+      "quantity": null,
+      "risk_snapshot": null,
+      "risk_suggestion_text": "Swing: 50.0% - medium\nMid-term: 75.0% - high",
+      "sell_date": null,
+      "sell_reason": null,
+      "signal_reference": null,
+      "status": "open",
+      "ticker": "FPT"
+    }
+  ],
+  "schema_version": 1,
+  "ticker": "FPT"
+}

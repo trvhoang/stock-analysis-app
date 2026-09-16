@@ -43,6 +43,8 @@ def _normalize_group_name(value: object) -> str | None:
     if not isinstance(value, str):
         raise ValueError("Group must be text")
     normalized = value.strip().upper()
+    if normalized == "ALL":
+        raise ValueError("ALL is reserved for the virtual Group selector")
     return None if not normalized or normalized == "N/A" else normalized
 
 
@@ -135,9 +137,14 @@ def _recover_group_move(group_dir: Path) -> None:
     payload = json.loads(journal.read_text(encoding="utf-8"))
     if not isinstance(payload, Mapping) or payload.get("schema_version") != 1:
         raise ValueError("Group move journal is invalid")
-    _journal_entries(payload.get("before"), group_dir)
-    for path, group_payload in _journal_entries(payload.get("after"), group_dir):
+    before = _journal_entries(payload.get("before"), group_dir)
+    after = _journal_entries(payload.get("after"), group_dir)
+    for path, group_payload in after:
         _write_json_atomically(path, group_payload)
+    written_paths = {path.resolve() for path, _ in after}
+    for path, _ in before:
+        if path.resolve() not in written_paths:
+            path.unlink(missing_ok=True)
     journal.unlink()
 
 
@@ -163,7 +170,7 @@ def groups_for_ticker(ticker: str, signal_dir: str = DEFAULT_SIGNAL_DIR) -> tupl
 
 
 def list_validation_group_choices(signal_dir: str = DEFAULT_SIGNAL_DIR) -> tuple[str, ...]:
-    return ("-", "N/A", *(group.group_name for group in list_groups(signal_dir)))
+    return ("-", "N/A", "ALL", *(group.group_name for group in list_groups(signal_dir)))
 
 
 def _artifact_tickers(signal_root: Path) -> tuple[str, ...]:
@@ -204,6 +211,11 @@ def resolve_group_tickers(selection: str, signal_dir: str = DEFAULT_SIGNAL_DIR) 
         raise ValueError("Group selection must be a named Group or N/A")
     root = ensure_result_root(signal_dir)
     groups = list_groups(str(root))
+    if normalized == "ALL":
+        return tuple(sorted({
+            *_artifact_tickers(root),
+            *(ticker for group in groups for ticker in group.tickers),
+        }))
     if normalized == "N/A":
         members = {ticker for group in groups for ticker in group.tickers}
         return tuple(ticker for ticker in _artifact_tickers(root) if ticker not in members)
@@ -215,6 +227,147 @@ def resolve_group_tickers(selection: str, signal_dir: str = DEFAULT_SIGNAL_DIR) 
 
 def assign_ticker_group(ticker: str, group_name: str, signal_dir: str = DEFAULT_SIGNAL_DIR) -> None:
     assign_tickers_group((ticker,), group_name, signal_dir)
+
+
+def _write_group_mutation(
+    group_dir: Path,
+    before: Sequence[SignalGroup],
+    after: Sequence[SignalGroup],
+) -> None:
+    """Journal a recoverable create, rename, replace, or delete mutation."""
+
+    _write_json_atomically(
+        group_dir / _GROUP_JOURNAL_NAME,
+        {
+            "schema_version": 1,
+            "before": [
+                {"path": str(group.path.resolve()), "payload": _group_payload(group)}
+                for group in before
+            ],
+            "after": [
+                {"path": str(group.path.resolve()), "payload": _group_payload(group)}
+                for group in after
+            ],
+        },
+    )
+    _recover_group_move(group_dir)
+
+
+def create_group(
+    group_name: str,
+    tickers: Sequence[str] = (),
+    signal_dir: str = DEFAULT_SIGNAL_DIR,
+) -> SignalGroup:
+    """Create one named Group, allowing an explicitly empty member list."""
+
+    if isinstance(tickers, (str, bytes)) or not isinstance(tickers, Sequence):
+        raise ValueError("Group tickers must be a sequence")
+    normalized_name = _normalize_group_name(group_name)
+    if normalized_name is None:
+        raise ValueError("Group must be a named Group")
+    normalized_tickers = tuple(sorted({_normalize_ticker(ticker) for ticker in tickers}))
+    root = ensure_result_root(signal_dir)
+    group_dir = _group_dir(root)
+    _recover_group_move(group_dir)
+    groups = _load_groups(group_dir)
+    if any(group.group_name == normalized_name for group in groups):
+        raise ValueError(f"Group already exists: {normalized_name}")
+    group_id = str(uuid.uuid4())
+    created = SignalGroup(
+        group_id,
+        normalized_name,
+        normalized_tickers,
+        {},
+        group_dir / f"{_group_slug(normalized_name)}-{group_id}.json",
+    )
+    _write_group_mutation(group_dir, (), (created,))
+    return created
+
+
+def rename_group(
+    group_name: str,
+    new_group_name: str,
+    signal_dir: str = DEFAULT_SIGNAL_DIR,
+) -> SignalGroup:
+    """Rename one Group while preserving its UUID, metadata, and members."""
+
+    normalized_name = _normalize_group_name(group_name)
+    normalized_new_name = _normalize_group_name(new_group_name)
+    if normalized_name is None or normalized_new_name is None:
+        raise ValueError("Group must be a named Group")
+    root = ensure_result_root(signal_dir)
+    group_dir = _group_dir(root)
+    _recover_group_move(group_dir)
+    groups = _load_groups(group_dir)
+    current = next((group for group in groups if group.group_name == normalized_name), None)
+    if current is None:
+        raise ValueError("Group does not exist")
+    if normalized_new_name != normalized_name and any(
+        group.group_name == normalized_new_name for group in groups
+    ):
+        raise ValueError(f"Group already exists: {normalized_new_name}")
+    renamed = SignalGroup(
+        current.group_id,
+        normalized_new_name,
+        current.tickers,
+        current.metadata,
+        group_dir / f"{_group_slug(normalized_new_name)}-{current.group_id}.json",
+    )
+    _write_group_mutation(group_dir, (current,), (renamed,))
+    return renamed
+
+
+def update_group(
+    group_name: str,
+    new_group_name: str,
+    tickers: Sequence[str],
+    signal_dir: str = DEFAULT_SIGNAL_DIR,
+) -> SignalGroup:
+    """Atomically rename one Group and replace all its members together."""
+
+    if isinstance(tickers, (str, bytes)) or not isinstance(tickers, Sequence):
+        raise ValueError("Group tickers must be a sequence")
+    normalized_name = _normalize_group_name(group_name)
+    normalized_new_name = _normalize_group_name(new_group_name)
+    if normalized_name is None or normalized_new_name is None:
+        raise ValueError("Group must be a named Group")
+    normalized_tickers = tuple(sorted({_normalize_ticker(ticker) for ticker in tickers}))
+    root = ensure_result_root(signal_dir)
+    group_dir = _group_dir(root)
+    _recover_group_move(group_dir)
+    groups = _load_groups(group_dir)
+    current = next((group for group in groups if group.group_name == normalized_name), None)
+    if current is None:
+        raise ValueError("Group does not exist")
+    if normalized_new_name != normalized_name and any(
+        group.group_name == normalized_new_name for group in groups
+    ):
+        raise ValueError(f"Group already exists: {normalized_new_name}")
+    updated = SignalGroup(
+        current.group_id,
+        normalized_new_name,
+        normalized_tickers,
+        current.metadata,
+        group_dir / f"{_group_slug(normalized_new_name)}-{current.group_id}.json",
+    )
+    _write_group_mutation(group_dir, (current,), (updated,))
+    return updated
+
+
+def delete_group(group_name: str, signal_dir: str = DEFAULT_SIGNAL_DIR) -> None:
+    """Delete one Group sidecar only; signals and positions are untouched."""
+
+    normalized_name = _normalize_group_name(group_name)
+    if normalized_name is None:
+        raise ValueError("Group must be a named Group")
+    root = ensure_result_root(signal_dir)
+    group_dir = _group_dir(root)
+    _recover_group_move(group_dir)
+    groups = _load_groups(group_dir)
+    current = next((group for group in groups if group.group_name == normalized_name), None)
+    if current is None:
+        raise ValueError("Group does not exist")
+    _write_group_mutation(group_dir, (current,), ())
 
 
 def assign_tickers_group(tickers: Sequence[str], group_name: str, signal_dir: str = DEFAULT_SIGNAL_DIR) -> None:
@@ -280,6 +433,8 @@ def replace_group_tickers(
 
 
 __all__ = [
-    "SignalGroup", "assign_ticker_group", "assign_tickers_group", "ensure_result_root",
-    "groups_for_ticker", "list_groups", "list_validation_group_choices", "replace_group_tickers", "resolve_group_tickers",
+    "SignalGroup", "assign_ticker_group", "assign_tickers_group", "create_group",
+    "delete_group", "ensure_result_root", "groups_for_ticker", "list_groups",
+    "list_validation_group_choices", "rename_group", "replace_group_tickers",
+    "resolve_group_tickers", "update_group",
 ]

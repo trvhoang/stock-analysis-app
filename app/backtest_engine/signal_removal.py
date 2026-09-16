@@ -1,4 +1,4 @@
-"""Crash-safe removal of selected schema-5 exploratory candidates."""
+"""Crash-safe origin-aware removal of selected exploratory candidates."""
 
 from __future__ import annotations
 
@@ -9,6 +9,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .config import DEFAULT_SIGNAL_DIR, HORIZONS, _normalize_ticker
+from .flexible_adapter import (
+    flexible_signal_artifact_path,
+    load_flexible_signal_artifact,
+    replace_flexible_signal_artifact,
+    validate_flexible_signal_artifact,
+)
 from .persistence import (
     _candidate_rank,
     _write_json_atomically,
@@ -24,15 +30,19 @@ _JOURNAL_FILENAME = ".backtest-signal-removal-transaction.json"
 _JOURNAL_SCHEMA_VERSION = 1
 _JOURNAL_OPERATION = "backtest_signal_removal"
 _FINAL_REMOVAL_REASON = "All saved candidates were removed by user."
+_FLEXIBLE_ORIGIN = "flexible"
+_STANDARD_ORIGIN = "standard"
+_ORIGINS = {_STANDARD_ORIGIN, _FLEXIBLE_ORIGIN}
 
 
 @dataclass(frozen=True, order=True)
 class SignalCandidateKey:
-    """One immutable schema-5 candidate identity."""
+    """One immutable Standard or Flexible candidate identity."""
 
     ticker: str
     horizon: str
     rulebook_id: str
+    origin: str = _STANDARD_ORIGIN
 
 
 @dataclass(frozen=True)
@@ -48,7 +58,7 @@ class SignalRemovalBlockedError(ValueError):
     def __init__(self, protected: Iterable[SignalCandidateKey]):
         self.protected = tuple(sorted(set(protected)))
         formatted = ", ".join(
-            f"{item.ticker} / {item.horizon} / {item.rulebook_id}"
+            f"{item.origin} / {item.ticker} / {item.horizon} / {item.rulebook_id}"
             for item in self.protected
         )
         super().__init__(f"saved positions reference selected signal candidates: {formatted}")
@@ -60,15 +70,25 @@ def _candidate_key(value: SignalCandidateKey | Mapping[str, object]) -> SignalCa
             "ticker": value.ticker,
             "horizon": value.horizon,
             "rulebook_id": value.rulebook_id,
+            "origin": value.origin,
         }
-    if not isinstance(value, Mapping) or set(value) != {"ticker", "horizon", "rulebook_id"}:
+    if not isinstance(value, Mapping) or set(value) not in (
+        {"ticker", "horizon", "rulebook_id"},
+        {"ticker", "horizon", "rulebook_id", "origin"},
+    ):
         raise ValueError("signal candidate selection is invalid")
     ticker = _normalize_ticker(value["ticker"])
     horizon = value["horizon"]
     rulebook_id = value["rulebook_id"]
-    if horizon not in HORIZONS or not isinstance(rulebook_id, str) or not rulebook_id:
+    origin = value.get("origin", _FLEXIBLE_ORIGIN if isinstance(rulebook_id, str) and rulebook_id.startswith("frb2_") else _STANDARD_ORIGIN)
+    if (
+        horizon not in HORIZONS
+        or not isinstance(rulebook_id, str)
+        or not rulebook_id
+        or origin not in _ORIGINS
+    ):
         raise ValueError("signal candidate selection is invalid")
-    return SignalCandidateKey(ticker, horizon, rulebook_id)
+    return SignalCandidateKey(ticker, horizon, rulebook_id, origin)
 
 
 def _normalized_selections(
@@ -95,6 +115,8 @@ def _replacement_documents(
 ) -> tuple[dict[str, object], ...]:
     selected_ids: dict[tuple[str, str], set[str]] = {}
     for selection in selections:
+        if selection.origin != _STANDARD_ORIGIN:
+            raise ValueError("schema-5 replacement requires Standard selections")
         selected_ids.setdefault((selection.ticker, selection.horizon), set()).add(selection.rulebook_id)
 
     entries: list[dict[str, object]] = []
@@ -141,6 +163,37 @@ def _replacement_documents(
     return tuple(entries)
 
 
+def _flexible_replacement_documents(
+    selections: tuple[SignalCandidateKey, ...],
+    signal_dir: str,
+) -> tuple[dict[str, object], ...]:
+    """Make one valid terminal empty document per selected Flexible artifact."""
+
+    entries: list[dict[str, object]] = []
+    for selection in selections:
+        if selection.origin != _FLEXIBLE_ORIGIN:
+            raise ValueError("Flexible replacement requires Flexible selections")
+        path = flexible_signal_artifact_path(
+            selection.ticker, selection.horizon, selection.rulebook_id, signal_dir,
+        )
+        before = load_flexible_signal_artifact(path)
+        if before["terminal_state"] != "success":
+            raise ValueError(
+                f"{selection.ticker} / {selection.horizon} does not contain a removable Flexible signal"
+            )
+        after = copy.deepcopy(before)
+        after.update({
+            "terminal_state": "empty",
+            "removal_reason": _FINAL_REMOVAL_REASON,
+            "current_signal_events": [],
+        })
+        # Validate all replacements before changing any selected Standard or
+        # Flexible artifact.  The actual write is one atomic file replacement.
+        validate_flexible_signal_artifact(after)
+        entries.append({"before": before, "after": after})
+    return tuple(entries)
+
+
 def _protected_selections(
     selections: tuple[SignalCandidateKey, ...],
     positions_dir: str,
@@ -152,12 +205,17 @@ def _protected_selections(
     protected = set()
     for position in records:
         reference = position.get("signal_reference")
-        if not isinstance(reference, Mapping) or reference.get("schema_version") != 5:
+        if not isinstance(reference, Mapping):
+            continue
+        schema_version = reference.get("schema_version")
+        origin = reference.get("origin", _STANDARD_ORIGIN if schema_version == 5 else None)
+        if schema_version not in {5, 6} or origin not in _ORIGINS:
             continue
         key = SignalCandidateKey(
             str(reference.get("ticker", "")),
             str(reference.get("horizon", "")),
             str(reference.get("rulebook_id", "")),
+            str(origin),
         )
         if key in requested:
             protected.add(key)
@@ -258,21 +316,27 @@ def remove_saved_signal_candidates(
 
     recover_pending_signal_removal(signal_dir)
     normalized = _normalized_selections(selections)
-    entries = _replacement_documents(normalized, signal_dir)
+    standard = tuple(item for item in normalized if item.origin == _STANDARD_ORIGIN)
+    flexible = tuple(item for item in normalized if item.origin == _FLEXIBLE_ORIGIN)
+    entries = _replacement_documents(standard, signal_dir) if standard else ()
+    flexible_entries = _flexible_replacement_documents(flexible, signal_dir) if flexible else ()
     protected = _protected_selections(normalized, positions_dir)
     if protected:
         raise SignalRemovalBlockedError(protected)
-    journal = {
-        "schema_version": _JOURNAL_SCHEMA_VERSION,
-        "operation": _JOURNAL_OPERATION,
-        "entries": list(entries),
-    }
-    _write_json_atomically(_journal_path(signal_dir), journal)
-    for entry in entries:
-        replace_validated_rulebook_result(
-            entry["ticker"], entry["horizon"], entry["after"], signal_dir,
-        )
-    _remove_journal(signal_dir)
+    if entries:
+        journal = {
+            "schema_version": _JOURNAL_SCHEMA_VERSION,
+            "operation": _JOURNAL_OPERATION,
+            "entries": list(entries),
+        }
+        _write_json_atomically(_journal_path(signal_dir), journal)
+        for entry in entries:
+            replace_validated_rulebook_result(
+                entry["ticker"], entry["horizon"], entry["after"], signal_dir,
+            )
+        _remove_journal(signal_dir)
+    for entry in flexible_entries:
+        replace_flexible_signal_artifact(entry["after"], signal_dir)
     return SignalRemovalResult(removed=normalized)
 
 

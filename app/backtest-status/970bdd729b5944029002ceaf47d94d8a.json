@@ -1,0 +1,170 @@
+{
+  "error_text": null,
+  "job_id": "970bdd729b5944029002ceaf47d94d8a",
+  "output_paths": [
+    "backtest-result/ticker-signals/HSG/HSG_signals_swing.json",
+    "backtest-result/ticker-signals/MBB/MBB_signals_swing.json",
+    "backtest-result/ticker-signals/MBS/MBS_signals_swing.json",
+    "backtest-result/ticker-signals/MCH/MCH_signals_swing.json",
+    "backtest-result/ticker-signals/MML/MML_signals_swing.json",
+    "backtest-result/ticker-signals/MSN/MSN_signals_swing.json",
+    "backtest-result/ticker-signals/MSR/MSR_signals_swing.json",
+    "backtest-result/ticker-signals/MWG/MWG_signals_swing.json",
+    "backtest-result/ticker-signals/NKG/NKG_signals_swing.json",
+    "backtest-result/ticker-signals/PLX/PLX_signals_swing.json",
+    "backtest-result/ticker-signals/PVD/PVD_signals_swing.json",
+    "backtest-result/ticker-signals/PVS/PVS_signals_swing.json",
+    "backtest-result/ticker-signals/PVT/PVT_signals_swing.json",
+    "backtest-result/ticker-signals/SHB/SHB_signals_swing.json",
+    "backtest-result/ticker-signals/SHS/SHS_signals_swing.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/HSG/HSG_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "HSG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/MBB/MBB_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "MBB"
+    },
+    {
+      "attempts": 2,
+      "error_texts": [
+        "ValueError: invalid backtest data: high contains non-positive prices",
+        "ValueError: invalid backtest data: high contains non-positive prices"
+      ],
+      "output_paths": [
+        "backtest-result/ticker-signals/MBS/MBS_signals_swing.json"
+      ],
+      "state": "failed",
+      "ticker": "MBS"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/MCH/MCH_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "MCH"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/MML/MML_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "MML"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/MSN/MSN_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "MSN"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/MSR/MSR_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "MSR"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/MWG/MWG_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "MWG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/NKG/NKG_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "NKG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/PLX/PLX_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "PLX"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/PVD/PVD_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "PVD"
+    },
+    {
+      "attempts": 2,
+      "error_texts": [
+        "ValueError: invalid backtest data: high contains non-positive prices",
+        "ValueError: invalid backtest data: high contains non-positive prices"
+      ],
+      "output_paths": [
+        "backtest-result/ticker-signals/PVS/PVS_signals_swing.json"
+      ],
+      "state": "failed",
+      "ticker": "PVS"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/PVT/PVT_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "PVT"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/SHB/SHB_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "SHB"
+    },
+    {
+      "attempts": 2,
+      "error_texts": [
+        "ValueError: invalid backtest data: high contains non-positive prices",
+        "ValueError: invalid backtest data: high contains non-positive prices"
+      ],
+      "output_paths": [
+        "backtest-result/ticker-signals/SHS/SHS_signals_swing.json"
+      ],
+      "state": "failed",
+      "ticker": "SHS"
+    }
+  ]
+}

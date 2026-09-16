@@ -1,0 +1,19 @@
+---
+description: Retry unavailable Docker checks once, then use safe fallback verification
+alwaysApply: true
+---
+
+# Docker availability fallback
+
+When a required Docker command fails because the Docker daemon or client is
+unavailable:
+
+1. Retry the identical Docker command exactly once.
+2. If it fails again for the same availability reason, do not keep retrying.
+3. Continue with the safest relevant non-Docker verification (for example,
+   host unit tests, syntax parsing, or read-only source inspection).
+4. Record Docker verification as pending and state the exact availability
+   failure in the handoff.
+
+Do not treat test, application, database, or configuration failures as Docker
+availability failures. Those must be diagnosed normally.

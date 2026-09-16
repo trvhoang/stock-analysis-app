@@ -90,10 +90,13 @@ Details on the role of each Python module within the `app/` directory.
     - **"Result" Page Logic:** Contains functions to display general market statistics, such as top tickers by volume or trading value.
 
 - **`commons/technical_analysis.py`**:
-    - **Indicator Engine:** Owns the eight indicator calculators, trend classifiers, dimension metadata, dimension-aware score aggregation, ADX gate, and `build_technical_snapshot()`.
+    - **Legacy Indicator Engine:** Owns the eight indicator calculators, trend classifiers, dimension metadata, dimension-aware score aggregation, ADX gate, `build_technical_snapshot()`, and the raw bounded Technical OHLCV fetch. Its legacy snapshot remains the Analyze/API contract.
+
+- **`commons/technical_horizon.py`**:
+    - **Technical horizon adapter:** Maps Swing/Mid-term UI labels to immutable schema-5 Backtest rulebooks, fetches 100/800 raw daily rows, builds up to 100 daily or completed-W-FRI native bars, and returns a nine-indicator UI snapshot. Backtest owns MA, causal Alligator, RSI, exact Wilder ADX, and exact Wilder ATR; this adapter adds Stochastic, OBV, and Bollinger, applies the sole k-VND UI conversion, and drops internal rulebook gates.
 
 - **`pages/technical_visualization.py`**:
-    - **"Technical Analyze" Page Logic:** Fetches OHLCV once per analysis key, caches the shared snapshot in `st.session_state`, and renders permanent candlestick/volume charts plus one selected visualization for MA, MA Cross, RSI, Stochastic, ADX, OBV, ATR, or Bollinger Bands. UI prices are displayed in k VND; export paths retain raw BIGINT prices.
+    - **"Technical Analyze" Page Logic:** Renders main-page Ticker/Horizon inputs and caches a horizon snapshot by ticker, horizon, and the fixed 100-bar output contract. It renders permanent candlestick/volume charts plus one result-only visualization for MA, MA Cross, Alligator, RSI, Stochastic, ADX, OBV, ATR, or Bollinger Bands. UI prices are displayed in k VND; export paths retain raw BIGINT prices.
 
     - **`apis/`**:
     - **`routes.py`**: Defines RESTful endpoints for ticker analysis and programmatic data updates.

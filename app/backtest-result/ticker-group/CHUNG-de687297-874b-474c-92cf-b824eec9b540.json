@@ -4,14 +4,16 @@
   "metadata": {},
   "schema_version": 1,
   "tickers": [
-    "SSI",
-    "HCM",
-    "VND",
+    "AAS",
+    "BVS",
     "FTS",
+    "HCM",
     "MBS",
-    "VCI",
+    "SHS",
+    "SSI",
     "TCX",
-    "SHS"
+    "VCI",
+    "VND"
   ],
-  "updated_at": "2026-08-14T22:34:50.512980+07:00"
+  "updated_at": "2026-09-08T06:32:40.506040+07:00"
 }

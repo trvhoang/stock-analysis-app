@@ -1,5 +1,7 @@
 # Flexible Rulebook UI Scope Expansion and Progress Implementation Plan
 
+> **Superseded by 2026-09-15 user-authored redesign.** Historical record only; do not use for implementation.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a one-button, policy-safe UI scope expansion workflow and phase-aware progress bars for every Flexible Rulebook operation.

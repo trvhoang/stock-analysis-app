@@ -2,7 +2,661 @@
 
 This document provides a snapshot of the project's current state, including finished tasks, ongoing work, known issues, and next steps.
 
-## 0. Active execution gate
+## 0. Current state
+
+  - **Flexible Rulebook user-authored selective replacement: complete
+    (2026-09-17).** Tasks 0–9 are complete. The current application exposes
+    only the v2 Builder, Backtest, and Library workspaces; the old automated
+    discovery/benchmark/activation/campaign/scope-expansion runtime and its
+    behavior tests are removed. Standard remains the default Collect source;
+    Flexible artifacts are a separate immutable schema with canonical Decimal
+    persistence and full identity backstage. Final Docker checks passed v2
+    **77/77**, focused adapter **9/9**, and the full suite **696/696**. A
+    temporary live VCB collection/reload smoke passed for both Swing (4,005
+    daily bars; 283 events) and Mid-term (830 completed weekly bars; 59
+    events). Legacy audit: zero retired runtime/test files; preserved v1
+    artifact roots remain empty at the original SHA-256 digest. No live
+    artifact, rulebook, position, or database row was retained from the smoke.
+    Flexible open-position risk stays unavailable until a definition-owned
+    risk contract is approved; no Standard risk is fabricated.
+
+## 0A. Historical execution detail (superseded by current state)
+
+  - **Flexible Rulebook user-authored selective replacement: Tasks 0–5
+    complete; Task 6 complete; Task 7 in progress (2026-09-16).** The approved
+    replacement freezes and later retires automatic discovery, benchmarks,
+    activation, campaigns, scope expansion, qualification, and Group BUY Scan
+    after v2 coverage passes. V2 owns Rulebook Builder, database-backed
+    Rulebook Backtest, and Rulebook Library; supports one Daily Swing or
+    completed W-FRI Mid-term timeframe per rulebook; ALL/ANY BUY, ALL gates,
+    ANY SELL; existing applicable indicators plus Bollinger and Supertrend;
+    Lifetime/ranged history and 50–80% chronological training; mutable drafts;
+    immutable publication; and final Backtest integration with Standard as the
+    default. Primary UI shows Standard or collision-safe Flexible short IDs;
+    full hashes remain backstage. The unified UI exposes only Closely Match,
+    Nearly Match, and No Match; raw Standard `weak` artifacts are unchanged but
+    display/filter as No Match. V1 is inventory-frozen: correctness fixes only,
+    no new discovery features. Its artifacts stay read-only and are never
+    automatically migrated or deleted. Task 0 added a read-only audit and an
+    intentionally RED final-cutover contract. The audit records 26 v1 runtime
+    modules, 26 v1 tests, one benchmark-policy reference, no Backtest/Position
+    package reference, and empty `/app/Flexible-Rulebook` plus
+    `/data/flexible-benchmark` roots. Pre-contract Docker baselines passed
+    Flexible **327/327** in **22.755s** and full **925/925** in **46.332s**;
+    the cutover contract now has exactly three expected future-cutover failures
+    while its audit assertion passes. No v1 artifact was changed. Post-contract
+    focused verification ran 331 tests in 23.161s—328 passed and only those
+    three expected assertions remained RED. Task 1 now supplies the isolated
+    v2 contracts and registry: canonical semantic identity; immutable
+    `frb2_` publication/retirement; collision-safe short IDs; revisioned
+    drafts/evidence; one Daily Swing or completed-W-FRI Mid-term grammar; and
+    typed indicator metadata/bounds for the twelve approved families. Host
+    Task 1 verification passed **15/15** in **0.003s** and all v2 modules
+    compiled. Docker was unavailable after the required retry, so no
+    Docker-specific Task 1 verification is claimed. Task 2 now provides
+    authoritative causal indicator primitives and v2 FeatureStore masks:
+    golden/prefix fixtures cover SMA/EMA, exact SMA-seeded Wilder RSI/ATR/ADX/
+    DMI, HL2 Alligator, Stochastic, relative volume, OBV, prior extrema,
+    Bollinger, and versioned Supertrend; threshold-only changes reuse math
+    components, unavailable values return false with diagnostics, and all 12
+    registry families build. Standard Backtest and Technical Analysis now use
+    compatibility wrappers. Host verification passed 41 focused v2/causal/
+    Backtest tests, and a direct isolated Technical wrapper parity check passed.
+    The initial finite Supertrend bar is confirmed bullish (`+1`) and uses the
+    final lower band. Fresh Docker verification then passed **100/100** across
+    v2 contracts/registry, causal primitives, FeatureStore masks, Backtest
+    indicators, and Technical Analysis parity. Task 2 is complete. Task 3 now
+    provides isolated v2 Lifetime/bounded
+    history loading through the existing retrying DBAPI route; live Listed-only
+    skips; raw BIGINT source and VN-Index calendar fingerprints; Daily and
+    completed W-FRI bars with actual session dates; every approved
+    chronological split after warm-up; partition-containment filtering; and a
+    contained atomic cache of computed arrays only. Cache identity binds source,
+    calendar, formula build, and math settings; corrupt/mismatched/locked items
+    safely miss and timestamps normalize to `Asia/Ho_Chi_Minh`. Host compilation
+    and fresh Docker verification passed **15/15** in **0.268s**. Task 4 now
+    supplies v2 Boolean rule composition, a causal flat-to-flat native-bar
+    executor, exact gross completed-trade metrics, and live support facts.
+    BUY/technical SELL execute at actual next native opens; ATR freezes on the
+    signal bar; gap/stop-first/trailing/deadline behavior is deterministic;
+    W-FRI uses actual sessions; and the UI-facing monitor has only Closely
+    Match, Nearly Match, and No Match. Fresh Docker verification passed
+    **14/14** in **0.009s**. Task 5 now supplies contained v2 lifecycle
+    storage: atomic revision-checked drafts; immutable definition,
+    evaluation, retirement, and unretirement events; safe corrupt/unsupported/
+    identity-mismatch rejection; and V1 quarantine. The evaluator reloads and
+    fingerprints each selected ticker, executes sequentially with true source/
+    feature/execution/metric/persistence progress, retains completed items if
+    another ticker fails, and caches only exact source/calendar/timeframe/
+    formula-bound components when the request enables it. A completed
+    zero-trade result remains valid matching train/test evidence; publication
+    needs explicit intent but no performance threshold. In-memory results keep
+    native numeric metrics; canonical document encoding occurs only at storage.
+    Host and fresh Docker contracts/storage/service verification passed
+    **21/21**. A read-only Docker VCB smoke evaluation completed 4,005 Swing
+    bars from 2010-08-17 through 2026-09-15 using a temporary artifact root.
+    Task 6 (three-workspace Flexible Rulebook UI) is complete. Its Builder now
+    uses registry-driven typed settings/conditions with a causal summary,
+    revision-safe editing, ATR exits, and reset/clone actions; Backtest exposes
+    draft/published evaluation with cache/progress/trades/diagnostics; Library
+    shows collision-safe IDs, evidence history, and lifecycle actions while
+    full hashes remain backstage. A temporary real-data VCB RSI smoke evaluated
+    4,005 Swing bars and 114 trades, then published and reread successfully.
+    Fresh Docker non-cutover v2/page/entrypoint verification passes **74/74**.
+    Task 7 (Backtest integration) is in progress. The approved plan is
+    `docs/superpowers/plans/2026-09-15-flexible-rulebook-user-authored-redesign.md`.
+    Its verified foundation adds a strict, atomic Flexible-only artifact
+    adapter: every ticker/horizon/full rulebook ID writes to a sibling result
+    root rather than the Standard schema-5 namespace. The unified read-only
+    catalog projects `Flexible · FR-…` but preserves full rulebook/evaluation
+    identities in private data. Published collection retains causal entry
+    events and loads each ticker source once across selected definitions. The
+    Collect UI now defaults to Standard and lets a user select compatible,
+    active Flexible rules; Flexible batches execute sequentially. Docker
+    adapter/service/catalog tests pass **13/13**, and the Backtest page/helper
+    regression passes **115/115**. Flexible validation, position references,
+    and removal integration remain pending.
+    Approved design:
+    `docs/superpowers/specs/2026-09-15-flexible-rulebook-user-authored-redesign-design.md`.
+
+  - **Current Positions ineligible saved-set dates: complete (2026-09-11).**
+    The New Position form now renders an ineligible saved-set result as one
+    named line per returned set—horizon, rulebook, theme, and signal date—so
+    multiple dates are never collapsed into a misleading latest date. One-set
+    output remains concise; missing or malformed dates render `—`. Eligibility,
+    selection, persistence, artifacts, SQL, BIGINT price handling,
+    dependencies, Docker, and Git behavior remain unchanged. Docker Backtest
+    page regression passes **102/102**.
+
+  - **Validate Positions P&L Trend triangle: complete (2026-09-11).** The
+    display table now projects `Ticker | Trend | Profit % | Profit | Risk |
+    Result`. Trend contains only a directional triangle from raw shared-as-of
+    Profit: green `▲` positive, red `▼` negative, yellow `▶` zero, or
+    unstyled `-` unavailable. Styling targets no other field; Profit is a
+    plain two-decimal k-VND value and Profit % remains plain. No scoring, P&L calculation,
+    persistence, SQL, BIGINT storage, artifact, dependency, Docker, or Git
+    behavior changed. Docker Backtest page regression passes **101/101**.
+
+  - **Backtest duplicate tab headings removed: complete (2026-09-10).** The
+    six Backtest tab bodies no longer repeat their label: Collect Signals,
+    View Signals, Validate Signals, Current Positions, Validate Positions, and
+    Group Manager. The parent Backtest Lab title, tab strip, and contextual
+    result headings such as As of are retained. No control, data, SQL,
+    artifact, position-risk, dependency, Docker, or Git behavior changed.
+    Docker Backtest page regression passes **98/98**.
+
+  - **Validate Positions as-of P&L result columns: complete (2026-09-10).**
+    The result table now has exactly Ticker, Profit %, Profit, Risk, and
+    Result—Evaluation is no longer projected. Profit % and raw Profit are
+    snapshotted from the same shared common As of close that drives risk
+    validation, reusing the existing BUY-to-close × volume P&L formula. Raw
+    Profit is converted only at the UI boundary to k VND. If no common As of
+    exists, or a row is Delisted/failed, both P&L cells show `-`; no current
+    price is reread after the run. Risk logic, persistence, SQL, BIGINT price
+    storage, artifacts, dependencies, Docker, and Git are unchanged. Docker
+    Backtest page, position-risk, and position-overview regression passes
+    **122/122**.
+
+  - **Validate Positions risk legend and cell markers: complete
+    (2026-09-10).** The result table has a display-only legend directly above
+    it: 🟢 Low, 🟡 Medium, 🟠 High, and 🔴 Very. Each native Swing/Mid-term
+    level inside a Risk cell now carries the matching circle, including
+    mixed-horizon results. One shared mapping prevents the legend and cells
+    from diverging. Scores, results, artifacts, SQL, dependencies, Docker,
+    and Git are unchanged. Docker Backtest page regression passes **97/97**.
+
+  - **Collect Both default and silent Delisted Validate skip: complete
+    (2026-09-09).** Collect Horizon now defaults to Both and submits the
+    selected ticker chunks sequentially—Swing first, then Mid-term—while each
+    persisted worker request retains one registered horizon. Validate performs
+    one batched live status lookup before its progress bar and replay, silently
+    omitting Delisted tickers from both; an all-Delisted request reports no
+    Listed ticker instead of a validation error. No rulebook, artifact, price,
+    SQL, dependency, Docker, or Git change. Docker changed-scope regression
+    passes **117/117**.
+
+  - **Live Delisted status and Group Manager: complete (2026-09-09).** A
+    ticker is live Delisted exactly when
+    its stored latest session differs from VN-Index's stored latest session;
+    it clears automatically once dates match. Collect skips it before
+    Lifetime/common-as-of work without creating an artifact; Validate and
+    Flexible Rulebook return unavailable without replay; new positions are
+    blocked; existing risk rows are unavailable without writes. Backtest now
+    has Group Manager for live member status and atomic Group CRUD, with no
+    signal/position mutation. The prior HSG/LTG batch-as-of conflict is
+    resolved: LTG cannot truncate a future HSG batch. Existing terminal
+    documents remain unchanged until a new Collect run. The Collect result
+    renders deliberate skips; a Current Positions listing-provider signature
+    mismatch and minimal-polled-status compatibility gap were repaired. Group
+    Manager Status uses the shared compact popover-and-pills filter. Docker
+    changed-scope regression passes **172/172**; focused Group Manager UI
+    tests pass **3/3**. Design/plan:
+    `docs/superpowers/{specs,plans}/2026-09-08-live-delisted-status-and-group-manager*`.
+
+  - **Flexible Rulebook active-policy storage missing: investigated — operator
+    decision required (2026-09-08).** The mounted
+    `/data/flexible-benchmark` directory is empty, including the previously
+    recorded VCB direct-cap report, immutable policy, and active-policy pointer.
+    Scope Expansion is intentionally additive and correctly refuses to run
+    without a valid policy that supplies its fixed cap, seed scope, and
+    historical anchors. The policy cannot be reconstructed from its documented
+    digest alone. A fresh initial 100-cold-window direct-cap benchmark plus
+    explicit activation, or a separately designed initial-bootstrap workflow,
+    is required; the evidence gate must not be bypassed. No code, data, SQL,
+    artifact, dependency, Docker, or Git change has been made.
+
+  - **Current Positions available-ticker filter: complete (2026-09-08).** The
+    free-text Ticker filter is now a Ticker dropdown containing ALL and only
+    sorted ticker codes represented by the loaded position overview. ALL keeps
+    the unfiltered view; State and sort continue to apply independently. A
+    stale previous text-filter value safely resets to ALL before rendering.
+    No position data, SQL, artifact, price, dependency, Docker, or Git change.
+    Docker Backtest page regression passes **90/90**.
+
+  - **Validate Signals position-action counts: complete (2026-09-07).** The
+    Position actions selector now displays counts for ALL, can BUY, expired
+    BUY, can SELL, and HOLD from the latest valid cached candidates after
+    Class, Trend, Horizon, and both Profit filters. Its own choice is excluded
+    so alternative actions remain visible. No validation replay, advice,
+    artifact, metric, schema, SQL, data, dependency, Docker, or Git change.
+    Docker Backtest page regression passes **86/86**.
+
+  - **DPM Trend-toggle diagnosis: verified (2026-09-08).** The live DPM
+    replay has six available candidates: five Invalidated and one Weakening.
+    The shared predicate and a Streamlit interaction regression both return
+    six with all states, one with Invalidated excluded, and five with
+    Invalidated alone. No server-side filter defect was reproduced; the
+    regression preserves this exact sequence. Docker Backtest page regression
+    passes **87/87**.
+
+  - **Validate Signals flat candidates: complete (2026-09-08).** Results no
+    longer render under ticker subheadings. Each candidate expander now uses
+    `Ticker — Rulebook — Theme`; Horizon remains a filter only. Unavailable
+    and historical-position messages retain their ticker prefix. No validation
+    replay, advice, artifact, metric, schema, SQL, data, dependency, Docker,
+    or Git change. Docker Backtest page regression passes **88/88**.
+
+  - **Validate Signals result-ticker filter: complete (2026-09-08).** A
+    result-gated Ticker dropdown follows Test Profit %. It lists only tickers
+with at least one available candidate plus ALL; selection filters cached
+candidates and count labels without replay. It resets to ALL when the
+cache is cleared or replaced without that ticker. No advice, artifact,
+metric, schema, SQL, data, dependency, Docker, or Git change. Docker
+Backtest page regression passes **89/89**.
+
+  - **Validate Signals trend filter: complete (2026-09-07).** The cached
+    result filter row now includes a multi-select Trend popover between
+    Position actions and Horizon. It defaults to Fresh, On-going, Weakening,
+    and Invalidated, re-filters without validation replay, and is applied
+    before profit-band predicates and global win-rate sorting. No advice,
+    artifact, metric, schema, SQL, data, dependency, Docker, or Git change.
+    Docker Backtest page regression passes **85/85**.
+
+  - **Validate Signals progressive signal state: complete (2026-09-07).** A
+    fresh schema-5 replay now classifies each candidate from its latest
+    observed entry event as Fresh, On-going, Weakening, or Invalidated. The
+    assessment uses only the selected candidate gates/their source indicators,
+    the original theme when selected, and signal-close/ATR-normalised price
+    progression. Age raises proof requirements but never invalidates alone;
+    `max_hold_bars` does not cap a BUY. Fresh/On-going permit `can BUY` while
+    Weakening/Invalidated produce `expired BUY`; historical artifacts, ranking,
+    treatments, and metrics remain immutable. Validate Signals displays the
+    trend state alongside Monitoring and retains causal facts in collapsed JSON.
+    Docker focused Backtest regression passes **100/100**. No SQL, schema,
+    data, artifact, dependency, Docker, or Git change.
+
+  - **Collect/Validate tab-exit reset: complete (2026-09-06).** Stateful
+    native tabs now reset a source tab when the user leaves it. Collect returns
+    to Group `N/A`, empty Tickers, and no completed output; Validate returns to
+    Ticker group `-`, empty Tickers, and no cached displayed result. Dynamic
+    group ticker controls and unsaved Collect drafts clear as well. An active
+    Collect queue is deliberately retained so the external job is not
+    orphaned, and will still be shown upon return. No other tab or control is
+    reset. Docker Backtest page regression passes **83/83**. No SQL, schema,
+    data, artifact, dependency, Docker, or Git change.
+
+  - **Validate Signals cross-ticker Win rate sort: complete (2026-09-06).**
+    Training/Test DESC now flatten all visible eligible candidates from every
+    ticker and rank the complete list by the selected preferred-treatment win
+    rate, descending. Every sorted expander includes its ticker. Thus the
+    reported BANK view orders VIB `57.7%`, VIB `55.6%`, then SHB `48.8%`.
+    None preserves the prior ticker-grouped stored order. Class, Position
+    actions, Horizon, and Train/Test Profit filtering apply before global
+    ordering; unavailable diagnostics and historical-position context remain
+    visible. Docker Backtest page regression passes **79/79**. No SQL, schema,
+    data, artifact, dependency, Docker, or Git change.
+
+  - **Validate Signals result-gated filters: complete (2026-09-06).** Class,
+    Win rate, Position actions, Horizon, Train Profit %, and Test Profit % are
+    disabled until latest cached validation has at least one `available`
+    candidate. No cache, zero-candidate runs, and unavailable-only diagnostics
+    leave the second row disabled while diagnostics remain visible. With an
+    available candidate, all existing cached filtering, preferred-treatment
+    profit bands, AND behavior, and Win rate sorting remain active without a
+    validation replay. Docker Backtest page regression passes **77/77**. No
+    SQL, schema, data, artifact, dependency, Docker, or Git change.
+
+  - **Validate Signals first-row action layout: complete (2026-09-06).**
+    Tickers, Ticker group, and Validate now share the first row. Ticker group
+    has a wider native stretch column for long group names; the existing
+    Class, Win rate, Position actions, Horizon, Train Profit %, and Test
+    Profit % controls stay together in their original second-row order.
+    Group resolution, validation execution, cached result projection,
+    filtering, artifacts, and trading logic are unchanged. Docker targeted
+    page regression passes **3/3**. No SQL, schema, dependency, Docker, or
+    Git change.
+
+  - **Validate Signals win-rate sort: complete (2026-09-06).** The `Win rate`
+    selector follows Class with `None` (default), `Training DESC`, and `Test
+    DESC`. None preserves stored order; descending options rank all visible
+    filtered candidates globally by preferred-treatment win rate, highest
+    first. Missing/non-finite values remain last; ties resolve by rulebook ID,
+    treatment, then ticker. The v2 widget key makes None take effect for
+    existing browser sessions. Filters, cached results, metrics, artifacts,
+    and trading logic are unchanged. Docker Backtest page tests pass **79/79**.
+    No SQL, schema, dependency, Docker, or Git change.
+
+  - **Validate Signals BANK profit-count audit: resolved—no defect
+    (2026-09-06).** In the exact BANK / Closely Match / can BUY / Swing case,
+    the four preferred-treatment test profits are `18.46%`, `-4.24%`,
+    `-9.72%`, and `-27.86%`. Therefore the Test Profit selector correctly
+    shows Profitable `1`, all other ≥5% bands `0`, and All `4`. Train values
+    independently produce Potential `2`, Profitable `1`, Attractive `1`, and
+    Outstanding `0`. `profit_pct` is the cumulative sum of completed-trade
+    returns, not a win rate or per-trade mean. The exact Test values are SHB
+    ADX `13/24`, `54.17%`, `+18.46%`; SHB ADX+trend+RSI `1/3`, `33.33%`,
+    `-4.24%`; VIB ADX+RSI `3/10`, `30.00%`, `-9.72%`; and VIB RSI+volume
+    `2/13`, `15.38%`, `-27.86%`. A rendered Docker audit also confirms that
+    Class, Horizon, and Position action filters change counts from their
+    common filtered cached set. No calculation, artifact, data, or trading
+    logic change was needed.
+
+  - **Validate Signals stale profit-filter state: complete (2026-09-06).**
+    Count-bearing labels retained by an earlier browser session—for example,
+    `Potential (5% - 15%) - 2`—now normalize to their stable internal filter
+    key before cached-result counts, Train Profit, Test Profit, and their AND
+    filter run. Recognized stale labels retain the chosen band; unknown state
+    safely defaults to `All`. No validation replay, artifact, metric, data, or
+    trading behavior changes. Docker Backtest regression passes **317/317**
+    and the page compiles. No SQL, schema, dependency, Docker, or Git change.
+
+  - **Validate Positions result reset and Risk display: complete
+    (2026-09-06).** After a completed run, the result persists through one
+    rerun while all position selection checkboxes and `All` reset unchecked;
+    a failed run retains selection for retry. Validate Positions alone now
+    displays Risk as `Swing: risk% - Level | Mid-term: risk% - Level` with
+    capitalized levels. Stored suggestions, risk formulas, and Current
+    Positions text are unchanged. Docker Backtest regression passes
+    **316/316** and the page compiles. No SQL, schema, dependency, Docker, or
+    Git change.
+
+  - **Validate Positions All selection and batched progress: complete
+    (2026-09-06).** `All` selects every currently eligible OPEN position.
+    One run first enforces a single common latest VN-Index/ticker bar across
+    the entire selection, then assesses sequential batches of at most five
+    while reusing loaded source histories. Native progress updates after every
+    batch, remains at completion for three seconds, then clears. Existing risk
+    formulas, result wording, persistence, and the one-to-five service remain
+    unchanged. Docker Backtest regression passes **315/315** and changed
+    modules compile. No schema, dependency, Docker, or Git change.
+
+  - **Collect Signals Lifetime range: complete (2026-09-06).** Range defaults
+    to `Lifetime`. The queued Batch V5 worker makes one bound aggregate at
+    execution time, selecting the earliest/latest selected-ticker records that
+    share a VN-Index session. It freezes those dates before every ticker and
+    theme load, while the existing calendar filter and common-as-of policy
+    remain authoritative and each artifact retains its own effective range.
+    No price, indicator, rulebook, artifact-schema, dependency, or Docker
+    behavior changed. Docker Backtest regression passes **312/312** and the
+    changed modules compile. Live read-only TCX bounds are `2025-10-21` to
+    `2026-09-04`.
+
+  - **Popover labels above triggers: complete (2026-09-06).** `Class`,
+    `State`, and `Table` now display above their compact popovers in Validate
+    Signals, Current Positions, and View Signals. The redundant visible label
+    inside each popover is collapsed while remaining accessible. Keys,
+    defaults, values, filtering, data, and artifacts remain unchanged. Docker
+    Backtest page/helper/store tests pass **80/80** and page compiles. No SQL,
+    dependency, Docker, or Git change.
+
+  - **Popover-pill label refinement: complete (2026-09-06).** Compact labels
+    are now `Class` in Validate Signals, `State` in Current Positions, and
+    `Table` in View Signals. Help text remains descriptive; widget keys,
+    selection values, defaults, filtering, data, and artifacts are unchanged.
+    Docker Backtest page/helper/store tests pass **80/80** and page compiles.
+    No SQL, dependency, Docker, or Git change.
+
+  - **Compact popover-pill filters: complete (2026-09-06).** Validate Signals
+    Monitoring classifications, Current Positions Position state, and View
+    Signals Columns now use native popovers containing multi-select pills.
+    The respective 4-, 2-, and 8-option fixed lists retain their exact widget
+    keys, defaults, list return values, filtering, and table projection
+    behavior. Validate's compact control frees filter-row width. Docker
+    Backtest page/helper/store tests pass **80/80** and page compiles. No SQL,
+    data, artifact, dependency, Docker, or Git change.
+
+  - **Validate Signals preferred-treatment profit filters: complete
+    (2026-09-06).** Train Profit % and Test Profit % now follow Horizon and
+    precede Validate. Each reads only raw `profit_pct` from candidate's exact
+    preferred treatment in latest cached validation results; it never uses the
+    alternate treatment or replays validation. Bands are Potential `5–15`,
+    Profitable `>15–30`, Attractive `>30–50`, and Outstanding `>50`; missing,
+    non-finite, and below-5 metrics remain in All only. Dynamic option counts
+    honor Classification, Position action, Horizon, and opposite profit filter;
+    Train/Test selections combine with AND. A fully successful validation
+    reruns once to refresh labels, while a partial batch preserves visible
+    errors. Docker Backtest page/helper/store tests pass **80/80** and page
+    compiles. No SQL, data, artifact, dependency, Docker, or Git change.
+
+  - **Current Positions expander BUY/SELL summary: complete (2026-09-06).**
+    Position expander headings now show ticker, state, P&L, holding sessions,
+    displayed BUY price, and SELL value. OPEN uses existing frozen sell
+    suggestion; CLOSED uses actual SELL price only, in k VND. Heading and
+    static detail table reuse one projection, avoiding parallel sell logic.
+    Docker Backtest page/helper/store tests pass **77/77** and the page
+    compiles. No SQL, data, artifact, dependency, Docker, or Git change.
+
+  - **Current Positions detail-table content width: complete (2026-09-06).**
+    Detail table now uses Streamlit native `width="content"` instead of stretch
+    width. Columns fit their longer header/cell plus native padding; values,
+    rows, and other behavior stay unchanged. Docker Backtest page/helper/store
+    tests pass **76/76** and the page compiles. No SQL, data, artifact,
+    dependency, Docker, or Git change.
+
+  - **Current Positions Saved signal set semantic display: complete
+    (2026-09-06).** Static detail table replaces the superseded fixed-character
+    wrap with a display-only two-line v5 projection: rulebook ID, then
+    `Theme: Included` or `Theme: Excluded`. Legacy/non-v5 labels remain exact;
+    stored positions/signals and other columns stay unchanged. Docker Backtest
+    page/helper/store tests pass **76/76** and the page compiles. No SQL, data,
+    artifact, dependency, Docker, or Git change.
+
+  - **Current Positions mutation feedback and readable details: complete
+    (2026-09-05).** Delete confirmation and Add Position now have
+    callback-owned busy states plus native spinners, preventing duplicate
+    mutations while work runs. Delete clears its modal after completion;
+    successful Add resets New Position to native defaults before next render,
+    while failed Add preserves values. Position expander headers now include
+    ticker, state, P&L %, and holding sessions. Their two-row static detail
+    tables wrap long text instead of clipping it. Docker Backtest
+    page/helper/store tests pass **75/75** and the page compiles. No SQL, data,
+    artifact, dependency, Docker, or Git change.
+
+  - **Collect Signals Edit Group Add-field reset: complete (2026-09-05).**
+    Successful draft-member Add now clears the Edit Group `Add ticker` field
+    before Streamlit rerenders. A native button callback updates only draft
+    state and the input key, avoiding forbidden post-render widget mutation.
+    Empty or duplicate input remains unchanged; persistence remains atomic at
+    Save Group. Docker Backtest page/helper/store tests pass **73/73** and the
+    page compiles. No SQL, data, artifact, dependency, Docker, or Git change.
+
+  - **Collect Signals saved-Group Tickers refresh: complete (2026-09-05).**
+    `replace_group_tickers` was already correct; the disabled Collect Tickers
+    input retained Streamlit widget state because its key only contained the
+    named Group. A successful Save Group increments a per-Group refresh
+    generation, changing only that disabled input key on rerun so it displays
+    saved Group members. Draft Add remains pending until Save Group. Docker
+    Backtest page/helper/store tests pass **72/72** and the page compiles. No
+    SQL, data, artifact, dependency, Docker, or Git change.
+
+  - **Validate Signals signal date and win-rate projection: complete
+    (2026-09-05).** Fresh schema-5 live replay derives `signal_date` from the
+    latest calendar-filtered observed false-to-true entry event. Validate
+    Signals projects this date plus preferred-treatment `training.win_rate` and
+    `test.win_rate`, rendering `Monitoring: A% - classification | position
+    action | signal date: DD/MM/YYYY | win rate training / test: X% / Y%`.
+    Missing values display `—`. Selecting the same saved signal set in New
+    Position shows and persists that exact date in `entry_context`; user-entered
+    BUY date remains actual execution history. Signal-backed Position risk
+    takes the saved date for T+3 and safely falls back to legacy `as_of_date`.
+    Training/test win rates display with exactly one Decimal `ROUND_HALF_UP`
+    digit; stored values and ranking remain exact. Affected display/page tests
+    pass **68/68**.
+    No artifact, ranking, evidence-eligibility, SQL, price, dependency, Docker,
+    or current BUY-policy change. Test-first focused Backtest passes **85/85**;
+    full Backtest discovery passes **299/299** and changed modules compile.
+    Design:
+    `docs/superpowers/specs/2026-09-05-validate-signal-date-win-rate-design.md`;
+    plan:
+    `docs/superpowers/plans/2026-09-05-validate-signal-date-win-rate.md`.
+    No Git action.
+
+  - **Data Page latest-session Highlights: complete (2026-09-04).** Successful
+    Get data now performs one read-only aggregate query and displays latest
+    VN-Index and latest non-VNINDEX ticker session dates as Highlights. A
+    visible mismatch warning names Backtest's shared-VN-Index-session behavior;
+    missing data displays `—` and never changes ingestion success. Live
+    read-only values are VN-Index `03/09/2026` and Ticker `04/09/2026`.
+    Docker Data Preparation passes **14/14**. No data, artifact, dependency,
+    Docker, or Git change.
+
+  - **Alligator HL2 formula migration: complete (2026-09-05).** Backtest and
+    Horizon Technical Analysis now use standard `HL2 = (high + low) / 2` as
+    Alligator input before their existing SMA-seeded recursive SMMA and causal
+    shifts. TCX Swing values exactly match the independent 8/5/3 calculation:
+    `39.964 / 40.141 / 40.401`, `40.006 / 40.228 / 40.701`,
+    `40.149 / 40.442 / 40.942`, and `40.202 / 40.639 / 40.945` k VND on
+    27/08, 28/08, 03/09, 04/09 respectively. The migration atomically
+    overwrote 96 canonical artifacts, 18 legacy variants, and 128 job
+    sidecars as `requires_regeneration`; 4 position records and market data
+    remain untouched. Docker Backtest passes **297/297**; shared Technical
+    Analysis passes **17/17**. No Git action.
+
+  - **TCX Swing artifact audit: Baseline live-validation root cause confirmed
+    (2026-09-04; no policy change approved).** User-added VNINDEX 04/09 data
+    correctly advances artifact and common-as-of to 04/09, proving this is not
+    cache/staleness. `joint_trend` alone checks only EMA/causal-Alligator line
+    ordering, not slope. On 04/09 its order remains true, so live replay treats
+    the persistent level as `literal_entry` and returns Closely Match/can BUY.
+    Its fresh edge was 26/08, four valid bars earlier; RSI has no upcross, ADX
+    is 15.41 below 17 and falling, and volume fails. Read-only diagnostics
+    calculate this age, but live Validate Signals does not use it. Preferred
+    themed Top-3 test treatments have 0% win rate and negative mean gross
+return; they are exploratory, not reliable trade proof. Stochastic is not
+a Baseline Swing gate. Technical Analysis shares the exact shifted HL2
+Alligator values with Backtest and they rise slightly over 28/08–04/09. A
+sensitivity design must choose which causal series owns slope semantics.
+Formula migration invalidated stale artifacts, but a separate approved design
+is still required for entry/validation repair.
+
+  - **VN-Index invalid-session ingestion cleanup: implemented; awaits next Get
+    data (2026-09-04).** Get data now runs an explicit, transaction-owned
+    cleanup after source finalization: it removes only the acknowledged invalid
+    dates `2023-08-26`, `2025-05-04`, `2025-05-11`, `2026-02-07`, and
+    `2026-03-08` from all tickers, then scans every persisted row for
+    Saturday/Sunday sessions. A remaining
+    invalid date reports date, row count, and ticker list and rolls back both
+    cleanup and staged input. Targeted test-first tests pass **4/4**; Docker
+    Data Preparation passes **13/13**. A read-only production scan established
+    the approved five-date list; no database write has been performed in this
+    work. The next Get data safely applies cleanup and accepts the refresh only
+    if its all-table session scan is empty. Design/plan:
+    `docs/superpowers/specs/2026-09-03-project-wide-vnindex-trading-calendar-design.md`;
+    `docs/superpowers/plans/2026-09-03-project-wide-vnindex-trading-calendar.md`.
+    No Git action.
+
+  - **Technical Analysis horizon-only UI: complete (2026-09-02).** Main-page
+    Ticker/Horizon inputs replace Technical sidebar controls. The isolated
+    `technical_horizon` adapter retrieves bounded raw BIGINT OHLCV, builds up
+    to 100 daily Swing or completed-W-FRI Mid-term schema-5 bars, and reuses
+    exact MA, causal Alligator, RSI, ADX, and ATR values. It adds the existing
+    Stochastic, OBV, and Bollinger calculations, scales price values once at
+    the UI boundary, and removes internal `rulebook_*` gates before display.
+    The result-only chart selector and nine tabs include Alligator; the legacy
+    eight-indicator Analyze/API snapshot is unchanged. Docker Technical tests
+    pass **109/109**, affected consumer tests **36/36**, the rendered Swing
+    AppTest is green, and changed modules compile. Design:
+    `docs/superpowers/specs/2026-09-02-technical-analysis-horizon-ui-design.md`;
+    plan:
+    `docs/superpowers/plans/2026-09-02-technical-analysis-horizon-ui.md`.
+    No Git action.
+
+  - **Flexible Rulebook Discover operator identity default: complete
+    (2026-09-02).** Discover initializes one editable HCM identity in the
+    format `admin DDMonYY <epoch-seconds>`, retains a manual edit, and disables
+    Start if it is blank. Scope Expansion uses same default. A UI-submitted
+    campaign records this identity as durable runtime audit metadata without
+    changing its idempotent semantic ID; older manifests with no identity remain
+    readable. Docker Flexible regression passes **323/323** plus changed-module
+    compilation. No SQL, BIGINT scaling, dependency, Docker, runtime-data, or
+    Git change.
+
+  - **Backtest Collect/Validate Group `ALL`: complete (2026-09-02).** Collect
+    now orders `N/A`, `New group…`, `ALL`, then named Groups. `ALL` is a
+    reserved virtual union of all named Group members and all saved-artifact
+    tickers, deduplicated and sorted; it cannot be saved as a named Group.
+    Collect executes ordered 15-ticker batches one job at a time and continues
+    after an independent failed/requires-regeneration batch. Validate exposes
+    `-`, `N/A`, `ALL`, then named Groups and retains serial batch execution.
+    Validate `N/A` remains the ungrouped saved-artifact set. Collect queue state
+    is intentionally session-local; durable continuation after browser/server
+    interruption remains out of scope. Docker Backtest regression passes
+    **284/284** plus changed-module compilation. No SQL, BIGINT scaling,
+    artifact, dependency, Docker, runtime-data, or Git change.
+
+  - **Backtest Group display refresh and Validate Horizon filter: complete
+    (2026-09-02).** Collect Signals and Validate Signals now assign Group-
+    specific keys to their disabled Ticker inputs, preventing Streamlit from
+    retaining a prior Group’s displayed members after selection changes.
+    Validate Signals adds a cached-display-only `Horizon` filter (`Both`,
+    `Swing`, `Mid-term`) between Position actions and Validate; no replay,
+    artifact, advice, SQL, BIGINT, dependency, Docker, runtime-data, or Git
+    change. Docker Backtest regression passes **284/284** plus page compilation.
+
+  - **Current Positions delete confirmation dialog: complete (2026-09-02).**
+    The existing protected batch-delete confirmation is now a native Streamlit
+    dialog, not inline page content. Exact selection/display-context guards,
+    summary, Confirm permanent delete, Cancel, and deletion service behavior
+    remain unchanged. Docker Backtest regression passes **284/284** plus page
+    compilation. No SQL, BIGINT scaling, artifact, dependency, Docker,
+    runtime-data, or Git change.
+
+  - **Streamlit 1.62 app-wide UX (2026-09-02; complete).** Streamlit 1.62.0, FastAPI 0.141.1, Uvicorn
+  0.52.4, NumPy 2.2.6, pandas 3.0.5, pandas-ta 0.4.71b0, and pytz 2025.2 are
+  active and `pip check` is clean. Flat top navigation now owns the seven
+  pages; the global `Stock Analysis App` title is gone. Technical Analyze
+  clears only its own session state on exit. The Backtest route-ownership
+  regression proves it calls only Backtest, not Flexible Rulebook Discover.
+  Presentation changes use native icons/popovers/dialogs and 1.62 sizing APIs;
+  Backtest removal is a two-step exact-identity confirmation guarded by existing
+  position-reference protection. Full affected Docker tests pass **170/170**;
+  targeted compilation, Streamlit health, real-entrypoint AppTest, FastAPI
+  docs HTTP 200, and legacy source audit pass. The original reported mixed
+  Discover rendering was not reproducible; provide one exact misplaced label
+  if it reappears. The Dockerfile's commented manual pandas-ta URL remains
+  unchanged; its prior telemetry-off command adjustment is the only Docker
+  source change in this UX work. A local headless Chrome visual gate visited
+  all seven valid routes at desktop and 390-pixel narrow widths: all rendered
+  their expected headings without page-not-found/exception overlays, the app
+  title is absent, layouts fit their width, and Backtest/Flexible remain
+  separated. No production action was submitted during that inspection.
+  Read-only live AppTests now execute Analyze through Final Advice and
+  Technical Analyze through a rendered Plotly chart with zero exceptions. A
+  live in-memory one-year FPT export returns 250 rows, expected columns, and
+  its deterministic filename. An existing running Flexible campaign retained
+  its state across read-only Refresh, while unchanged default Discover inputs
+  correctly kept Preflight/Start disabled. Local headless Chrome also confirmed
+  Technical output clears after Backtest/Flexible navigation and return without
+  a Streamlit exception. An isolated copy of current BVH Swing evidence verifies
+  cancel preservation, exact one-candidate removal, and reference-block
+  preservation.
+  - User subsequently added a current ACB schema-5 signal-backed position. Its
+    exact candidate is protected by the production read-only preflight.
+  - The user then explicitly approved that exact ACB guard call. It raised the
+    expected block; artifact before/after documents match and no journal was
+    written. The user also explicitly approved removal of unreferenced
+    `ACB / midterm / midterm_rulebook_v5__adx`; artifact candidates changed
+    from seven to six, stayed schema-valid, and left no journal. Fresh Backtest
+    discovery passes **272/272** plus compilation. No Git action.
+
+- **Saved-signal position fractional-ATR repair: complete (2026-09-02).**
+  Exact Wilder ATR is a valid fractional raw-price value, but New Position
+  incorrectly routed it through an integer-only close-price validator. Frozen
+  schema-5 risk snapshots now convert only finite positive ATR by Decimal
+  half-up rounding to one raw price unit; `latest_close` remains strict raw
+  integer. Current TCB Swing ATR `979.5087091830576` becomes `980`, yielding
+  raw stop/target `31930`/`35850`. Docker Backtest discovery passes **272/272**
+  plus compilation. No SQL, BIGINT storage scaling, artifact, or Git change.
+  Report: `docs/superpowers/reports/2026-09-02-streamlit-1-62-app-wide-ux-verification.md`.
+  No Git action.
+
+- **Backtest removal-toolbar clarification: complete (2026-09-02).** Current
+  Positions now renders its protected batch-delete action as a compact remove
+  icon immediately beside `Select all visible`; its exact-locator preflight and
+  confirmation flow are unchanged. View Signals uses the same adjacent layout.
+  The reported unchanged row count after successful signal removal is expected
+  when another stored candidate is promoted into the reranked Top 3; the
+  success notice now makes this refresh explicit. Docker Backtest regression
+  passes **272/272** plus page compilation. No SQL, data, artifact,
+  dependency, or Git change.
+
+- **Backtest View Signals pagination: complete (2026-09-02).** Filtered
+  signals now paginate at 50 rows by default, with 100 and 150 alternatives.
+  Previous/next controls report the current page and filtered total. Selection
+  and `Select all visible` remain strictly page-local, so navigation cannot
+  retain a deletion selection from a different page. No signal-removal or
+  artifact semantics changed. Docker Backtest regression passes **276/276**
+  plus page compilation. No SQL, data, artifact, dependency, or Git change.
 
 - **Backtest V4 schema-5 evidence integrity and enhancement (2026-09-01;
   design and ordered plan approved, Tasks 1–11 complete).**
@@ -1576,48 +2230,32 @@ Verification:
   the `env_file` declaration alone is insufficient for constructing
   `DATABASE_URL`.
 ## 4. Known Issues & Technical Debt
-- Docker test topology remediation completed 2026-08-31: canonical
-  `unittest discover -s tests -v` passes **697/697**. The development app
-  mounts root `scripts` read-only for the probe; diagnostics and worker
-  fixtures resolve successfully under discovery. The focused Backtest gate
-  remains retained as fast feature evidence.
 - Historical technical context still reads the full ticker history without a
   date bound. This is retained for exact prefix/as-of semantics; score processing
   is now precomputed in linear history time. A future SQL bound requires a
   separately verified as-of design.
 - Canonical Docker discovery is available through
-  `python -m unittest discover -s tests -v`; explicit module gates remain
-  useful for fast feature-scoped feedback.
+  `python -m unittest discover -s tests -v`; the latest completed run passed
+  **696/696**. Explicit module gates remain useful for fast feature-scoped
+  feedback.
+- Flexible open-position risk is unavailable by design until a
+  definition-owned risk contract is approved. Standard risk values must not be
+  fabricated for a Flexible rulebook.
 
 ## 5. Next Steps & Priorities
-1.  **Flexible Rulebook Discover activation:** Complete for VCB with seed
-    `frb-default-seed-v1` and cap 8. Any additional ticker or seed requires a
-    separately benchmarked, reviewed, and atomically activated policy; do not
-    broaden the active scope implicitly.
-2.  **Comprehensive Unit Testing:** The targeted commons, utility, API-route,
-    entrypoint, Analyze classification, and Docker-topology pass is complete
-    at 697 canonical tests.
-    Broader page-private coverage is optional follow-up work.
-3.  **Build Per-Ticker Signal-Set Backtest Engine:** Complete; maintain the shipped engine and address only separately approved follow-up work. Preserve offline execution, no look-ahead, multiple-testing control, and overwrite-only current signal files.
-4.  **Technical Indicator empirical validation:** Broader 64-ticker sample is measured; extend only with separately approved datasets and recalibrate only from measured results.
-5.  **Technical Indicator Enhancement — Phase 1:** Deferred until high-effort `pandas_ta` tech debt is separately approved.
-6.  **Legacy indicator backlog:** Bollinger visualization is covered by the UI integration plan; Ichimoku is intentionally removed from scope.
-7.  **Define explanation of Final Advice:** Keep as a later documentation refinement after the UI workflow plan.
+1.  **Technical Indicator empirical validation:** Broader 64-ticker sample is
+    measured; extend only with separately approved datasets and recalibrate
+    only from measured results.
+2.  **Technical Indicator Enhancement — Phase 1:** Deferred until high-effort
+    `pandas_ta` technical debt is separately approved.
+3.  **Comprehensive Unit Testing:** Broader page-private coverage is an
+    optional follow-up; the latest canonical suite passes **696/696**.
+4.  **Define explanation of Final Advice:** Keep as a later documentation
+    refinement after the UI workflow plan.
 
 ---
-*Last Updated: 2026-08-31 (Comprehensive unit-testing pass complete for
-commons, utility, API-route, and entrypoint slices; canonical Docker discovery
-697/697 after the read-only scripts mount repair. Flexible Rulebook Discover activation
-complete:
-VCB cap-8 production corpus and immutable active policy are recorded.
-Flexible Rulebook Core Tasks 1–7 complete. Campaign
-Tasks 1–4 complete and Docker-verified with receipt-first DiscoveryService,
-isolated subprocess worker/watchdog, retry/fault classification, receipt-bound
-Resume, group preflight/qualification, common-as-of Current BUY Scan, source/
-anchor checks, shared feature preflight, and atomic current-scan artifacts.
-Flexible evidence is 189/189 plus compilation. Campaign Task 5 benchmark
-policy, fixture evidence, and report are complete; Task 5B provides the
-Docker-verified runnable production benchmark and the VCB policy activation
-now unlocks Discover within its explicit scope.
-Horizon Rulebook Signal Redesign schema-4 replacement and Validate Positions
-Phase B are complete. Original V2 deletion remains unapproved.)*
+*Last Updated: 2026-09-17. Flexible Rulebook user-authored selective
+replacement Tasks 0–9 are complete: v2 is the only active runtime, the old
+automated-discovery workflow is retired, final Docker verification passed
+696/696, and temporary VCB Swing/Mid-term live collection/reload evidence
+passed. Historical details remain above for audit only.*

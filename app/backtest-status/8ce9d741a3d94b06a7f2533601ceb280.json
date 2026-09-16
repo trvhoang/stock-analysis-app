@@ -1,0 +1,61 @@
+{
+  "error_text": null,
+  "job_id": "8ce9d741a3d94b06a7f2533601ceb280",
+  "output_paths": [
+    "backtest-result/ticker-signals/MWG/MWG_signals_swing.json",
+    "backtest-result/ticker-signals/DGW/DGW_signals_swing.json",
+    "backtest-result/ticker-signals/FRT/FRT_signals_swing.json",
+    "backtest-result/ticker-signals/PNJ/PNJ_signals_swing.json",
+    "backtest-result/ticker-signals/DMX/DMX_signals_swing.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/MWG/MWG_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "MWG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DGW/DGW_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DGW"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/FRT/FRT_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "FRT"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/PNJ/PNJ_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "PNJ"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DMX/DMX_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DMX"
+    }
+  ]
+}

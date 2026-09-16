@@ -1,0 +1,36 @@
+{
+  "config": {
+    "end_date": null,
+    "group_name": "N/A",
+    "horizon": "swing",
+    "output_dir": "backtest-result/ticker-signals",
+    "permutation_block_size": 20,
+    "permutation_count": 1000,
+    "permutation_seed": 42,
+    "request_type": "backtest_batch_v5",
+    "start_date": null,
+    "tickers": [
+      "SBT",
+      "SGP",
+      "SHB",
+      "SHS",
+      "SIP",
+      "SLS",
+      "SNZ",
+      "SSI",
+      "STB",
+      "TAR",
+      "TCB",
+      "TCH",
+      "TCL",
+      "TCX",
+      "TDM"
+    ],
+    "use_lifetime_range": true,
+    "worker_count": 6
+  },
+  "factory_ref": "backtest_engine.pipeline:run_backtest_batch_from_env",
+  "job_id": "adb7aad981884c1f9fdda5472d67cec1",
+  "schema_version": 5,
+  "status_dir": "backtest-status"
+}

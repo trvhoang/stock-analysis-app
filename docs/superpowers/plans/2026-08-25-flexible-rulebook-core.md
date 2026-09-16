@@ -1,5 +1,7 @@
 # Flexible Rulebook Core Implementation Plan
 
+> **Superseded by 2026-09-15 user-authored redesign.** Historical record only; do not use for implementation.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans task-by-task. Steps use checkbox syntax for tracking. Do not commit, stage, inspect, or run Git commands.
 
 **Goal:** Build isolated, deterministic Flexible Rulebook core services that define portable Swing rulebooks, discover finite causal candidates, evaluate them in frozen train/test partitions, and persist reusable evidence.

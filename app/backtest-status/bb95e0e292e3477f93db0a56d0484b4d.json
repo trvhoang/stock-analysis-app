@@ -1,0 +1,124 @@
+{
+  "error_text": null,
+  "job_id": "bb95e0e292e3477f93db0a56d0484b4d",
+  "output_paths": [
+    "backtest-result/ticker-signals/NVL/NVL_signals_swing.json",
+    "backtest-result/ticker-signals/KBC/KBC_signals_swing.json",
+    "backtest-result/ticker-signals/KDH/KDH_signals_swing.json",
+    "backtest-result/ticker-signals/DXG/DXG_signals_swing.json",
+    "backtest-result/ticker-signals/DXS/DXS_signals_swing.json",
+    "backtest-result/ticker-signals/DIG/DIG_signals_swing.json",
+    "backtest-result/ticker-signals/CEO/CEO_signals_swing.json",
+    "backtest-result/ticker-signals/SNZ/SNZ_signals_swing.json",
+    "backtest-result/ticker-signals/SIP/SIP_signals_swing.json",
+    "backtest-result/ticker-signals/TCH/TCH_signals_swing.json",
+    "backtest-result/ticker-signals/BCM/BCM_signals_swing.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/NVL/NVL_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "NVL"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/KBC/KBC_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "KBC"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/KDH/KDH_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "KDH"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DXG/DXG_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DXG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DXS/DXS_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DXS"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DIG/DIG_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DIG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/CEO/CEO_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "CEO"
+    },
+    {
+      "attempts": 2,
+      "error_texts": [
+        "ValueError: invalid backtest data: open contains non-positive prices; high contains non-positive prices; low contains non-positive prices",
+        "ValueError: invalid backtest data: open contains non-positive prices; high contains non-positive prices; low contains non-positive prices"
+      ],
+      "output_paths": [
+        "backtest-result/ticker-signals/SNZ/SNZ_signals_swing.json"
+      ],
+      "state": "failed",
+      "ticker": "SNZ"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/SIP/SIP_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "SIP"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/TCH/TCH_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "TCH"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/BCM/BCM_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "BCM"
+    }
+  ]
+}

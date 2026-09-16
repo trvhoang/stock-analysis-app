@@ -4,7 +4,7 @@ import zipfile
 import os
 import pandas as pd
 from sqlalchemy import create_engine, text
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from dataclasses import dataclass
 from pathlib import Path
 import pytz
@@ -89,6 +89,12 @@ _SCHEMA_COLUMNS_SQL = text("""
 _LATEST_DATES_SQL = text(
     "SELECT ticker, MAX(date) FROM trading_data GROUP BY ticker"
 )
+_LATEST_SESSION_HIGHLIGHTS_SQL = text("""
+    SELECT
+        MAX(date) FILTER (WHERE ticker = 'VNINDEX') AS vnindex_session,
+        MAX(date) FILTER (WHERE ticker <> 'VNINDEX') AS ticker_session
+    FROM trading_data
+""")
 _CREATE_STAGING_SQL = text("""
     CREATE TEMPORARY TABLE ingestion_stage (
         ticker TEXT NOT NULL,
@@ -116,6 +122,28 @@ _INSERT_TRADING_DATA_SQL = text("""
 _CREATE_TICKER_DATE_INDEX_SQL = text(
     "CREATE INDEX IF NOT EXISTS idx_ticker_date ON trading_data (ticker, date DESC)"
 )
+_ACKNOWLEDGED_INVALID_TRADING_SESSION_DATES = (
+    date(2023, 8, 26),
+    date(2025, 5, 4),
+    date(2025, 5, 11),
+    date(2026, 2, 7),
+    date(2026, 3, 8),
+)
+_DELETE_ACKNOWLEDGED_INVALID_TRADING_SESSIONS_SQL = text("""
+    DELETE FROM trading_data
+    WHERE date = ANY(%(dates)s)
+    RETURNING date
+""")
+_SCAN_INVALID_TRADING_SESSIONS_SQL = text("""
+    SELECT
+        date,
+        COUNT(*)::BIGINT AS row_count,
+        ARRAY_AGG(DISTINCT ticker ORDER BY ticker) AS tickers
+    FROM trading_data
+    WHERE EXTRACT(ISODOW FROM date) IN (6, 7)
+    GROUP BY date
+    ORDER BY date
+""")
 _CSV_COLUMNS = ("Ticker", "DTYYYYMMDD", "Open", "High", "Low", "Close", "Volume")
 
 
@@ -126,6 +154,23 @@ class ExtractedSource:
     data_type: str
     extract_path: Path
     ticker_filter: str | None
+
+
+@dataclass(frozen=True)
+class InvalidTradingSession:
+    """One persisted calendar-invalid session found by the post-cleanup scan."""
+
+    session_date: date
+    row_count: int
+    tickers: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class LatestSessionHighlights:
+    """Latest persisted VN-Index and non-index ticker sessions for Data Page."""
+
+    vnindex_session: date | None
+    ticker_session: date | None
 
 
 def _execute(cursor, statement, params=None) -> None:
@@ -229,6 +274,22 @@ def _latest_dates(cursor) -> dict[str, object]:
     return {str(ticker).upper(): latest_date for ticker, latest_date in cursor.fetchall()}
 
 
+def load_latest_session_highlights(engine) -> LatestSessionHighlights:
+    """Load the two Data Page latest-session highlights without mutating data."""
+
+    connection = engine.raw_connection()
+    cursor = connection.cursor()
+    try:
+        _execute(cursor, _LATEST_SESSION_HIGHLIGHTS_SQL)
+        row = cursor.fetchone()
+        if row is None:
+            return LatestSessionHighlights(vnindex_session=None, ticker_session=None)
+        return LatestSessionHighlights(vnindex_session=row[0], ticker_session=row[1])
+    finally:
+        cursor.close()
+        connection.close()
+
+
 def _exchange_for_file(path: Path) -> str:
     filename = path.name.upper()
     if "HSX" in filename:
@@ -324,6 +385,45 @@ def _finalize_staged_rows(cursor) -> None:
     _execute(cursor, _CREATE_TICKER_DATE_INDEX_SQL)
 
 
+def exclude_acknowledged_invalid_trading_sessions(cursor) -> tuple[date, ...]:
+    """Remove only the explicitly acknowledged invalid calendar dates.
+
+    This is deliberately transaction-owned by ``run_full_ingestion``. A later
+    validity failure rolls this cleanup back together with the newly staged
+    source rows, so an invalid input state can never be partially committed.
+    """
+
+    _execute(
+        cursor,
+        _DELETE_ACKNOWLEDGED_INVALID_TRADING_SESSIONS_SQL,
+        {"dates": list(_ACKNOWLEDGED_INVALID_TRADING_SESSION_DATES)},
+    )
+    return tuple(sorted({row[0] for row in cursor.fetchall()}))
+
+
+def scan_invalid_trading_sessions(cursor) -> tuple[InvalidTradingSession, ...]:
+    """Return every persisted Saturday/Sunday row across the full input table."""
+
+    _execute(cursor, _SCAN_INVALID_TRADING_SESSIONS_SQL)
+    return tuple(
+        InvalidTradingSession(
+            session_date=session_date,
+            row_count=int(row_count),
+            tickers=tuple(str(ticker) for ticker in tickers),
+        )
+        for session_date, row_count, tickers in cursor.fetchall()
+    )
+
+
+def _format_invalid_trading_sessions(
+    invalid_sessions: tuple[InvalidTradingSession, ...],
+) -> str:
+    return "; ".join(
+        f"{item.session_date.isoformat()} ({item.row_count} rows: {', '.join(item.tickers)})"
+        for item in invalid_sessions
+    )
+
+
 def _report_phase(progress_callback: Callable[[int, str], None] | None, value, label):
     if progress_callback is not None:
         progress_callback(value, label)
@@ -359,6 +459,20 @@ def run_full_ingestion(report_date, gaps_of_data, engine, progress_callback=None
             _stage_source(cursor, index_source, latest_dates, cutoff_date)
             _report_phase(progress_callback, 90, "VN-Index data staged.")
             _finalize_staged_rows(cursor)
+            removed_sessions = exclude_acknowledged_invalid_trading_sessions(cursor)
+            removed_label = ", ".join(item.isoformat() for item in removed_sessions) or "none"
+            _report_phase(
+                progress_callback,
+                94,
+                f"Acknowledged invalid sessions excluded: {removed_label}.",
+            )
+            invalid_sessions = scan_invalid_trading_sessions(cursor)
+            if invalid_sessions:
+                raise ValueError(
+                    "Invalid trading-session input remains after cleanup: "
+                    f"{_format_invalid_trading_sessions(invalid_sessions)}"
+                )
+            _report_phase(progress_callback, 97, "Trading-session input validity checked.")
             connection.commit()
         log_progress("Full data ingestion complete.", level="success")
         _report_phase(progress_callback, 100, "Data ingestion complete.")
@@ -375,6 +489,28 @@ def run_full_ingestion(report_date, gaps_of_data, engine, progress_callback=None
             connection.close()
         data_prep_lock.release()
 
+
+def _format_session_highlight(value: date | None) -> str:
+    return "—" if value is None else value.strftime("Up to %d/%m/%Y")
+
+
+def _render_latest_session_highlights(highlights: LatestSessionHighlights) -> None:
+    """Render post-ingestion source dates and make an index/ticker mismatch explicit."""
+
+    st.subheader("Highlights")
+    vnindex_column, ticker_column = st.columns(2)
+    vnindex_column.metric("VN-Index", _format_session_highlight(highlights.vnindex_session))
+    ticker_column.metric("Ticker", _format_session_highlight(highlights.ticker_session))
+    if (
+        highlights.vnindex_session is not None
+        and highlights.ticker_session is not None
+        and highlights.vnindex_session != highlights.ticker_session
+    ):
+        st.warning(
+            "VN-Index and latest ticker data use different sessions. "
+            "Backtest uses their latest shared VN-Index session."
+        )
+
 # Data page logic
 def data_page(engine):
     st.header("Data Page")
@@ -386,7 +522,11 @@ def data_page(engine):
         gaps_of_data = st.number_input("Year gaps", min_value=1, value=15, step=1)
     with action_column:
         st.caption("Action")
-        get_data = st.button("Get data", use_container_width=True)
+        get_data = st.button(
+            "Get data",
+            icon=":material/cloud_download:",
+            width="stretch",
+        )
 
     if get_data:
         if data_prep_lock.locked():
@@ -404,3 +544,10 @@ def data_page(engine):
                 )
             if not completed:
                 st.error("No new data was saved. Please rerun Get data manually.")
+            else:
+                try:
+                    highlights = load_latest_session_highlights(engine)
+                except Exception as error:
+                    st.warning(f"Highlights unavailable: {error}")
+                else:
+                    _render_latest_session_highlights(highlights)

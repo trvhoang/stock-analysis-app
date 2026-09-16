@@ -39,7 +39,9 @@ class ResultVisualizationTests(unittest.TestCase):
         engine.raw_connection.return_value.close.assert_called_once_with()
         self.assertEqual(streamlit.dataframe.call_count, 2)
         for call in streamlit.dataframe.call_args_list:
-            self.assertTrue(call.kwargs["use_container_width"])
+            self.assertEqual("stretch", call.kwargs["width"])
+            self.assertTrue(call.kwargs["hide_index"])
+            self.assertNotIn("use_container_width", call.kwargs)
 
     @patch("pages.result_visualization.st")
     @patch("pages.result_visualization.pd.read_sql", side_effect=RuntimeError("db unavailable"))

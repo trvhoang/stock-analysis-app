@@ -1,0 +1,14 @@
+{
+  "group_id": "9def2a26-5a17-471a-a5cb-d3f9c63dcb55",
+  "group_name": "RETAILS",
+  "metadata": {},
+  "schema_version": 1,
+  "tickers": [
+    "DGW",
+    "DMX",
+    "FRT",
+    "MWG",
+    "PNJ"
+  ],
+  "updated_at": "2026-09-05T12:16:10.206368+07:00"
+}

@@ -1,0 +1,161 @@
+{
+  "error_text": null,
+  "job_id": "53038660e4eb4ba48b38f8b9c734f6b6",
+  "output_paths": [
+    "backtest-result/ticker-signals/TRA/TRA_signals_swing.json",
+    "backtest-result/ticker-signals/TTD/TTD_signals_swing.json",
+    "backtest-result/ticker-signals/VCB/VCB_signals_swing.json",
+    "backtest-result/ticker-signals/VCI/VCI_signals_swing.json",
+    "backtest-result/ticker-signals/VGC/VGC_signals_swing.json",
+    "backtest-result/ticker-signals/VHC/VHC_signals_swing.json",
+    "backtest-result/ticker-signals/VHM/VHM_signals_swing.json",
+    "backtest-result/ticker-signals/VIB/VIB_signals_swing.json",
+    "backtest-result/ticker-signals/VIC/VIC_signals_swing.json",
+    "backtest-result/ticker-signals/VIX/VIX_signals_swing.json",
+    "backtest-result/ticker-signals/VJC/VJC_signals_swing.json",
+    "backtest-result/ticker-signals/VND/VND_signals_swing.json",
+    "backtest-result/ticker-signals/VPL/VPL_signals_swing.json",
+    "backtest-result/ticker-signals/VRE/VRE_signals_swing.json",
+    "backtest-result/ticker-signals/VSC/VSC_signals_swing.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/TRA/TRA_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "TRA"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/TTD/TTD_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "TTD"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VCB/VCB_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "VCB"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VCI/VCI_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "VCI"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VGC/VGC_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "VGC"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VHC/VHC_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "VHC"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VHM/VHM_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "VHM"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VIB/VIB_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "VIB"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VIC/VIC_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "VIC"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VIX/VIX_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "VIX"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VJC/VJC_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "VJC"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VND/VND_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "VND"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VPL/VPL_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "VPL"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VRE/VRE_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "VRE"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/VSC/VSC_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "VSC"
+    }
+  ]
+}

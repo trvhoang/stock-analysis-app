@@ -70,6 +70,12 @@ class PositionStoreTests(unittest.TestCase):
         self.assertEqual(build_v5_risk_snapshot("swing", 2, 100), {"atr": 2, "stop_loss": 97, "take_profit": 105, "max_hold_bars": 22})
         self.assertEqual(build_v5_risk_snapshot("midterm", 2, 100)["max_hold_bars"], 16)
 
+    def test_v5_risk_snapshot_rounds_fractional_wilder_atr_to_raw_price_unit(self):
+        self.assertEqual(
+            build_v5_risk_snapshot("swing", 500.5, 20_125),
+            {"atr": 501, "stop_loss": 19_374, "take_profit": 21_378, "max_hold_bars": 22},
+        )
+
     def test_snapshot_routes_current_writes_to_v5_and_keeps_v4_v3_readable_history(self):
         v5 = _reference("swing")
         self.assertEqual(validate_v5_position_snapshot(v5)["rulebook_id"], "swing_rulebook_v5__adx")

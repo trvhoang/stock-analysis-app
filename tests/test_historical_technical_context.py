@@ -1,11 +1,13 @@
 import math
 import unittest
+from unittest.mock import patch
 
 import pandas as pd
 
 from pages.analyze_visualization import (
     build_historical_context_query,
     build_historical_technical_score_table,
+    load_historical_technical_context,
 )
 from commons.technical_analysis import (
     calculate_ma_cross,
@@ -67,6 +69,26 @@ def _reference_prefix_score(prepared, index, short_ma=5, long_ma=10):
 
 
 class TestHistoricalTechnicalContext(unittest.TestCase):
+    def test_historical_context_loads_calendar_filtered_frame_before_scores(self):
+        raw = _make_ohlcv_frame(rows=3)
+        filtered = raw.iloc[[0, 2]].copy()
+
+        class Connection:
+            def close(self):
+                return None
+
+        class Engine:
+            def raw_connection(self):
+                return Connection()
+
+        with patch("pages.analyze_visualization.pd.read_sql", return_value=raw), patch(
+            "pages.analyze_visualization.load_calendar_aligned_history",
+            return_value=(filtered, object(), (raw["date"].iloc[1].date(),)),
+        ):
+            result = load_historical_technical_context("FPT", Engine())
+
+        pd.testing.assert_frame_equal(filtered, result)
+
     def test_historical_context_query_uses_bound_ticker_parameter(self):
         query = build_historical_context_query()
 

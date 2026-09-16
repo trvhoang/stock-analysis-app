@@ -1,0 +1,143 @@
+{
+  "history": [
+    {
+      "actual_buy_price": 15050,
+      "actual_sell_price": null,
+      "buy_date": "2026-09-04",
+      "certified_signal": {
+        "evaluation_label": "Exploratory \u2014 gross",
+        "horizon": "swing",
+        "preferred_variant": "no-background-theme",
+        "rulebook_id": "swing_rulebook_v5__rsi_upcross",
+        "selected_gates": [
+          "rulebook_rsi_upcross"
+        ],
+        "treatment": {
+          "dsr_status": "available",
+          "test": {
+            "n": 17,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -20.45429986729319,
+            "sharpe": -0.3579051606748705,
+            "win_rate": 29.411764705882355
+          },
+          "theme_mode": null,
+          "theme_variant": "no-background-theme",
+          "training": {
+            "n": 34,
+            "p_value": 0.000999000999000999,
+            "p_value_status": "informational",
+            "profit_pct": 64.79015858358365,
+            "sharpe": 0.2987227953354738,
+            "win_rate": 61.76470588235294
+          },
+          "training_dsr": 0.9428315375389429
+        }
+      },
+      "closed_at": null,
+      "entry_context": {
+        "as_of_date": "2026-09-04",
+        "current_price": 15050,
+        "match_level": 100.0,
+        "signal_date": "2026-09-04"
+      },
+      "id": "5eddc7a021a1438d8c48fb559c1e85ce",
+      "opened_at": "2026-09-05T21:39:58.893348+07:00",
+      "origin": "current_positions",
+      "quantity": null,
+      "risk_snapshot": {
+        "atr": 317,
+        "max_hold_bars": 22,
+        "stop_loss": 14575,
+        "take_profit": 15843
+      },
+      "risk_suggestion_text": "Swing: 100.0% - very",
+      "sell_date": null,
+      "sell_reason": null,
+      "signal_reference": {
+        "contract_version": "backtest_schema5_v1",
+        "evidence_eligibility": {
+          "common_as_of": "2026-09-04",
+          "coverage_ratio": 0.9993084370677732,
+          "eligible": true,
+          "expected_sessions": 1446,
+          "first_available_bar": "2020-11-10",
+          "last_available_bar": "2026-09-04",
+          "max_gap_sessions": 1,
+          "observed_sessions": 1445,
+          "reasons": [],
+          "status": "eligible",
+          "ticker_fingerprint": "ec0678064900bf59936a1275fadf2338ce38dc1a03a713b56a590ed03d14a14d",
+          "vnindex_fingerprint": "9d1fafbacd4e26db5c173657d61a162a5f0b33b40ec9fc0faf665b9b0ef8b439"
+        },
+        "exploratory_candidate": {
+          "candidate_role": "baseline_control",
+          "preferred_variant": "no-background-theme",
+          "rulebook_id": "swing_rulebook_v5__rsi_upcross",
+          "selected_gates": [
+            "rulebook_rsi_upcross"
+          ],
+          "treatments": {
+            "background-theme": {
+              "dsr_status": "available",
+              "test": {
+                "n": 12,
+                "p_value": null,
+                "p_value_status": "not_estimated_n_le_block_size",
+                "profit_pct": -17.187070703732413,
+                "sharpe": -0.46384042604644055,
+                "win_rate": 25.0
+              },
+              "theme_mode": "AND",
+              "theme_variant": "background-theme",
+              "training": {
+                "n": 28,
+                "p_value": 0.000999000999000999,
+                "p_value_status": "informational",
+                "profit_pct": 41.193809357050625,
+                "sharpe": 0.24678227891501436,
+                "win_rate": 60.71428571428571
+              },
+              "training_dsr": 0.8747805051421698
+            },
+            "no-background-theme": {
+              "dsr_status": "available",
+              "test": {
+                "n": 17,
+                "p_value": null,
+                "p_value_status": "not_estimated_n_le_block_size",
+                "profit_pct": -20.45429986729319,
+                "sharpe": -0.3579051606748705,
+                "win_rate": 29.411764705882355
+              },
+              "theme_mode": null,
+              "theme_variant": "no-background-theme",
+              "training": {
+                "n": 34,
+                "p_value": 0.000999000999000999,
+                "p_value_status": "informational",
+                "profit_pct": 64.79015858358365,
+                "sharpe": 0.2987227953354738,
+                "win_rate": 61.76470588235294
+              },
+              "training_dsr": 0.9428315375389429
+            }
+          }
+        },
+        "horizon": "swing",
+        "link_keys": [
+          "373269243626eb958060e11a76afc823465f3e7615c2969bac3a517bf4e06cff"
+        ],
+        "preferred_variant": "no-background-theme",
+        "rulebook_id": "swing_rulebook_v5__rsi_upcross",
+        "schema_version": 5,
+        "ticker": "VIB"
+      },
+      "status": "open",
+      "ticker": "VIB"
+    }
+  ],
+  "schema_version": 1,
+  "ticker": "VIB"
+}

@@ -53,6 +53,14 @@ def _batch_status_engine(config, report_progress):
             state="failed",
             error_texts=("ValueError: first failure", "ValueError: retry failure"),
         ),
+        BatchTickerStatus(
+            "LTG",
+            attempts=0,
+            state="skipped",
+            error_texts=(
+                "Delisted: ticker latest 2026-06-19; VN-Index latest 2026-09-08.",
+            ),
+        ),
     )
     report_progress(0.5, ticker_results)
     report_progress(0.8)
@@ -204,12 +212,16 @@ class BacktestJobRunnerTests(unittest.TestCase):
         self.assertEqual(final.state, "done")
         self.assertEqual(final.output_paths, ("FPT.json",))
         self.assertEqual(loaded.ticker_results, final.ticker_results)
-        self.assertEqual([result.ticker for result in loaded.ticker_results], ["FPT", "VCB"])
+        self.assertEqual(
+            [result.ticker for result in loaded.ticker_results], ["FPT", "VCB", "LTG"]
+        )
         self.assertEqual(loaded.ticker_results[1].attempts, 2)
         self.assertEqual(
             loaded.ticker_results[1].error_texts,
             ("ValueError: first failure", "ValueError: retry failure"),
         )
+        self.assertEqual("skipped", loaded.ticker_results[2].state)
+        self.assertEqual(0, loaded.ticker_results[2].attempts)
 
     def test_failure_records_an_exception_trace_in_worker_logs(self):
         with self._temporary_status_dir() as directory:

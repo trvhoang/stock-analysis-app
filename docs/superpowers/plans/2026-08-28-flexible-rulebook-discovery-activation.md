@@ -1,5 +1,7 @@
 # Flexible Rulebook Discovery Activation Implementation Plan
 
+> **Superseded by 2026-09-15 user-authored redesign.** Historical record only; do not use for implementation.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (- [ ]) syntax for tracking.
 
 **Goal:** Unlock a policy-bound, fixed-cap Flexible Rulebook Discover workflow that remains disabled until an independently reviewed production cap benchmark is explicitly activated.

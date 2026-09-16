@@ -1,0 +1,145 @@
+{
+  "error_text": null,
+  "job_id": "1b91b239f46a4a039ce4b54b61395bae",
+  "output_paths": [],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "HT1"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "IDC"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "IMP"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "KBC"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "KDH"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "LDG"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-06-19; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "LTG"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "MBB"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "MBS"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "MCH"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "MML"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "MSN"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "MSR"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "MWG"
+    },
+    {
+      "attempts": 0,
+      "error_texts": [
+        "Delisted: ticker latest 2026-09-15; VN-Index latest 2026-09-14."
+      ],
+      "output_paths": [],
+      "state": "skipped",
+      "ticker": "NKG"
+    }
+  ]
+}

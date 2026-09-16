@@ -1,0 +1,134 @@
+{
+  "error_text": null,
+  "job_id": "5b4fb686b28f4c3dbdf5ffa4acd85db6",
+  "output_paths": [
+    "backtest-result/ticker-signals/AAA/AAA_signals_swing.json",
+    "backtest-result/ticker-signals/BCC/BCC_signals_swing.json",
+    "backtest-result/ticker-signals/BMP/BMP_signals_swing.json",
+    "backtest-result/ticker-signals/CSV/CSV_signals_swing.json",
+    "backtest-result/ticker-signals/DDV/DDV_signals_swing.json",
+    "backtest-result/ticker-signals/DGC/DGC_signals_swing.json",
+    "backtest-result/ticker-signals/DPR/DPR_signals_swing.json",
+    "backtest-result/ticker-signals/GVR/GVR_signals_swing.json",
+    "backtest-result/ticker-signals/HT1/HT1_signals_swing.json",
+    "backtest-result/ticker-signals/PAT/PAT_signals_swing.json",
+    "backtest-result/ticker-signals/PHR/PHR_signals_swing.json",
+    "backtest-result/ticker-signals/PTB/PTB_signals_swing.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/AAA/AAA_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "AAA"
+    },
+    {
+      "attempts": 2,
+      "error_texts": [
+        "ValueError: invalid backtest data: high contains non-positive prices",
+        "ValueError: invalid backtest data: high contains non-positive prices"
+      ],
+      "output_paths": [
+        "backtest-result/ticker-signals/BCC/BCC_signals_swing.json"
+      ],
+      "state": "failed",
+      "ticker": "BCC"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/BMP/BMP_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "BMP"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/CSV/CSV_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "CSV"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DDV/DDV_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DDV"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DGC/DGC_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DGC"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DPR/DPR_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DPR"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/GVR/GVR_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "GVR"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/HT1/HT1_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "HT1"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/PAT/PAT_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "PAT"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/PHR/PHR_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "PHR"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/PTB/PTB_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "PTB"
+    }
+  ]
+}

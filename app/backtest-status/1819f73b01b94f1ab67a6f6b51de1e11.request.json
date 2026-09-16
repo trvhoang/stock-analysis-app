@@ -1,0 +1,36 @@
+{
+  "config": {
+    "end_date": null,
+    "group_name": "N/A",
+    "horizon": "midterm",
+    "output_dir": "backtest-result/ticker-signals",
+    "permutation_block_size": 20,
+    "permutation_count": 1000,
+    "permutation_seed": 42,
+    "request_type": "backtest_batch_v5",
+    "start_date": null,
+    "tickers": [
+      "CGI",
+      "CII",
+      "CSV",
+      "CTG",
+      "CTR",
+      "DBC",
+      "DBD",
+      "DCL",
+      "DCM",
+      "DDV",
+      "DGC",
+      "DGW",
+      "DHB",
+      "DHG",
+      "DHT"
+    ],
+    "use_lifetime_range": true,
+    "worker_count": 6
+  },
+  "factory_ref": "backtest_engine.pipeline:run_backtest_batch_from_env",
+  "job_id": "1819f73b01b94f1ab67a6f6b51de1e11",
+  "schema_version": 5,
+  "status_dir": "backtest-status"
+}

@@ -1,0 +1,145 @@
+{
+  "history": [
+    {
+      "actual_buy_price": 12050,
+      "actual_sell_price": null,
+      "buy_date": "2026-09-04",
+      "certified_signal": {
+        "evaluation_label": "Exploratory \u2014 gross",
+        "horizon": "swing",
+        "preferred_variant": "background-theme",
+        "rulebook_id": "swing_rulebook_v5__joint_trend__rsi_upcross",
+        "selected_gates": [
+          "rulebook_joint_trend_pass",
+          "rulebook_rsi_upcross"
+        ],
+        "treatment": {
+          "dsr_status": "available",
+          "test": {
+            "n": 5,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": -12.44047833821224,
+            "sharpe": -0.4550154826686064,
+            "win_rate": 20.0
+          },
+          "theme_mode": "AND",
+          "theme_variant": "background-theme",
+          "training": {
+            "n": 10,
+            "p_value": null,
+            "p_value_status": "not_estimated_n_le_block_size",
+            "profit_pct": 3.9839634151528416,
+            "sharpe": 0.0775582320365548,
+            "win_rate": 40.0
+          },
+          "training_dsr": 0.5431006055651967
+        }
+      },
+      "closed_at": null,
+      "entry_context": {
+        "as_of_date": "2026-09-04",
+        "current_price": 12050,
+        "match_level": 100.0,
+        "signal_date": "2026-09-04"
+      },
+      "id": "8f0ee8f5f00743418b01fb55887d7b11",
+      "opened_at": "2026-09-05T21:39:24.155656+07:00",
+      "origin": "current_positions",
+      "quantity": null,
+      "risk_snapshot": {
+        "atr": 282,
+        "max_hold_bars": 22,
+        "stop_loss": 11627,
+        "take_profit": 12755
+      },
+      "risk_suggestion_text": "Swing: 100.0% - very",
+      "sell_date": null,
+      "sell_reason": null,
+      "signal_reference": {
+        "contract_version": "backtest_schema5_v1",
+        "evidence_eligibility": {
+          "common_as_of": "2026-09-04",
+          "coverage_ratio": 1.0,
+          "eligible": true,
+          "expected_sessions": 1218,
+          "first_available_bar": "2021-10-11",
+          "last_available_bar": "2026-09-04",
+          "max_gap_sessions": 0,
+          "observed_sessions": 1218,
+          "reasons": [],
+          "status": "eligible",
+          "ticker_fingerprint": "353f4cc142f7a60e85448b7753e2095c63ee46093d6d1ba84f978fd0bbf187a3",
+          "vnindex_fingerprint": "9d1fafbacd4e26db5c173657d61a162a5f0b33b40ec9fc0faf665b9b0ef8b439"
+        },
+        "exploratory_candidate": {
+          "candidate_role": "baseline_control",
+          "preferred_variant": "background-theme",
+          "rulebook_id": "swing_rulebook_v5__joint_trend__rsi_upcross",
+          "selected_gates": [
+            "rulebook_joint_trend_pass",
+            "rulebook_rsi_upcross"
+          ],
+          "treatments": {
+            "background-theme": {
+              "dsr_status": "available",
+              "test": {
+                "n": 5,
+                "p_value": null,
+                "p_value_status": "not_estimated_n_le_block_size",
+                "profit_pct": -12.44047833821224,
+                "sharpe": -0.4550154826686064,
+                "win_rate": 20.0
+              },
+              "theme_mode": "AND",
+              "theme_variant": "background-theme",
+              "training": {
+                "n": 10,
+                "p_value": null,
+                "p_value_status": "not_estimated_n_le_block_size",
+                "profit_pct": 3.9839634151528416,
+                "sharpe": 0.0775582320365548,
+                "win_rate": 40.0
+              },
+              "training_dsr": 0.5431006055651967
+            },
+            "no-background-theme": {
+              "dsr_status": "available",
+              "test": {
+                "n": 7,
+                "p_value": null,
+                "p_value_status": "not_estimated_n_le_block_size",
+                "profit_pct": 6.1656531306301545,
+                "sharpe": 0.1209457391361028,
+                "win_rate": 42.857142857142854
+              },
+              "theme_mode": null,
+              "theme_variant": "no-background-theme",
+              "training": {
+                "n": 11,
+                "p_value": null,
+                "p_value_status": "not_estimated_n_le_block_size",
+                "profit_pct": -2.3102713824547387,
+                "sharpe": -0.03678856170261277,
+                "win_rate": 36.36363636363637
+              },
+              "training_dsr": 0.40233670564474233
+            }
+          }
+        },
+        "horizon": "swing",
+        "link_keys": [
+          "1c711d083ca99a14681607982c0eea11146d4f5a6f467ec3a470bfa0defbc55f"
+        ],
+        "preferred_variant": "background-theme",
+        "rulebook_id": "swing_rulebook_v5__joint_trend__rsi_upcross",
+        "schema_version": 5,
+        "ticker": "SHB"
+      },
+      "status": "open",
+      "ticker": "SHB"
+    }
+  ],
+  "schema_version": 1,
+  "ticker": "SHB"
+}

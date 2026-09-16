@@ -6,6 +6,7 @@ import concurrent.futures
 from datetime import datetime, timedelta
 # Updated import to use the commons package prefix
 from commons.common_functions import analyze_ticker, get_all_tickers
+from commons.ui_controls import read_only_dataframe_kwargs
 
 # Main page function with volume filter
 def suggestion_page(engine):
@@ -23,7 +24,7 @@ def suggestion_page(engine):
         year_gap = st.number_input("Year Gap", min_value=1, value=1, step=1)
     
     # Button to trigger analysis
-    if st.button("Generate Suggestions"):
+    if st.button("Generate Suggestions", icon=":material/lightbulb:"):
         min_avg_volume = volume_threshold * 1000  # Convert thousands to actual volume
         tickers = get_all_tickers(engine, min_avg_volume, year_gap)
         
@@ -67,7 +68,7 @@ def suggestion_page(engine):
         ).head(5)[["ticker", "exchange", "current_delta", "possibility_up", "tech_trend", "total_signals"]]
         
         st.subheader("Top 5 Tickers by Possibility of Up")
-        st.dataframe(top_up_possibility, use_container_width=True)
+        st.dataframe(top_up_possibility, **read_only_dataframe_kwargs())
         
         # Table 2: Top 5 by Delta of Up
         top_up_delta = df_up.sort_values(
@@ -76,7 +77,7 @@ def suggestion_page(engine):
         ).head(5)[["ticker", "exchange", "current_delta", "max_up_delta", "tech_trend", "total_signals"]]
         
         st.subheader("Top 5 Tickers by Delta of Up")
-        st.dataframe(top_up_delta, use_container_width=True)
+        st.dataframe(top_up_delta, **read_only_dataframe_kwargs())
         
         # Table 3: Top 5 by Possibility of Down
         df_down = df_results[df_results["stat_trend"].isin(["Strong Down", "Down"]) & df_results["tech_trend"].isin(bearish_trends)]
@@ -87,7 +88,7 @@ def suggestion_page(engine):
         ).head(5)[["ticker", "exchange", "current_delta", "possibility_down", "tech_trend", "total_signals"]]
 
         st.subheader("Top 5 Tickers by Possibility of Down")
-        st.dataframe(top_down_possibility, use_container_width=True)
+        st.dataframe(top_down_possibility, **read_only_dataframe_kwargs())
         
         # Table 4: Top 5 by Delta of Down
         top_down_delta = df_down.sort_values(
@@ -96,4 +97,4 @@ def suggestion_page(engine):
         ).head(5)[["ticker", "exchange", "current_delta", "min_down_delta", "tech_trend", "total_signals"]]
 
         st.subheader("Top 5 Tickers by Delta of Down")
-        st.dataframe(top_down_delta, use_container_width=True)
+        st.dataframe(top_down_delta, **read_only_dataframe_kwargs())

@@ -7,6 +7,12 @@ import hashlib
 import numpy as np
 import pandas as pd
 
+from commons.trading_calendar import (
+    VNIndexCalendar,
+    build_vnindex_calendar,
+    restrict_to_vnindex_sessions,
+)
+
 
 _RAW_COLUMNS = ("open", "high", "low", "close", "volume")
 _REQUIRED_COLUMNS = ("date", *_RAW_COLUMNS)
@@ -96,6 +102,32 @@ def source_fingerprint(
     return digest.hexdigest()
 
 
+def canonical_vnindex_calendar(
+    vnindex_frame: pd.DataFrame,
+    common_as_of: date,
+    *,
+    start: date | None = None,
+) -> VNIndexCalendar:
+    """Backtest compatibility wrapper around the shared VN-Index calendar."""
+
+    rows = _canonical_rows(vnindex_frame, common_as_of)
+    first = pd.Timestamp(rows["date"].iloc[0]).date()
+    return build_vnindex_calendar(
+        rows,
+        start=start or first,
+        end=common_as_of,
+    )
+
+
+def restrict_to_canonical_sessions(
+    ticker_frame: pd.DataFrame,
+    calendar: VNIndexCalendar,
+) -> tuple[pd.DataFrame, tuple[date, ...]]:
+    """Expose shared filtering under the evidence module's public contract."""
+
+    return restrict_to_vnindex_sessions(ticker_frame, calendar)
+
+
 def _maximum_missing_run(expected: pd.Series, observed: set[pd.Timestamp]) -> int:
     maximum = 0
     current = 0
@@ -121,13 +153,28 @@ def assess_evidence(
     ticker_rows = _canonical_rows(ticker_frame, common_as_of)
     vnindex_rows = _canonical_rows(vnindex_frame, common_as_of)
     common = pd.Timestamp(common_as_of).date()
+    raw_first = pd.Timestamp(ticker_rows["date"].iloc[0]).date()
+    calendar = canonical_vnindex_calendar(
+        vnindex_rows,
+        common,
+        start=raw_first,
+    )
+    ticker_rows, _outside_calendar = restrict_to_canonical_sessions(
+        ticker_rows,
+        calendar,
+    )
+    if ticker_rows.empty:
+        raise ValueError("ticker has no usable overlap with VN-Index sessions")
     first = pd.Timestamp(ticker_rows["date"].iloc[0]).date()
     last = pd.Timestamp(ticker_rows["date"].iloc[-1]).date()
-    expected_dates = vnindex_rows.loc[
-        vnindex_rows["date"].ge(pd.Timestamp(first))
-        & vnindex_rows["date"].le(pd.Timestamp(common)),
-        "date",
-    ].reset_index(drop=True)
+    expected_dates = pd.Series(
+        [
+            pd.Timestamp(session)
+            for session in calendar.sessions
+            if first <= session <= common
+        ],
+        dtype="datetime64[ns]",
+    )
     if expected_dates.empty:
         raise ValueError("VN-Index has no effective sessions for ticker interval")
     observed_dates = {
@@ -189,6 +236,8 @@ def unavailable_evidence(reason: str) -> dict[str, object]:
 __all__ = [
     "EvidenceEligibility",
     "assess_evidence",
+    "canonical_vnindex_calendar",
+    "restrict_to_canonical_sessions",
     "source_fingerprint",
     "unavailable_evidence",
 ]

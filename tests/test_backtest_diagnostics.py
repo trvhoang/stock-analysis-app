@@ -19,12 +19,33 @@ def _frame() -> pd.DataFrame:
 
 class BacktestDiagnosticsTests(unittest.TestCase):
     def test_diagnostic_reports_paired_exploratory_evidence_without_writes(self):
-        report = diagnostics.collect_rulebook_diagnostics(BacktestConfig.for_ticker("FPT"), object(), raw_history=_frame())
+        report = diagnostics.collect_rulebook_diagnostics(
+            BacktestConfig.for_ticker("FPT"),
+            object(),
+            raw_history=_frame(),
+            vnindex_history=_frame(),
+        )
         self.assertEqual(report["write_boundary"], {"database": False, "jobs": False, "artifacts": False})
         self.assertEqual(report["evaluation_label"], "Exploratory — gross")
         self.assertEqual(report["theme_treatments"], ["no-background-theme", "background-theme:AND"])
         self.assertIn("rulebook_joint_trend_pass", report["gate_rejections"])
         self.assertIn("N/A", report["p_value_policy"])
+
+    def test_diagnostics_report_ticker_rows_excluded_by_vnindex_calendar(self):
+        raw = _frame()
+        vnindex = raw.drop(index=[5]).reset_index(drop=True)
+
+        report = diagnostics.collect_rulebook_diagnostics(
+            BacktestConfig.for_ticker("FPT"),
+            object(),
+            raw_history=raw,
+            vnindex_history=vnindex,
+        )
+
+        self.assertEqual(
+            [raw["date"].iloc[5].date().isoformat()],
+            report["calendar"]["excluded_ticker_dates"],
+        )
 
     def test_diagnostics_has_no_binary_certification_path(self):
         source = inspect.getsource(diagnostics)

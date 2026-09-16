@@ -3,6 +3,15 @@
 # It is the single source of truth for all AI coding rules.
 
 ---
+## 0. NON-NEGOTIABLE RULES:
+- Finish authorized work without repeated approval pauses. 
+- Ask only about decisions that materially affect the result. 
+- Apply corrections and resume after side questions. 
+- Explain the exact instruction behind any blocker. 
+- Delegate bounded, independent work. 
+- Report concisely with concrete evidence. 
+- Stop verification once appropriate checks pass.
+
 
 ## 1. MANDATORY ONBOARDING — READ BEFORE ANYTHING ELSE
 

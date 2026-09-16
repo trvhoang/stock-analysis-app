@@ -20,11 +20,40 @@ def _loaded_main(selected_page: str, session_state: dict[str, object] | None = N
 
     streamlit = types.ModuleType("streamlit")
     streamlit.session_state = session
-    streamlit.sidebar = types.SimpleNamespace(selectbox=lambda *_args, **_kwargs: selected_page)
+    streamlit.created_pages = []
+    streamlit.navigation_position = None
     streamlit.set_page_config = lambda **_kwargs: events.append(("page-config",))
     streamlit.cache_resource = lambda function: function
     streamlit.markdown = lambda *_args, **_kwargs: None
-    streamlit.title = lambda *_args, **_kwargs: None
+    streamlit.title = lambda value, **_kwargs: events.append(("title", value))
+
+    class FakePage:
+        def __init__(self, callback, *, title: str, icon: str, url_path: str, default: bool = False):
+            self.callback = callback
+            self.title = title
+            self.icon = icon
+            self.url_path = url_path
+            self.default = default
+
+        def run(self) -> None:
+            self.callback()
+
+    def create_page(callback, *, title: str, icon: str, url_path: str, default: bool = False):
+        streamlit.created_pages.append((title, icon, url_path))
+        return FakePage(
+            callback,
+            title=title,
+            icon=icon,
+            url_path=url_path,
+            default=default,
+        )
+
+    def navigation(pages, *, position: str):
+        streamlit.navigation_position = position
+        return next(page for page in pages if page.title == selected_page)
+
+    streamlit.Page = create_page
+    streamlit.navigation = navigation
 
     data_page_module = types.ModuleType("pages.data_preparation")
     data_page_module.get_engine_with_retry = lambda _url: engine
@@ -41,6 +70,9 @@ def _loaded_main(selected_page: str, session_state: dict[str, object] | None = N
     technical_page_module.technical_analysis_page = lambda received_engine: events.append(
         ("page", "Technical Analyze", received_engine)
     )
+    technical_page_module.clear_technical_session_state = lambda state: [
+        state.pop(key, None) for key in tuple(state) if key.startswith("tech_")
+    ]
     backtest_page_module = types.ModuleType("pages.backtest_lab")
     backtest_page_module.render_backtest_page = lambda **kwargs: events.append(
         ("page", "Backtest", kwargs["engine"], kwargs["engine_factory"])
@@ -110,7 +142,7 @@ def _loaded_main(selected_page: str, session_state: dict[str, object] | None = N
         module = importlib.util.module_from_spec(spec)
         sys.modules[module_name] = module
         spec.loader.exec_module(module)
-        yield module, events, engine, session, router
+        yield module, events, engine, session, router, streamlit
     finally:
         sys.modules.pop(module_name, None)
         for name, original in saved_modules.items():
@@ -122,7 +154,7 @@ def _loaded_main(selected_page: str, session_state: dict[str, object] | None = N
 
 class MainEntrypointTests(unittest.TestCase):
     def test_bootstrap_configures_api_initializes_database_and_starts_daemon_server(self) -> None:
-        with _loaded_main("Data") as (main_module, events, engine, _session, router):
+        with _loaded_main("Data") as (main_module, events, engine, _session, router, _streamlit):
             self.assertIs(engine, main_module.engine)
             self.assertIs(engine, main_module.api_app.state.engine)
             self.assertEqual([(router, "/api")], main_module.api_app.routers)
@@ -130,20 +162,70 @@ class MainEntrypointTests(unittest.TestCase):
             self.assertIn(("server-start", True), events)
             self.assertTrue(any(event[0] == "server-run" for event in events))
 
-    def test_main_dispatches_each_supported_page_with_the_shared_engine(self) -> None:
-        for page_name in ("Data", "Result", "Analyze", "Suggestion", "Technical Analyze", "Backtest", "Flexible Rulebook"):
-            with self.subTest(page=page_name), _loaded_main(page_name) as (main_module, events, engine, _session, _router):
-                main_module.main()
-                routed_pages = [event for event in events if event[0] == "page"]
-                self.assertEqual(page_name, routed_pages[-1][1])
-                self.assertIs(engine, routed_pages[-1][2])
+    def test_flat_top_navigation_has_stable_routes_and_no_global_title(self) -> None:
+        expected = [
+            ("Data", ":material/database:", "data"),
+            ("Result", ":material/leaderboard:", "result"),
+            ("Analyze", ":material/query_stats:", "analyze"),
+            ("Suggestion", ":material/lightbulb:", "suggestion"),
+            ("Technical Analyze", ":material/candlestick_chart:", "technical-analyze"),
+            ("Backtest", ":material/science:", "backtest"),
+            ("Flexible Rulebook", ":material/tune:", "flexible-rulebook"),
+        ]
 
-    def test_leaving_technical_analyze_clears_stale_page_state_before_result_render(self) -> None:
-        session = {"previous_page": "Technical Analyze", "technical_snapshot": "stale"}
-        with _loaded_main("Result", session) as (main_module, events, engine, loaded_session, _router):
+        with _loaded_main("Data") as (main_module, events, _engine, _session, _router, streamlit):
             main_module.main()
 
-        self.assertEqual({"previous_page": "Result"}, loaded_session)
+        self.assertEqual(expected, streamlit.created_pages)
+        self.assertEqual("top", streamlit.navigation_position)
+        self.assertNotIn(("title", "Stock Analysis App"), events)
+
+    def test_main_dispatches_each_supported_page_with_the_shared_engine(self) -> None:
+        for page_name in ("Data", "Result", "Analyze", "Suggestion", "Technical Analyze", "Backtest", "Flexible Rulebook"):
+            with self.subTest(page=page_name), _loaded_main(page_name) as (
+                main_module,
+                events,
+                engine,
+                _session,
+                _router,
+                _streamlit,
+            ):
+                main_module.main()
+                routed_pages = [event for event in events if event[0] == "page"]
+                self.assertEqual([page_name], [event[1] for event in routed_pages])
+                self.assertIs(engine, routed_pages[0][2])
+
+    def test_backtest_route_never_invokes_flexible_renderer(self) -> None:
+        with _loaded_main("Backtest") as (main_module, events, _engine, _session, _router, _streamlit):
+            main_module.main()
+
+        self.assertEqual(["Backtest"], [event[1] for event in events if event[0] == "page"])
+
+    def test_leaving_technical_analyze_clears_stale_page_state_before_result_render(self) -> None:
+        session = {
+            "previous_page": "Technical Analyze",
+            "tech_df": object(),
+            "tech_ticker": "FPT",
+            "tech_snapshot": object(),
+            "tech_snapshot_params": ("FPT", "Day", 100, 5, 10),
+            "tech_raw_history": {"FPT_Day_100": object()},
+            "backtest_job": "must-survive",
+            "flexible_campaign": "must-survive",
+        }
+        with _loaded_main("Result", session) as (
+            main_module,
+            events,
+            engine,
+            loaded_session,
+            _router,
+            _streamlit,
+        ):
+            main_module.main()
+
+        self.assertFalse(any(key.startswith("tech_") for key in loaded_session))
+        self.assertEqual("Result", loaded_session["previous_page"])
+        self.assertEqual("must-survive", loaded_session["backtest_job"])
+        self.assertEqual("must-survive", loaded_session["flexible_campaign"])
         self.assertIn(("page", "Result", engine), events)
 
 

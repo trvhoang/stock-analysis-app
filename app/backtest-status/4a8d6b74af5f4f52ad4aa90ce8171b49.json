@@ -1,0 +1,164 @@
+{
+  "error_text": null,
+  "job_id": "4a8d6b74af5f4f52ad4aa90ce8171b49",
+  "output_paths": [
+    "backtest-result/ticker-signals/CDN/CDN_signals_midterm.json",
+    "backtest-result/ticker-signals/CEO/CEO_signals_midterm.json",
+    "backtest-result/ticker-signals/CII/CII_signals_midterm.json",
+    "backtest-result/ticker-signals/CSV/CSV_signals_midterm.json",
+    "backtest-result/ticker-signals/CTG/CTG_signals_midterm.json",
+    "backtest-result/ticker-signals/CTR/CTR_signals_midterm.json",
+    "backtest-result/ticker-signals/DBC/DBC_signals_midterm.json",
+    "backtest-result/ticker-signals/DBD/DBD_signals_midterm.json",
+    "backtest-result/ticker-signals/DCL/DCL_signals_midterm.json",
+    "backtest-result/ticker-signals/DCM/DCM_signals_midterm.json",
+    "backtest-result/ticker-signals/DDV/DDV_signals_midterm.json",
+    "backtest-result/ticker-signals/DGC/DGC_signals_midterm.json",
+    "backtest-result/ticker-signals/DGW/DGW_signals_midterm.json",
+    "backtest-result/ticker-signals/DHB/DHB_signals_midterm.json",
+    "backtest-result/ticker-signals/DHG/DHG_signals_midterm.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 2,
+      "error_texts": [
+        "ValueError: invalid backtest data: high contains non-positive prices",
+        "ValueError: invalid backtest data: high contains non-positive prices"
+      ],
+      "output_paths": [
+        "backtest-result/ticker-signals/CDN/CDN_signals_midterm.json"
+      ],
+      "state": "failed",
+      "ticker": "CDN"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/CEO/CEO_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "CEO"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/CII/CII_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "CII"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/CSV/CSV_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "CSV"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/CTG/CTG_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "CTG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/CTR/CTR_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "CTR"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DBC/DBC_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "DBC"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DBD/DBD_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "DBD"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DCL/DCL_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "DCL"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DCM/DCM_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "DCM"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DDV/DDV_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "DDV"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DGC/DGC_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "DGC"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DGW/DGW_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "DGW"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DHB/DHB_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "DHB"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DHG/DHG_signals_midterm.json"
+      ],
+      "state": "done",
+      "ticker": "DHG"
+    }
+  ]
+}

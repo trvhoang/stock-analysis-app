@@ -1,0 +1,114 @@
+{
+  "error_text": null,
+  "job_id": "39eed459817d402fbf03fa729bf00312",
+  "output_paths": [
+    "backtest-result/ticker-signals/DHG/DHG_signals_swing.json",
+    "backtest-result/ticker-signals/DBD/DBD_signals_swing.json",
+    "backtest-result/ticker-signals/DHT/DHT_signals_swing.json",
+    "backtest-result/ticker-signals/IMP/IMP_signals_swing.json",
+    "backtest-result/ticker-signals/DVN/DVN_signals_swing.json",
+    "backtest-result/ticker-signals/DCL/DCL_signals_swing.json",
+    "backtest-result/ticker-signals/TTD/TTD_signals_swing.json",
+    "backtest-result/ticker-signals/DMC/DMC_signals_swing.json",
+    "backtest-result/ticker-signals/TRA/TRA_signals_swing.json",
+    "backtest-result/ticker-signals/DTP/DTP_signals_swing.json"
+  ],
+  "progress": 1.0,
+  "schema_version": 5,
+  "state": "done",
+  "ticker_results": [
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DHG/DHG_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DHG"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DBD/DBD_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DBD"
+    },
+    {
+      "attempts": 2,
+      "error_texts": [
+        "ValueError: invalid backtest data: high contains non-positive prices",
+        "ValueError: invalid backtest data: high contains non-positive prices"
+      ],
+      "output_paths": [
+        "backtest-result/ticker-signals/DHT/DHT_signals_swing.json"
+      ],
+      "state": "failed",
+      "ticker": "DHT"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/IMP/IMP_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "IMP"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DVN/DVN_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DVN"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DCL/DCL_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DCL"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/TTD/TTD_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "TTD"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DMC/DMC_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DMC"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/TRA/TRA_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "TRA"
+    },
+    {
+      "attempts": 1,
+      "error_texts": [],
+      "output_paths": [
+        "backtest-result/ticker-signals/DTP/DTP_signals_swing.json"
+      ],
+      "state": "done",
+      "ticker": "DTP"
+    }
+  ]
+}

@@ -1,5 +1,7 @@
 # Flexible Rulebook Production Benchmark Design
 
+> **Superseded by 2026-09-15 user-authored redesign.** Historical record only; do not use for implementation.
+
 ## Purpose
 
 Provide one explicit, read-only Docker command that measures real Flexible

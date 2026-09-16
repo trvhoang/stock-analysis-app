@@ -15,7 +15,7 @@ from .config import (
     rulebook_for,
 )
 
-JOB_STATES = ("queued", "running", "done", "failed", "requires_regeneration")
+JOB_STATES = ("queued", "running", "done", "failed", "requires_regeneration", "skipped")
 EXIT_REASONS = ("stop_loss", "take_profit", "timeout")
 
 
@@ -191,17 +191,17 @@ class BatchTickerStatus:
         object.__setattr__(self, "ticker", _normalize_ticker(self.ticker))
         if self.state not in JOB_STATES:
             raise ValueError(f"state must be one of {JOB_STATES}")
-        if self.state == "queued":
+        if self.state in {"queued", "skipped"}:
             if self.attempts != 0:
-                raise ValueError("queued ticker status must have zero attempts")
+                raise ValueError("queued or skipped ticker status must have zero attempts")
         elif self.attempts not in (1, 2):
             raise ValueError("non-queued ticker status must have one or two attempts")
         object.__setattr__(self, "output_paths", tuple(self.output_paths))
         error_texts = tuple(self.error_texts)
         if any(not isinstance(error, str) or not error for error in error_texts):
             raise ValueError("error_texts must contain non-empty strings")
-        if self.state == "failed" and not error_texts:
-            raise ValueError("failed ticker status must include an error")
+        if self.state in {"failed", "skipped"} and not error_texts:
+            raise ValueError("failed or skipped ticker status must include an error")
         object.__setattr__(self, "error_texts", error_texts)
 
     def to_dict(self) -> dict[str, object]:

@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 
+from commons.ui_controls import read_only_dataframe_kwargs
+
 # Result page logic
 def result_page(engine):
     st.header("Result Page")
@@ -45,7 +47,7 @@ def result_page(engine):
     col1, col2 = st.columns([1, 2])
     with col1:
         st.subheader("Top 10 Trading Volume")
-        st.dataframe(df_volume, use_container_width=True)
+        st.dataframe(df_volume, **read_only_dataframe_kwargs())
     with col2:
         st.subheader("Top 10 Trading Value")
-        st.dataframe(df_value, use_container_width=True)
+        st.dataframe(df_value, **read_only_dataframe_kwargs())

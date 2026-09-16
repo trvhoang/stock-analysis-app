@@ -43,6 +43,8 @@ def _normalize_group_name(group_name: object) -> str:
     if not isinstance(group_name, str):
         raise ValueError("group_name must be text")
     normalized = group_name.strip().upper()
+    if normalized == "ALL":
+        raise ValueError("ALL is reserved for the virtual Group selector")
     return normalized or "N/A"
 
 
@@ -60,6 +62,7 @@ class RulebookSpec:
     rsi_upcross_level: float
     alligator_periods: tuple[int, int, int]
     alligator_lags: tuple[int, int, int]
+    alligator_source: str
     volume_window: int
     volume_multiplier: float
     adx_period: int
@@ -90,6 +93,8 @@ class RulebookSpec:
             raise ValueError("alligator_periods must contain three positive periods")
         if len(self.alligator_lags) != 3 or min(self.alligator_lags) < 0:
             raise ValueError("alligator_lags must contain three non-negative lags")
+        if self.alligator_source != "HL2":
+            raise ValueError("V3 rulebooks require HL2 Alligator input")
         if min(
             self.rsi_period,
             self.volume_window,
@@ -144,6 +149,7 @@ _RULEBOOKS = {
         rsi_upcross_level=52,
         alligator_periods=(8, 5, 3),
         alligator_lags=(5, 3, 2),
+        alligator_source="HL2",
         volume_window=10,
         volume_multiplier=1.15,
         adx_period=14,
@@ -168,6 +174,7 @@ _RULEBOOKS = {
         rsi_upcross_level=65,
         alligator_periods=(13, 8, 5),
         alligator_lags=(8, 5, 3),
+        alligator_source="HL2",
         volume_window=8,
         volume_multiplier=1.3,
         adx_period=14,
@@ -253,6 +260,7 @@ class BacktestBatchConfig:
     tickers: tuple[str, ...]
     start_date: Optional[date] = None
     end_date: Optional[date] = None
+    use_lifetime_range: bool = False
     horizon: str = "swing"
     group_name: str = "N/A"
     permutation_count: int = 1000
@@ -275,6 +283,8 @@ class BacktestBatchConfig:
             )
         if len(set(normalized_tickers)) != len(normalized_tickers):
             raise ValueError("tickers must not contain a duplicate")
+        if not isinstance(self.use_lifetime_range, bool):
+            raise ValueError("use_lifetime_range must be a boolean")
         rulebook_for(self.horizon)
         if self.permutation_count < 1:
             raise ValueError("permutation_count must be positive")

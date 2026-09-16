@@ -1,0 +1,94 @@
+{
+  "audit_eligibility": {
+    "effective_date_range": [
+      null,
+      null
+    ],
+    "eligible": false,
+    "reasons": [
+      "ValueError: invalid backtest data: open contains non-positive prices"
+    ],
+    "source": "unavailable",
+    "status": "unavailable",
+    "warnings": []
+  },
+  "candidates": [],
+  "contract_version": "backtest_schema5_v1",
+  "effective_data_range": {
+    "end": null,
+    "reason": "ValueError: invalid backtest data: open contains non-positive prices",
+    "start": null
+  },
+  "empty": true,
+  "evaluated_at": "2026-09-15T22:03:59.431517+07:00",
+  "evaluation_label": "Exploratory \u2014 gross",
+  "evidence_eligibility": {
+    "common_as_of": null,
+    "coverage_ratio": 0.0,
+    "eligible": false,
+    "expected_sessions": 0,
+    "first_available_bar": null,
+    "last_available_bar": null,
+    "max_gap_sessions": 0,
+    "observed_sessions": 0,
+    "reasons": [
+      "ValueError: invalid backtest data: open contains non-positive prices"
+    ],
+    "status": "unavailable",
+    "ticker_fingerprint": null,
+    "vnindex_fingerprint": null
+  },
+  "failure_reason": "ValueError: invalid backtest data: open contains non-positive prices",
+  "horizon": "midterm",
+  "partition_labels": {
+    "test": "historical test \u2014 previously observed",
+    "training": "in-sample"
+  },
+  "rejection_reason": null,
+  "requested_date_range": {
+    "end": "2026-09-15",
+    "reason": null,
+    "start": "2010-08-17"
+  },
+  "rulebook": {
+    "adx_minimum": 20,
+    "adx_period": 14,
+    "alligator_lags": [
+      8,
+      5,
+      3
+    ],
+    "alligator_periods": [
+      13,
+      8,
+      5
+    ],
+    "alligator_source": "HL2",
+    "atr_period": 14,
+    "atr_sl_multiplier": 1.5,
+    "atr_tp_multiplier": 2.5,
+    "horizon": "midterm",
+    "joint_trend_required": true,
+    "ma_kind": "SMA",
+    "ma_pair": [
+      8,
+      21
+    ],
+    "max_hold_bars": 16,
+    "min_exit_offset_bars": 1,
+    "min_n": 5,
+    "native_timeframe": "weekly",
+    "rsi_period": 14,
+    "rsi_upcross_level": 65,
+    "rule_id": "midterm_rulebook_v5",
+    "theme_sma_window": 20,
+    "volume_multiplier": 1.3,
+    "volume_window": 8,
+    "weekly_frequency": "W-FRI"
+  },
+  "schema_version": 5,
+  "split": null,
+  "terminal_state": "failed",
+  "ticker": "BWS",
+  "top_rulebook_ids": []
+}

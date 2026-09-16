@@ -1,0 +1,35 @@
+{
+  "config": {
+    "end_date": "2026-09-05",
+    "group_name": "B\u0110S",
+    "horizon": "swing",
+    "output_dir": "backtest-result/ticker-signals",
+    "permutation_block_size": 20,
+    "permutation_count": 1000,
+    "permutation_seed": 42,
+    "request_type": "backtest_batch_v5",
+    "start_date": "2011-09-05",
+    "tickers": [
+      "BCM",
+      "CEO",
+      "CII",
+      "DIG",
+      "DXG",
+      "DXS",
+      "HDG",
+      "IDC",
+      "KBC",
+      "KDH",
+      "LDG",
+      "NLG",
+      "NVL",
+      "SIP",
+      "SNZ"
+    ],
+    "worker_count": 6
+  },
+  "factory_ref": "backtest_engine.pipeline:run_backtest_batch_from_env",
+  "job_id": "14223fdabcac4b7995fef4b9992dd4cc",
+  "schema_version": 5,
+  "status_dir": "backtest-status"
+}

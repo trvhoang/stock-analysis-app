@@ -74,8 +74,29 @@ def rulebook_entry_signal(
     return (entry & themed).astype(bool)
 
 
+def rulebook_entry_events(
+    entry_mask: pd.Series,
+    observed_mask: pd.Series,
+) -> pd.Series:
+    """Return only observed false-to-true entry transitions.
+
+    A warm-up row with no observed predecessor is never relabelled as a fresh
+    entry. This helper is diagnostic-only; level-entry execution is unchanged.
+    """
+
+    entry = pd.Series(entry_mask).fillna(False).astype(bool)
+    observed = pd.Series(observed_mask, index=entry.index).fillna(False).astype(bool)
+    return (
+        observed
+        & entry
+        & observed.shift(1, fill_value=False)
+        & ~entry.shift(1, fill_value=False)
+    ).astype(bool)
+
+
 __all__ = [
     "gate_subsets",
     "generate_rulebook_executions",
+    "rulebook_entry_events",
     "rulebook_entry_signal",
 ]
